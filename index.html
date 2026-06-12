@@ -1,394 +1,289 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Urban Loop 360° — Tu ciudad, contada por quienes la viven</title>
-  <meta name="description" content="Plataforma urbana ciudadana para municipios de Entre Ríos. Fotos geolocalizadas, recorridos colaborativos y comunidad local." />
-  <meta property="og:title" content="Urban Loop 360°" />
-  <meta property="og:description" content="Tu ciudad, contada por quienes la viven." />
-  <meta property="og:url" content="https://www.urbanloop360.com.ar" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@400;600;700&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-    body {
-      font-family: 'Bai Jamjuree', sans-serif;
-      background: #0a0f1a;
-      color: #f0ede6;
-      min-height: 100vh;
-    }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Urban Loop 360° — Tu ciudad, contada por quienes la viven</title>
+<meta name="description" content="Plataforma urbana ciudadana para municipios de Entre Ríos. Fotos geolocalizadas, recorridos colaborativos y comunidad local."/>
+<meta property="og:title" content="Urban Loop 360°"/>
+<meta property="og:description" content="Tu ciudad, contada por quienes la viven."/>
+<meta property="og:url" content="https://www.urbanloop360.com.ar"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+:root{
+  --or:#FF5F00;--or2:#FF8C42;
+  --bg0:#0a0f1a;--bg1:#0f1520;--bg2:#161d2c;
+  --bd:rgba(255,95,0,0.18);
+  --txt:#f0ede6;--muted:#7a8599;--sub:#a0a8b8;
+}
+body{font-family:'Bai Jamjuree',sans-serif;background:var(--bg0);color:var(--txt);min-height:100vh;overflow-x:hidden;}
 
-    /* NAV */
-    nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 1.2rem 2rem;
-      border-bottom: 0.5px solid rgba(255,95,0,0.2);
-      position: sticky;
-      top: 0;
-      background: #0a0f1a;
-      z-index: 100;
-    }
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      text-decoration: none;
-    }
-    .logo-icon {
-      width: 36px;
-      height: 36px;
-      background: #FF5F00;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-    .logo-text {
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      color: #f0ede6;
-    }
-    .logo-text span { color: #FF5F00; }
-    .nav-url {
-      font-size: 12px;
-      color: #3a4255;
-      letter-spacing: 0.08em;
-    }
+nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1.1rem 2rem;border-bottom:0.5px solid var(--bd);
+  position:sticky;top:0;background:rgba(10,15,26,0.95);
+  backdrop-filter:blur(12px);z-index:100;
+}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.logo img{width:38px;height:38px;object-fit:contain;border-radius:8px;}
+.logo-text{font-size:15px;font-weight:700;letter-spacing:0.04em;color:var(--txt);}
+.logo-text span{color:var(--or);}
+.nav-right{display:flex;align-items:center;gap:16px;}
+.nav-url{font-size:11px;color:rgba(160,168,184,0.4);letter-spacing:0.1em;}
+.nav-cta{font-size:12px;font-weight:700;color:var(--or);border:0.5px solid rgba(255,95,0,0.4);border-radius:6px;padding:7px 14px;text-decoration:none;letter-spacing:0.04em;transition:background 0.2s,color 0.2s;}
+.nav-cta:hover{background:var(--or);color:#fff;}
 
-    /* HERO */
-    .hero {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-      padding: 4rem 2rem 3rem;
-      align-items: center;
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-    .hero-label {
-      font-size: 11px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: #FF5F00;
-      margin-bottom: 1rem;
-    }
-    .hero-title {
-      font-size: clamp(28px, 4vw, 48px);
-      font-weight: 700;
-      line-height: 1.1;
-      margin-bottom: 1.2rem;
-      color: #f0ede6;
-    }
-    .hero-title em {
-      font-style: normal;
-      color: #FF5F00;
-    }
-    .hero-sub {
-      font-size: 15px;
-      line-height: 1.7;
-      color: #a0a8b8;
-      margin-bottom: 2rem;
-      max-width: 440px;
-    }
-    .btn-primary {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      background: #FF5F00;
-      color: #fff;
-      font-family: 'Bai Jamjuree', sans-serif;
-      font-size: 14px;
-      font-weight: 700;
-      padding: 14px 28px;
-      border-radius: 8px;
-      text-decoration: none;
-      letter-spacing: 0.04em;
-      transition: background 0.2s;
-    }
-    .btn-primary:hover { background: #e05500; }
-    .btn-ghost {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: transparent;
-      color: #a0a8b8;
-      font-family: 'Bai Jamjuree', sans-serif;
-      font-size: 14px;
-      padding: 14px 20px;
-      border-radius: 8px;
-      text-decoration: none;
-      border: 0.5px solid rgba(160,168,184,0.3);
-      margin-left: 12px;
-      transition: border-color 0.2s, color 0.2s;
-    }
-    .btn-ghost:hover { border-color: #FF5F00; color: #FF5F00; }
+.hero{max-width:1100px;margin:0 auto;padding:5rem 2rem 3rem;display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center;}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--or);margin-bottom:1.4rem;}
+.hero-eyebrow::before{content:'';width:20px;height:1.5px;background:var(--or);}
+h1{font-size:clamp(32px,4.5vw,54px);font-weight:700;line-height:1.05;color:var(--txt);margin-bottom:1.4rem;letter-spacing:-0.02em;}
+h1 em{font-style:normal;color:var(--or);}
+h1 .light{font-weight:300;color:var(--sub);}
+.hero-desc{font-size:15px;line-height:1.75;color:var(--sub);margin-bottom:2.2rem;max-width:420px;}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+.btn-wa{display:inline-flex;align-items:center;gap:9px;background:#25D366;color:#fff;font-family:'Bai Jamjuree',sans-serif;font-size:14px;font-weight:700;padding:14px 26px;border-radius:8px;text-decoration:none;transition:background 0.2s;}
+.btn-wa:hover{background:#1ebe5d;}
+.btn-app{display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--sub);font-family:'Bai Jamjuree',sans-serif;font-size:14px;padding:14px 20px;border-radius:8px;text-decoration:none;border:0.5px solid rgba(160,168,184,0.25);transition:border-color 0.2s,color 0.2s;}
+.btn-app:hover{border-color:var(--or);color:var(--or);}
 
-    /* MAP SVG */
-    .map-wrap {
-      position: relative;
-      width: 100%;
-      height: 320px;
-    }
-    .map-wrap svg { width: 100%; height: 100%; }
+.hero-visual{position:relative;display:flex;justify-content:center;}
+.phone-frame{position:relative;width:220px;border-radius:28px;border:1.5px solid rgba(255,95,0,0.25);background:var(--bg1);overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,0.5);}
+.phone-screen{width:100%;display:block;object-fit:cover;max-height:380px;}
+.phone-badge{position:absolute;top:-10px;right:-10px;background:var(--or);color:#fff;font-size:10px;font-weight:700;padding:5px 10px;border-radius:20px;letter-spacing:0.06em;white-space:nowrap;}
+.float-pill{position:absolute;background:var(--bg1);border:0.5px solid var(--bd);border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;color:var(--txt);white-space:nowrap;}
+.float-pill.left{left:-80px;top:28%;}
+.float-pill.bot{right:-70px;bottom:24%;}
+.fp-dot{width:7px;height:7px;border-radius:50%;background:var(--or);flex-shrink:0;}
 
-    /* PILLARS */
-    .pillars {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1px;
-      background: rgba(255,95,0,0.15);
-      border: 0.5px solid rgba(255,95,0,0.15);
-      border-radius: 12px;
-      overflow: hidden;
-      margin: 0 2rem;
-      max-width: 1060px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    .pillar {
-      background: #0f1520;
-      padding: 2rem 1.5rem;
-    }
-    .pillar-num {
-      font-size: 11px;
-      letter-spacing: 0.14em;
-      color: #FF5F00;
-      margin-bottom: 0.8rem;
-      font-weight: 700;
-    }
-    .pillar-name {
-      font-size: 20px;
-      font-weight: 700;
-      color: #f0ede6;
-      margin-bottom: 0.6rem;
-    }
-    .pillar-desc {
-      font-size: 13px;
-      line-height: 1.65;
-      color: #6e7a8a;
-    }
+.comunidad-wrap{max-width:1060px;margin:3rem auto 0;padding:0 2rem;}
+.comunidad-img{width:100%;border-radius:14px;border:0.5px solid var(--bd);display:block;object-fit:cover;max-height:360px;}
 
-    /* MID */
-    .mid {
-      padding: 4rem 2rem;
-      text-align: center;
-      max-width: 700px;
-      margin: 0 auto;
-    }
-    .mid-label {
-      font-size: 11px;
-      letter-spacing: 0.14em;
-      color: #FF5F00;
-      text-transform: uppercase;
-      margin-bottom: 1rem;
-    }
-    .mid-title {
-      font-size: clamp(20px, 2.5vw, 30px);
-      font-weight: 700;
-      line-height: 1.3;
-      color: #f0ede6;
-      margin-bottom: 1.2rem;
-    }
-    .mid-sub {
-      font-size: 14px;
-      color: #6e7a8a;
-      line-height: 1.7;
-    }
+.pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--bd);border:0.5px solid var(--bd);border-radius:14px;overflow:hidden;max-width:1060px;margin:3rem auto 0;padding:0 2rem;}
+@media(min-width:900px){.pillars,.stats,.comunidad-wrap{padding:0;}}
+.pillar{background:var(--bg1);padding:2rem 1.6rem;}
+.pillar-emoji{font-size:26px;margin-bottom:0.9rem;display:block;}
+.pillar-tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--or);margin-bottom:0.7rem;border:0.5px solid rgba(255,95,0,0.3);border-radius:4px;padding:3px 7px;}
+.pillar-name{font-size:18px;font-weight:700;color:var(--txt);margin-bottom:0.5rem;line-height:1.2;}
+.pillar-desc{font-size:13px;line-height:1.65;color:var(--muted);}
 
-    /* CONTACT */
-    .contact {
-      background: #0f1520;
-      border-top: 0.5px solid rgba(255,95,0,0.2);
-      padding: 3.5rem 2rem;
-      text-align: center;
-    }
-    .contact h2 {
-      font-size: 22px;
-      font-weight: 700;
-      color: #f0ede6;
-      margin-bottom: 0.5rem;
-    }
-    .contact p {
-      font-size: 14px;
-      color: #6e7a8a;
-      margin-bottom: 2rem;
-    }
-    .btn-wa {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      background: #25D366;
-      color: #fff;
-      font-family: 'Bai Jamjuree', sans-serif;
-      font-size: 15px;
-      font-weight: 700;
-      padding: 16px 32px;
-      border-radius: 8px;
-      text-decoration: none;
-      transition: background 0.2s;
-    }
-    .btn-wa:hover { background: #1ebe5d; }
+.wheel-section{max-width:1060px;margin:0 auto;padding:4.5rem 2rem;display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center;}
+.section-label{font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--or);margin-bottom:1rem;}
+h2{font-size:clamp(22px,3vw,32px);font-weight:700;line-height:1.15;color:var(--txt);margin-bottom:1rem;letter-spacing:-0.01em;}
+h2 span{color:var(--or);}
+.wheel-copy p{font-size:14px;line-height:1.75;color:var(--sub);margin-bottom:1.4rem;}
+.cats-preview{display:flex;flex-wrap:wrap;gap:8px;}
+.cat-chip{display:flex;align-items:center;gap:6px;background:var(--bg2);border:0.5px solid rgba(255,95,0,0.2);border-radius:20px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--sub);}
+.wheel-visual{display:flex;justify-content:center;align-items:center;}
+.wheel-wrap{position:relative;width:260px;height:260px;}
+.wheel-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--or);color:#fff;font-family:'Bai Jamjuree',sans-serif;font-size:12px;font-weight:700;border-radius:50%;width:56px;height:56px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.2;pointer-events:none;box-shadow:0 0 0 4px var(--bg0),0 0 0 5px rgba(255,95,0,0.3);}
 
-    /* FOOTER */
-    footer {
-      padding: 1.5rem 2rem;
-      border-top: 0.5px solid rgba(255,255,255,0.06);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-    footer span { font-size: 12px; color: #3a4255; }
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--bd);border:0.5px solid var(--bd);border-radius:14px;overflow:hidden;max-width:1060px;margin:0 auto 0;padding:0 2rem;}
+.stat{background:var(--bg1);padding:2rem 1.5rem;text-align:center;}
+.stat-num{font-size:34px;font-weight:700;color:var(--or);line-height:1;margin-bottom:4px;letter-spacing:-0.02em;}
+.stat-lbl{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:0.04em;line-height:1.4;}
 
-    /* ANIMATIONS */
-    @keyframes pinpop {
-      0%   { opacity: 0; transform: scale(0) translate(-50%, -100%); }
-      60%  { transform: scale(1.2) translate(-50%, -100%); }
-      100% { opacity: 1; transform: scale(1) translate(-50%, -100%); }
-    }
-    @keyframes ripple {
-      0%   { r: 6; opacity: 0.7; }
-      100% { r: 22; opacity: 0; }
-    }
-    .pin { animation: pinpop 0.4s cubic-bezier(.34,1.56,.64,1) both; }
-    .rip { animation: ripple 1.5s ease-out infinite; }
+.mid{background:var(--bg1);border-top:0.5px solid var(--bd);border-bottom:0.5px solid var(--bd);padding:4rem 2rem;text-align:center;}
+.mid-inner{max-width:640px;margin:0 auto;}
+.mid-label{font-size:11px;letter-spacing:0.16em;color:var(--or);text-transform:uppercase;margin-bottom:1rem;font-weight:700;}
+.mid h2{margin-bottom:1rem;}
+.mid p{font-size:14px;color:var(--muted);line-height:1.75;}
 
-    /* RESPONSIVE */
-    @media (max-width: 720px) {
-      .hero { grid-template-columns: 1fr; padding: 2.5rem 1.2rem 2rem; }
-      .map-wrap { height: 220px; }
-      .pillars { grid-template-columns: 1fr; margin: 0 1.2rem; }
-      nav { padding: 1rem 1.2rem; }
-      .nav-url { display: none; }
-      .btn-ghost { display: none; }
-      footer { flex-direction: column; gap: 6px; text-align: center; }
-    }
-  </style>
+.contact{background:var(--bg1);border-top:0.5px solid var(--bd);padding:4rem 2rem;text-align:center;}
+.contact h2{margin-bottom:0.6rem;}
+.contact p{font-size:14px;color:var(--muted);margin-bottom:1.6rem;line-height:1.65;}
+.contact-email{display:inline-flex;align-items:center;gap:8px;color:var(--sub);font-size:14px;text-decoration:none;margin-bottom:1.4rem;transition:color 0.2s;}
+.contact-email:hover{color:var(--or);}
+.contact-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+
+footer{padding:1.5rem 2rem;border-top:0.5px solid rgba(255,255,255,0.05);display:flex;justify-content:space-between;align-items:center;max-width:1100px;margin:0 auto;}
+footer span{font-size:12px;color:rgba(100,110,130,0.7);}
+
+@media(max-width:768px){
+  .hero{grid-template-columns:1fr;padding:2.5rem 1.2rem 2rem;gap:2rem;}
+  .hero-visual{order:-1;}
+  .phone-frame{width:180px;}
+  .float-pill{display:none;}
+  .pillars{grid-template-columns:1fr;margin:2rem 1.2rem 0;padding:0;}
+  .wheel-section{grid-template-columns:1fr;padding:2.5rem 1.2rem;gap:2rem;}
+  .stats{grid-template-columns:repeat(2,1fr);margin:2rem 1.2rem;padding:0;}
+  .comunidad-wrap{padding:0 1.2rem;}
+  nav{padding:1rem 1.2rem;}
+  .nav-url,.nav-cta{display:none;}
+  footer{flex-direction:column;gap:6px;text-align:center;}
+}
+</style>
 </head>
 <body>
 
-  <nav>
-    <a class="logo" href="#">
-      <div class="logo-icon">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <circle cx="10" cy="10" r="7" stroke="#fff" stroke-width="1.5"/>
-          <circle cx="10" cy="10" r="2.5" fill="#fff"/>
-          <line x1="10" y1="3" x2="10" y2="17" stroke="#fff" stroke-width="1.2" stroke-dasharray="2 2"/>
-          <line x1="3" y1="10" x2="17" y2="10" stroke="#fff" stroke-width="1.2" stroke-dasharray="2 2"/>
-        </svg>
-      </div>
-      <div class="logo-text">Urban<span>Loop</span> 360°</div>
-    </a>
+<nav>
+  <a class="logo" href="#">
+    <img src="https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/6d08a563-b7bd-4856-9904-3cd8343950c9%20(1).png" alt="Urban Loop 360° logo">
+    <div class="logo-text">Urban<span>Loop</span> 360°</div>
+  </a>
+  <div class="nav-right">
     <span class="nav-url">urbanloop360.com.ar</span>
-  </nav>
+    <a class="nav-cta" href="https://ul360.github.io/home/#explore" target="_blank" rel="noopener">Ver la app →</a>
+  </div>
+</nav>
 
-  <section class="hero">
-    <div>
-      <div class="hero-label">Plataforma urbana ciudadana</div>
-      <h1 class="hero-title">Tu ciudad,<br>contada por<br><em>quienes la viven</em></h1>
-      <p class="hero-sub">Urban Loop 360° transforma a los vecinos en narradores de su propio territorio. Fotos reales, recorridos colaborativos y una comunidad que conecta la ciudad desde adentro.</p>
-      <div>
-        <a class="btn-primary" href="https://wa.me/543437408435" target="_blank" rel="noopener">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.025.507 3.934 1.399 5.608L0 24l6.541-1.377A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.8 9.8 0 01-5.032-1.388l-.36-.214-3.733.786.797-3.61-.235-.372A9.795 9.795 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
-          Escribinos por WhatsApp
-        </a>
-        <a class="btn-ghost" href="https://ul360.github.io/home/#explore" target="_blank" rel="noopener">Ver la app →</a>
-      </div>
-    </div>
-    <div class="map-wrap">
-      <svg id="mapsvg" viewBox="0 0 420 320" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="420" height="320" rx="12" fill="#111827"/>
-        <g opacity="0.18" stroke="#FF5F00" stroke-width="0.5">
-          <line x1="0" y1="64" x2="420" y2="64"/><line x1="0" y1="128" x2="420" y2="128"/>
-          <line x1="0" y1="192" x2="420" y2="192"/><line x1="0" y1="256" x2="420" y2="256"/>
-          <line x1="84" y1="0" x2="84" y2="320"/><line x1="168" y1="0" x2="168" y2="320"/>
-          <line x1="252" y1="0" x2="252" y2="320"/><line x1="336" y1="0" x2="336" y2="320"/>
-        </g>
-        <polyline points="60,200 120,160 180,180 250,120 310,140 370,100" stroke="#FF5F00" stroke-width="1.5" stroke-dasharray="5 3" opacity="0.5"/>
-        <polyline points="40,260 100,230 160,240 230,200 290,210 360,180" stroke="#4a9eff" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.35"/>
-        <g id="pins"></g>
-      </svg>
-    </div>
-  </section>
-
-  <div class="pillars">
-    <div class="pillar">
-      <div class="pillar-num">01 — FOTOLOOP</div>
-      <div class="pillar-name">La ciudad en fotos</div>
-      <p class="pillar-desc">Cada vecino sube fotos geolocalizadas que aparecen en el mapa. La ciudad se construye sola, en tiempo real, con la mirada de su propia gente.</p>
-    </div>
-    <div class="pillar">
-      <div class="pillar-num">02 — LOOPS URBANOS</div>
-      <div class="pillar-name">Recorridos que conectan</div>
-      <p class="pillar-desc">Gastronómico, cultural, histórico, deportivo. Los vecinos trazan recorridos temáticos que muestran lo mejor de cada barrio y cada ciudad.</p>
-    </div>
-    <div class="pillar">
-      <div class="pillar-num">03 — LOOPERS</div>
-      <div class="pillar-name">La comunidad detrás</div>
-      <p class="pillar-desc">Perfiles, interacciones y reconocimiento entre vecinos. Una red local viva que no depende de algoritmos externos ni de contenido institucional.</p>
+<section class="hero">
+  <div>
+    <div class="hero-eyebrow">Plataforma urbana ciudadana</div>
+    <h1>Tu ciudad,<br><span class="light">contada por</span><br><em>quienes la viven</em></h1>
+    <p class="hero-desc">Urban Loop 360° convierte a cada vecino en un narrador de su propio territorio. Fotos reales, recorridos colaborativos y una comunidad que conecta la ciudad desde adentro.</p>
+    <div class="hero-actions">
+      <a class="btn-wa" href="https://wa.me/543437408435" target="_blank" rel="noopener">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.025.507 3.934 1.399 5.608L0 24l6.541-1.377A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.8 9.8 0 01-5.032-1.388l-.36-.214-3.733.786.797-3.61-.235-.372A9.795 9.795 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
+        Escribinos por WhatsApp
+      </a>
+      <a class="btn-app" href="https://ul360.github.io/home/#explore" target="_blank" rel="noopener">Ver la app →</a>
     </div>
   </div>
+  <div class="hero-visual">
+    <div class="phone-frame">
+      <img class="phone-screen"
+        src="https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/6d08a563-b7bd-4856-9904-3cd8343950c9%20(1).png"
+        alt="Urban Loop 360° pantalla principal">
+      <div class="phone-badge">PWA · Sin descarga</div>
+    </div>
+    <div class="float-pill left">
+      <div class="fp-dot"></div>
+      📸 FotoLoop activo
+    </div>
+    <div class="float-pill bot">
+      <div class="fp-dot" style="background:#25D366;"></div>
+      🗺️ 12 loops en La Paz
+    </div>
+  </div>
+</section>
 
-  <div class="mid">
+<div class="comunidad-wrap">
+  <img class="comunidad-img"
+    src="https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/comunidadfoto.png"
+    alt="Comunidad Urban Loop 360° — vecinos que narran su ciudad"
+    loading="lazy">
+</div>
+
+<div class="pillars" style="margin-left:auto;margin-right:auto;padding:0 2rem;">
+  <div class="pillar">
+    <span class="pillar-emoji">📸</span>
+    <div class="pillar-tag">FotoLoop</div>
+    <div class="pillar-name">La ciudad en fotos</div>
+    <p class="pillar-desc">Cada vecino sube fotos geolocalizadas que aparecen en el mapa. La ciudad se construye sola, en tiempo real, con la mirada de su propia gente.</p>
+  </div>
+  <div class="pillar">
+    <span class="pillar-emoji">🔁</span>
+    <div class="pillar-tag">Loops Urbanos</div>
+    <div class="pillar-name">Recorridos que conectan</div>
+    <p class="pillar-desc">Gastronómico, cultural, histórico, deportivo. Los vecinos trazan recorridos temáticos que muestran lo mejor de cada barrio y cada ciudad.</p>
+  </div>
+  <div class="pillar">
+    <span class="pillar-emoji">👥</span>
+    <div class="pillar-tag">Loopers</div>
+    <div class="pillar-name">La comunidad detrás</div>
+    <p class="pillar-desc">Perfiles, interacciones y reconocimiento entre vecinos. Una red local viva que no depende de algoritmos externos ni de contenido institucional.</p>
+  </div>
+</div>
+
+<section class="wheel-section">
+  <div class="wheel-copy">
+    <div class="section-label">Qué hacemos hoy</div>
+    <h2>La app que te ayuda a<br><span>decidir qué hacer</span> en tu ciudad</h2>
+    <p>Una rueda con actividades reales de tu entorno: ocio, deporte, aventuras y noches con amigos. Girás y la ciudad te sorprende.</p>
+    <div class="cats-preview">
+      <div class="cat-chip">☀️ Ocio</div>
+      <div class="cat-chip">⚡ Deportes</div>
+      <div class="cat-chip">🌿 Aventuras</div>
+      <div class="cat-chip">🍻 Noche de amigos</div>
+    </div>
+  </div>
+  <div class="wheel-visual">
+    <div class="wheel-wrap">
+      <canvas id="wc" width="260" height="260"></canvas>
+      <div class="wheel-center">¡Girá!</div>
+    </div>
+  </div>
+</section>
+
+<div class="stats" style="margin-left:auto;margin-right:auto;padding:0 2rem;">
+  <div class="stat"><div class="stat-num">PWA</div><div class="stat-lbl">Sin descarga,<br>corre en el celular</div></div>
+  <div class="stat"><div class="stat-num">0</div><div class="stat-lbl">Contenido que carga<br>el municipio</div></div>
+  <div class="stat"><div class="stat-num">360°</div><div class="stat-lbl">Vista completa<br>de tu ciudad</div></div>
+  <div class="stat"><div class="stat-num" style="font-size:22px;">Entre<br>Ríos</div><div class="stat-lbl">Primer piloto<br>disponible</div></div>
+</div>
+
+<div class="mid" style="margin-top:3rem;">
+  <div class="mid-inner">
     <div class="mid-label">Para municipios</div>
-    <h2 class="mid-title">El municipio no carga contenido.<br>Lo genera la comunidad.</h2>
-    <p class="mid-sub">Una PWA sin necesidad de descarga, con panel de administración municipal, moderación de contenido y módulo de negocios locales. Lista para implementar en Entre Ríos.</p>
+    <h2>El municipio no carga contenido.<br>Lo genera la comunidad.</h2>
+    <p>Panel de administración municipal, moderación de contenido y módulo de negocios locales. Lista para implementar en Entre Ríos.</p>
   </div>
+</div>
 
-  <div class="contact">
-    <h2>¿Tu municipio quiere ser el primero?</h2>
-    <p>Estamos buscando el primer caso piloto en Entre Ríos. Escribinos y te mostramos la demo en vivo.</p>
-    <a href="mailto:urbanloop360@gmail.com" style="display:inline-flex;align-items:center;gap:8px;color:#a0a8b8;font-family:'Bai Jamjuree',sans-serif;font-size:14px;text-decoration:none;margin-bottom:1.2rem;transition:color 0.2s;" onmouseover="this.style.color='#FF5F00'" onmouseout="this.style.color='#a0a8b8'">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2,4 12,13 22,4"/></svg>
+<div class="contact">
+  <h2>¿Tu municipio quiere ser el primero?</h2>
+  <p>Estamos buscando el primer caso piloto en Entre Ríos.<br>Escribinos y te mostramos la demo en vivo.</p>
+  <div>
+    <a class="contact-email" href="mailto:urbanloop360@gmail.com">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2,4 12,13 22,4"/></svg>
       urbanloop360@gmail.com
-    </a><br><br>
+    </a>
+  </div>
+  <div class="contact-actions" style="margin-top:1rem;">
     <a class="btn-wa" href="https://wa.me/543437408435" target="_blank" rel="noopener">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.025.507 3.934 1.399 5.608L0 24l6.541-1.377A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.8 9.8 0 01-5.032-1.388l-.36-.214-3.733.786.797-3.61-.235-.372A9.795 9.795 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.025.507 3.934 1.399 5.608L0 24l6.541-1.377A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.8 9.8 0 01-5.032-1.388l-.36-.214-3.733.786.797-3.61-.235-.372A9.795 9.795 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
       Escribinos por WhatsApp
     </a>
+    <a class="btn-app" href="https://ul360.github.io/home/#explore" target="_blank" rel="noopener">Probar la app →</a>
   </div>
+</div>
 
-  <footer>
-    <span>© 2025 Urban Loop 360° — Entre Ríos, Argentina</span>
-    <span>La Paz · Paraná · Gualeguaychú</span>
-  </footer>
+<footer>
+  <span>© 2026 Urban Loop 360° — Entre Ríos, Argentina</span>
+  <span>La Paz · Paraná · Gualeguaychú</span>
+</footer>
 
-  <script>
-    const pinsData = [
-      {x:120,y:160,d:300},{x:180,y:180,d:700},{x:250,y:120,d:1100},
-      {x:310,y:140,d:1600},{x:60,y:200,d:500},{x:370,y:100,d:2000},
-      {x:160,y:240,d:900},{x:290,y:210,d:1400}
-    ];
-    const svg = document.getElementById('mapsvg');
-    const ns = 'http://www.w3.org/2000/svg';
-    pinsData.forEach(p => {
-      setTimeout(() => {
-        const g = document.createElementNS(ns, 'g');
-        g.setAttribute('transform', `translate(${p.x},${p.y})`);
-        g.classList.add('pin');
-        const rip = document.createElementNS(ns, 'circle');
-        rip.setAttribute('r', '6');
-        rip.setAttribute('fill', 'none');
-        rip.setAttribute('stroke', '#FF5F00');
-        rip.setAttribute('stroke-width', '1');
-        rip.classList.add('rip');
-        const c = document.createElementNS(ns, 'circle');
-        c.setAttribute('r', '5');
-        c.setAttribute('fill', '#FF5F00');
-        g.appendChild(rip);
-        g.appendChild(c);
-        document.getElementById('pins').appendChild(g);
-      }, p.d);
+<script>
+(function(){
+  const c=document.getElementById('wc');if(!c)return;
+  const ctx=c.getContext('2d'),W=260,R=118,cx=130,cy=130;
+  const segs=[
+    {label:'Asado 🔥',color:'#FF5F00'},
+    {label:'Running 🏃',color:'#185FA5'},
+    {label:'FotoLoop 📸',color:'#1D9E75'},
+    {label:'Kayak 🛶',color:'#9333EA'},
+    {label:'Truco 🃏',color:'#D69E2E'},
+    {label:'Bici 🚴',color:'#E53E3E'},
+    {label:'Trekking 🥾',color:'#0F6E56'},
+    {label:'Noche 🍻',color:'#C44D00'},
+  ];
+  const n=segs.length,sl=(Math.PI*2)/n;
+  let angle=0;
+  function draw(a){
+    ctx.clearRect(0,0,W,W);
+    segs.forEach((s,i)=>{
+      const st=a+i*sl,en=st+sl;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,st,en);ctx.closePath();
+      ctx.fillStyle=s.color+'BB';ctx.fill();
+      ctx.strokeStyle='#0a0f1a';ctx.lineWidth=1.5;ctx.stroke();
+      const mid=st+sl/2;
+      const tx=cx+(R*0.63)*Math.cos(mid),ty=cy+(R*0.63)*Math.sin(mid);
+      ctx.save();ctx.translate(tx,ty);ctx.rotate(mid+Math.PI/2);
+      ctx.fillStyle='rgba(255,255,255,0.9)';
+      ctx.font='bold 10px "Bai Jamjuree",sans-serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(s.label,0,0);ctx.restore();
     });
-  </script>
-
+    ctx.beginPath();ctx.arc(cx,cy,34,0,Math.PI*2);
+    ctx.fillStyle='#0a0f1a';ctx.fill();
+  }
+  function loop(){angle+=0.004;draw(angle);requestAnimationFrame(loop);}
+  loop();
+})();
+</script>
 </body>
 </html>
