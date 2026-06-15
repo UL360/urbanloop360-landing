@@ -154,6 +154,61 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
 @keyframes shimmer  { 0%{transform:translateX(-100%);} 100%{transform:translateX(100%);} }
 @keyframes dotAnim  { 0%,80%,100%{opacity:.3;transform:scale(.7);} 40%{opacity:1;transform:scale(1);} }
 
+/* ── PWA Install Banner ── */
+#pwa-install-banner {
+  position:fixed;bottom:0;left:0;right:0;z-index:999;
+  background:var(--bg1);
+  border-top:0.5px solid var(--bd);
+  border-radius:20px 20px 0 0;
+  padding:20px 18px 36px;
+  transform:translateY(100%);
+  transition:transform .35s cubic-bezier(.34,1.2,.64,1);
+  box-shadow:0 -8px 40px rgba(0,0,0,.4);
+}
+#pwa-install-banner.show { transform:translateY(0); }
+.pwa-banner-handle {
+  width:36px;height:4px;background:var(--bd);
+  border-radius:2px;margin:0 auto 16px;
+}
+.pwa-banner-row {
+  display:flex;align-items:center;gap:14px;margin-bottom:16px;
+}
+.pwa-banner-logo {
+  width:56px;height:56px;border-radius:14px;
+  object-fit:contain;background:#FF5F00;padding:4px;flex-shrink:0;
+}
+.pwa-banner-title {
+  font-family:var(--fH);font-size:17px;font-weight:800;color:var(--dk);line-height:1.2;
+}
+.pwa-banner-sub {
+  font-size:12px;color:var(--gr);margin-top:3px;line-height:1.4;
+}
+.pwa-install-btn {
+  width:100%;padding:15px;border:none;border-radius:14px;
+  background:var(--or);color:#fff;
+  font-family:var(--fH);font-size:15px;font-weight:800;
+  cursor:pointer;margin-bottom:10px;
+  box-shadow:0 6px 20px rgba(255,95,0,.4);
+}
+.pwa-dismiss-btn {
+  width:100%;padding:10px;border:none;background:transparent;
+  color:var(--gr);font-size:13px;cursor:pointer;
+}
+/* Instrucciones iOS */
+.pwa-ios-steps {
+  display:flex;flex-direction:column;gap:10px;margin-bottom:16px;
+}
+.pwa-ios-step {
+  display:flex;align-items:center;gap:10px;
+  font-size:13px;color:var(--md);line-height:1.4;
+}
+.pwa-ios-step-num {
+  width:24px;height:24px;border-radius:50%;
+  background:var(--or);color:#fff;
+  font-size:11px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+
 /* ═══════════════════════
    SPLASH
 ═══════════════════════ */
@@ -4335,6 +4390,72 @@ const App = {
     document.querySelectorAll('.sb-nav-btn').forEach(b => b.classList.remove('active'));
     const sbBtn = document.getElementById('sb-btn-' + sid);
     if (sbBtn) sbBtn.classList.add('active');
+  },
+
+  // ── PWA INSTALL ──
+  _pwaPrompt: null,
+
+  _pwaInit() {
+    // No mostrar si ya está instalada
+    if (window.matchMedia('(display-mode: standalone)').matches) return;
+    if (window.navigator.standalone) return; // iOS ya instalada
+
+    const dismissed = localStorage.getItem('ul360_pwa_dismissed');
+    if (dismissed && Date.now() - parseInt(dismissed) < 7 * 24 * 60 * 60 * 1000) return; // 7 días
+
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+    if (isIOS && isSafari) {
+      // iOS: mostrar instrucciones manuales después de 4s
+      setTimeout(() => this._pwaShowBanner('ios'), 4000);
+      return;
+    }
+
+    // Android/Chrome: capturar evento nativo
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      this._pwaPrompt = e;
+      // Mostrar banner a los 3s
+      setTimeout(() => this._pwaShowBanner('android'), 3000);
+    });
+
+    // Botón instalar
+    const btn = document.getElementById('pwa-install-btn');
+    if (btn) btn.addEventListener('click', async () => {
+      if (!this._pwaPrompt) return;
+      this._pwaPrompt.prompt();
+      const { outcome } = await this._pwaPrompt.userChoice;
+      if (outcome === 'accepted') {
+        this.toast('🎉 ¡Urban Loop 360° instalada!');
+      }
+      this._pwaPrompt = null;
+      this._pwaHideBanner();
+    });
+
+    // Botón descartar
+    const dis = document.getElementById('pwa-dismiss-btn');
+    if (dis) dis.addEventListener('click', () => {
+      localStorage.setItem('ul360_pwa_dismissed', Date.now());
+      this._pwaHideBanner();
+    });
+  },
+
+  _pwaShowBanner(type) {
+    const banner  = document.getElementById('pwa-install-banner');
+    const android = document.getElementById('pwa-android-content');
+    const ios     = document.getElementById('pwa-ios-content');
+    if (!banner) return;
+    if (type === 'ios') {
+      if (android) android.style.display = 'none';
+      if (ios)     ios.style.display     = 'block';
+    }
+    banner.classList.add('show');
+  },
+
+  _pwaHideBanner() {
+    const banner = document.getElementById('pwa-install-banner');
+    if (banner) banner.classList.remove('show');
   },
 
   // ── MAIN MAP (MapLibre GL JS) ──
@@ -13985,6 +14106,48 @@ document.addEventListener('DOMContentLoaded',()=>{
     </div>
   </div>
 </div>
+
+  <!-- ══ PWA INSTALL BANNER ══ -->
+  <div id="pwa-install-banner">
+    <div class="pwa-banner-handle"></div>
+    <div class="pwa-banner-row">
+      <img class="pwa-banner-logo"
+        src="https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/LOGO%20SOLO.png"
+        alt="Urban Loop 360°">
+      <div>
+        <div class="pwa-banner-title">Urban Loop 360°</div>
+        <div class="pwa-banner-sub">Instalá la app en tu celular.<br>Gratis, sin pasar por ninguna tienda.</div>
+      </div>
+    </div>
+
+    <!-- Contenido Android/Chrome -->
+    <div id="pwa-android-content">
+      <button class="pwa-install-btn" id="pwa-install-btn">
+        📲 Instalar en mi celular
+      </button>
+      <button class="pwa-dismiss-btn" id="pwa-dismiss-btn">Ahora no</button>
+    </div>
+
+    <!-- Contenido iOS -->
+    <div id="pwa-ios-content" style="display:none;">
+      <div class="pwa-ios-steps">
+        <div class="pwa-ios-step">
+          <div class="pwa-ios-step-num">1</div>
+          Tocá el botón <strong style="color:var(--or);">Compartir</strong> 
+          <span style="font-size:16px;">⬆️</span> abajo en Safari
+        </div>
+        <div class="pwa-ios-step">
+          <div class="pwa-ios-step-num">2</div>
+          Elegí <strong style="color:var(--or);">"Agregar a pantalla de inicio"</strong>
+        </div>
+        <div class="pwa-ios-step">
+          <div class="pwa-ios-step-num">3</div>
+          Tocá <strong style="color:var(--or);">"Agregar"</strong> — ¡listo!
+        </div>
+      </div>
+      <button class="pwa-dismiss-btn" onclick="App._pwaHideBanner()">Entendido</button>
+    </div>
+  </div>
 
   <script>
     // ── PWA Service Worker ──
