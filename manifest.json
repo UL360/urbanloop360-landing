@@ -5,23 +5,29 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#16161C",
+  "background_color": "#FF5F00",
   "theme_color": "#FF5F00",
   "orientation": "portrait-primary",
   "lang": "es-AR",
   "categories": ["sports", "lifestyle", "navigation"],
   "icons": [
     {
-      "src": "https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/LOGO%20SOLO.png",
+      "src": "/imagenes/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/LOGO%20SOLO.png",
+      "src": "/imagenes/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/imagenes/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "screenshots": [
