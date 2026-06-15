@@ -10491,10 +10491,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           </button>
         </div>
         <div class="hw-actions">
-          <button class="hw-action-btn primary" onclick="App.sideNav('grabar')">
+          <button class="hw-action-btn primary" onclick="App._hwSumarPuntosAccion('grabar',60,'📹 +60 pts por grabar un Loop!');App.sideNav('grabar');">
             <span class="hw-a-ico">📹</span>Grabar Loop
           </button>
-          <button class="hw-action-btn primary" onclick="App.openFotoLoop()">
+          <button class="hw-action-btn primary" onclick="App._hwSumarPuntosAccion('fotoloop',40,'📷 +40 pts por subir un FotoLoop!');App.openFotoLoop();">
             <span class="hw-a-ico">📷</span>Fotoloop
           </button>
           <button class="hw-action-btn" onclick="App._hwInvitar('${act.full.replace(/'/g,"\\'")}')">
@@ -10512,18 +10512,75 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
   _hwInvitar(nombre) {
     if (navigator.share) {
-      navigator.share({title:'Urban Loop 360°',text:`¡Te invito a: ${nombre}! Armemos un loop 🚀`,url:location.href});
+      navigator.share({
+        title: 'Urban Loop 360°',
+        text: `¡Te invito a: ${nombre}! Armemos un loop 🚀`,
+        url: 'https://www.urbanloop360.com.ar'
+      });
     } else {
-      navigator.clipboard?.writeText(`¡Hagamos: ${nombre} con Urban Loop 360! 🚀`);
+      navigator.clipboard?.writeText(`¡Hagamos: ${nombre} con Urban Loop 360! 🚀 urbanloop360.com.ar`);
       this.toast('👥 Invitación copiada al portapapeles');
     }
+    // Sumar puntos por invitar
+    this._hwSumarPuntosAccion('invitar', 80, '👥 +80 pts por invitar amigos!');
   },
 
   _hwCompartir(nombre) {
     if (navigator.share) {
-      navigator.share({title:'Urban Loop 360°',text:`Hoy la actividad es: ${nombre} 🎯`,url:location.href});
+      navigator.share({
+        title: 'Urban Loop 360°',
+        text: `Hoy en Urban Loop 360°: ${nombre} 🎯`,
+        url: 'https://www.urbanloop360.com.ar'
+      });
     } else {
       this.toast('📤 ¡Compartido: '+nombre+'!');
+    }
+    // Sumar puntos por compartir
+    this._hwSumarPuntosAccion('compartir', 15, '📤 +15 pts por compartir!');
+  },
+
+  async _hwSumarPuntosAccion(tipo, pts, msg) {
+    if (!this._user || this._uid === 'public') return; // silencioso, no requiere login
+    try {
+      const uid = this._uid;
+      const db  = this._db;
+      // Registrar acción
+      await db.collection('completados').add({
+        uid,
+        displayName : this._user.displayName || 'Looper',
+        photoURL    : this._user.photoURL    || '',
+        actividad   : tipo,
+        icon        : tipo === 'invitar' ? '👥' : tipo === 'compartir' ? '📤' : tipo === 'fotoloop' ? '📷' : '📹',
+        categoria   : 'accion',
+        pts,
+        ts          : Date.now(),
+        createdAt   : Date.now(),
+      });
+      // Actualizar total
+      const uRef = db.collection('usuarios_pts').doc(uid);
+      const uDoc = await uRef.get();
+      if (uDoc.exists) {
+        await uRef.update({
+          pts         : firebase.firestore.FieldValue.increment(pts),
+          actividades : firebase.firestore.FieldValue.increment(1),
+          ultimaActiv : Date.now(),
+        });
+      } else {
+        await uRef.set({
+          uid,
+          displayName : this._user.displayName || 'Looper',
+          photoURL    : this._user.photoURL    || '',
+          pts,
+          actividades : 1,
+          ultimaActiv : Date.now(),
+          createdAt   : Date.now(),
+        });
+      }
+      this._hwUserPoints += pts;
+      this.toast(msg);
+      this._hwParticles('#FF5F00');
+    } catch(e) {
+      console.warn('[hwPuntosAccion]', e);
     }
   },
 
