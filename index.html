@@ -2257,7 +2257,49 @@ body.day .layer-chip.all  { background:var(--orL); border-color:var(--or); color
 
     <!-- ── USUARIOS ── -->
     <div id="adm-tab-usuarios" class="adm-panel" style="display:none;">
+
+      <!-- Barra de búsqueda y filtros -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
+        <input id="adm-users-search" type="search" placeholder="🔍 Buscar por nombre o email..."
+          class="fi" style="flex:1;min-width:180px;font-size:13px;padding:9px 12px;"
+          oninput="App._admFilterUsers()">
+        <select id="adm-users-role-filter" class="fi" style="font-size:12px;padding:9px 10px;" onchange="App._admFilterUsers()">
+          <option value="">Todos los roles</option>
+          <option value="user">👤 Usuario</option>
+          <option value="moderador">🛡️ Moderador</option>
+          <option value="admin">👑 Admin</option>
+        </select>
+        <select id="adm-users-sort" class="fi" style="font-size:12px;padding:9px 10px;" onchange="App._admFilterUsers()">
+          <option value="newest">Más nuevos</option>
+          <option value="oldest">Más antiguos</option>
+          <option value="name">Nombre A-Z</option>
+          <option value="loops">Más loops</option>
+          <option value="pts">Más puntos</option>
+        </select>
+        <span id="adm-users-count" style="font-size:11px;color:var(--gr);white-space:nowrap;"></span>
+      </div>
+
+      <!-- Tabla desktop / cards mobile -->
+      <div id="adm-users-table-wrap" style="overflow-x:auto;">
+        <table id="adm-users-table" style="width:100%;border-collapse:collapse;font-size:13px;display:none;">
+          <thead>
+            <tr style="border-bottom:1.5px solid var(--bd);text-align:left;">
+              <th style="padding:8px 10px;color:var(--gr);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;">Usuario</th>
+              <th style="padding:8px 10px;color:var(--gr);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Email</th>
+              <th style="padding:8px 10px;color:var(--gr);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Rol</th>
+              <th style="padding:8px 10px;color:var(--gr);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:center;">Loops</th>
+              <th style="padding:8px 10px;color:var(--gr);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:center;">Pts</th>
+              <th style="padding:8px 10px;color:var(--gr);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Registro</th>
+              <th style="padding:8px 10px;color:var(--gr);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="adm-users-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Cards mobile -->
       <div id="adm-users-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+
     </div>
 
     <!-- ── REPORTES ── -->
@@ -12281,92 +12323,180 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
 
   // ── Usuarios ──
   async _admRenderUsuarios() {
-    const el = document.getElementById('adm-users-list');
+    const el    = document.getElementById('adm-users-list');
+    const table = document.getElementById('adm-users-table');
+    const tbody = document.getElementById('adm-users-tbody');
     if (!el) return;
     if (!this._db) { el.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">Firebase no disponible</div>`; return; }
-    el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">Cargando usuarios...</div>`;
+    el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">⏳ Cargando usuarios...</div>`;
+
     try {
       let snap;
-      try {
-        snap = await this._db.collection('users').orderBy('createdAt','desc').limit(50).get();
-      } catch(e) {
-        // Fallback sin orderBy si falta el índice o el campo
-        snap = await this._db.collection('users').limit(50).get();
-      }
-      if (snap.empty) { el.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">Sin usuarios registrados en la colección "users".<br><small>Nota: los usuarios se crean en la colección al iniciar sesión por primera vez.</small></div>`; return; }
-      // Contar loops de cada usuario
-      let loopCountMap = {};
-      try {
-        const allMine = await this._db.collection('loops').get();
-        allMine.forEach(d => {
-          const aid = d.data().authorId;
-          if (aid) loopCountMap[aid] = (loopCountMap[aid]||0) + 1;
-        });
-      } catch(e) {}
+      try { snap = await this._db.collection('users').orderBy('createdAt','desc').limit(100).get(); }
+      catch(e) { snap = await this._db.collection('users').limit(100).get(); }
 
-      el.innerHTML = snap.docs.map(doc => {
-        const u = {id:doc.id,...doc.data()};
-        const banned   = u.banned || false;
-        const role     = u.role || 'user';
-        const slots    = u.loopSlots || null;
-        const usedLoops = loopCountMap[u.id] || 0;
-        const defaultSlots = role==='admin' ? '∞' : role==='moderador' ? (slots||15) : (slots||5);
-        const roleBadge = role==='admin'
-          ? `<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;background:#FFF3CD;color:#92400E;">👑 Admin</span>`
-          : role==='moderador'
-          ? `<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;background:#EDE9FE;color:#6D28D9;">🛡️ Moderador</span>`
-          : `<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;background:var(--bg2);color:var(--gr);">👤 Usuario</span>`;
-        const bannedBadge = banned
-          ? `<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;background:#FEE2E2;color:#991B1B;">🚫 Baneado</span>`
-          : '';
-        const isCurrentAdmin = u.id === this.ADMIN_UID;
-        return `<div class="adm-item" style="${isCurrentAdmin?'border-left:3px solid #F59E0B;':''}">
-          <div class="adm-item-row">
-            <div class="adm-item-thumb" style="display:flex;align-items:center;justify-content:center;font-size:20px;font-family:var(--fH);font-weight:700;color:var(--or);flex-shrink:0;">${(u.displayName||u.email||'?')[0].toUpperCase()}</div>
-            <div class="adm-item-info" style="flex:1;min-width:0;">
-              <div class="adm-item-name" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">${App._esc(u.displayName||u.email||u.id)} ${roleBadge} ${bannedBadge}</div>
-              <div class="adm-item-meta">${u.email||''}</div>
-              <div class="adm-item-meta">Loops: <b style="color:var(--or);">${usedLoops}</b> / ${defaultSlots} · ${u.pts||0} pts · ${u.createdAt ? new Date(u.createdAt).toLocaleDateString('es-AR') : '—'}</div>
-            </div>
-          </div>
-          ${isCurrentAdmin ? '' : `
-          <div style="padding:10px 0 6px;border-top:1px solid var(--bd);margin-top:8px;display:flex;flex-direction:column;gap:8px;">
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-              <label style="font-size:11px;font-weight:700;color:var(--gr);text-transform:uppercase;letter-spacing:.4px;width:42px;flex-shrink:0;">Rol</label>
-              <select class="fi" style="flex:1;min-width:120px;font-size:12px;padding:6px 10px;" onchange="App._admSetRole('${u.id}',this.value)">
-                <option value="user"      ${role==='user'?'selected':''}>👤 Usuario</option>
-                <option value="moderador" ${role==='moderador'?'selected':''}>🛡️ Moderador</option>
-                <option value="admin"     ${role==='admin'?'selected':''}>👑 Admin</option>
-              </select>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-              <label style="font-size:11px;font-weight:700;color:var(--gr);text-transform:uppercase;letter-spacing:.4px;width:42px;flex-shrink:0;">Slots</label>
-              <input type="number" class="fi" min="1" max="999" value="${u.loopSlots||''}" placeholder="Default (${role==='moderador'?15:5})"
-                style="flex:1;min-width:100px;font-size:12px;padding:6px 10px;"
-                onchange="App._admSetSlots('${u.id}',this.value)" />
-              <span style="font-size:10px;color:var(--gr);">vacío = default del rol</span>
-            </div>
-            <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:2px;">
-              ${!banned
-                ? `<button class="adm-btn adm-btn-red" onclick="App._admBanUser('${u.id}','${(u.displayName||u.email||'Usuario').replace(/'/g,'')}')">🚫 Banear</button>`
-                : `<button class="adm-btn adm-btn-green" onclick="App._admUnbanUser('${u.id}')">✅ Desbanear</button>`
-              }
-            </div>
-          </div>`}
-        </div>`;
-      }).join('');
+      if (snap.empty) {
+        el.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">Sin usuarios registrados aún.</div>`;
+        return;
+      }
+
+      // Contar loops por usuario
+      let loopMap = {};
+      try {
+        const ls = await this._db.collection('loops').get();
+        ls.forEach(d => { const a=d.data().authorId; if(a) loopMap[a]=(loopMap[a]||0)+1; });
+      } catch(e){}
+
+      // Guardar todos los usuarios para filtrar en cliente
+      this._admAllUsers = snap.docs.map(doc => ({id:doc.id,...doc.data(),_loops:loopMap[doc.id]||0}));
+      this._admLoopMap  = loopMap;
+      this._admFilterUsers();
+
     } catch(e) {
-      // Probablemente falta la regla de Firestore para leer la colección 'users' como admin
       el.innerHTML = `<div style="text-align:center;padding:32px;color:#EF4444;font-size:13px;">
-        Error al leer usuarios: ${e.message}<br><br>
-        <div style="background:var(--bg2);border-radius:10px;padding:12px;text-align:left;font-size:11px;color:var(--md);line-height:1.7;">
-          <b>Probablemente falta esta regla en Firestore:</b><br>
-          <code style="color:var(--or);">match /users/{uid} {<br>
-          &nbsp;&nbsp;allow read: if request.auth.uid == '${this.ADMIN_UID}';<br>
-          }</code>
-        </div>
-      </div>`;
+        ❌ Error: ${e.message}</div>`;
     }
+  },
+
+  _admFilterUsers() {
+    const users  = this._admAllUsers || [];
+    const search = (document.getElementById('adm-users-search')?.value||'').toLowerCase();
+    const role   = document.getElementById('adm-users-role-filter')?.value || '';
+    const sort   = document.getElementById('adm-users-sort')?.value || 'newest';
+
+    let filtered = users.filter(u => {
+      const matchSearch = !search
+        || (u.displayName||'').toLowerCase().includes(search)
+        || (u.email||'').toLowerCase().includes(search);
+      const matchRole = !role || (u.role||'user') === role;
+      return matchSearch && matchRole;
+    });
+
+    filtered.sort((a,b) => {
+      if (sort==='newest')  return (b.createdAt||0)-(a.createdAt||0);
+      if (sort==='oldest')  return (a.createdAt||0)-(b.createdAt||0);
+      if (sort==='name')    return (a.displayName||'').localeCompare(b.displayName||'');
+      if (sort==='loops')   return (b._loops||0)-(a._loops||0);
+      if (sort==='pts')     return (b.pts||0)-(a.pts||0);
+      return 0;
+    });
+
+    const count = document.getElementById('adm-users-count');
+    if (count) count.textContent = `${filtered.length} de ${users.length} usuarios`;
+
+    const isDesktop = window.innerWidth >= 768;
+    const el    = document.getElementById('adm-users-list');
+    const table = document.getElementById('adm-users-table');
+    const tbody = document.getElementById('adm-users-tbody');
+
+    if (isDesktop && table && tbody) {
+      table.style.display = 'table';
+      el.style.display = 'none';
+      tbody.innerHTML = filtered.map(u => this._admUserRow(u)).join('');
+    } else {
+      table.style.display = 'none';
+      el.style.display    = 'flex';
+      el.innerHTML = filtered.map(u => this._admUserCard(u)).join('');
+    }
+  },
+
+  _admUserRow(u) {
+    const role    = u.role || 'user';
+    const banned  = u.banned || false;
+    const isAdmin = u.id === this.ADMIN_UID || u.id === 't2twqnGmp4NniufqbVLJ0V1tDgu2';
+    const roleBadge = role==='admin'
+      ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#FFF3CD;color:#92400E;">👑 Admin</span>`
+      : role==='moderador'
+      ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#EDE9FE;color:#6D28D9;">🛡️ Mod</span>`
+      : `<span style="font-size:10px;padding:2px 8px;border-radius:6px;background:var(--bg2);color:var(--gr);">👤</span>`;
+    const bannedStyle = banned ? 'opacity:.5;' : '';
+    const avatar = u.photoURL
+      ? `<img src="${u.photoURL}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
+      : `<div style="width:32px;height:32px;border-radius:50%;background:var(--orL);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--or);font-size:14px;flex-shrink:0;">${(u.displayName||u.email||'?')[0].toUpperCase()}</div>`;
+    const fecha = u.createdAt ? new Date(u.createdAt).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '—';
+
+    return `<tr style="border-bottom:0.5px solid var(--bd);${bannedStyle}" id="urow-${u.id}">
+      <td style="padding:10px 10px;white-space:nowrap;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${avatar}
+          <div>
+            <div style="font-weight:600;color:var(--dk);font-size:13px;">${App._esc(u.displayName||'—')} ${banned?'🚫':''}</div>
+          </div>
+        </div>
+      </td>
+      <td style="padding:10px;color:var(--gr);font-size:12px;">${u.email||'—'}</td>
+      <td style="padding:10px;">
+        ${isAdmin ? roleBadge : `
+        <select class="fi" style="font-size:11px;padding:4px 6px;" onchange="App._admSetRole('${u.id}',this.value)">
+          <option value="user"      ${role==='user'?'selected':''}>👤 Usuario</option>
+          <option value="moderador" ${role==='moderador'?'selected':''}>🛡️ Moderador</option>
+          <option value="admin"     ${role==='admin'?'selected':''}>👑 Admin</option>
+        </select>`}
+      </td>
+      <td style="padding:10px;text-align:center;font-weight:700;color:var(--or);">${u._loops||0}</td>
+      <td style="padding:10px;text-align:center;font-weight:700;color:var(--dk);">${u.pts||0}</td>
+      <td style="padding:10px;color:var(--gr);font-size:12px;white-space:nowrap;">${fecha}</td>
+      <td style="padding:10px;">
+        ${isAdmin ? '<span style="font-size:11px;color:var(--gr);">—</span>' : `
+        <div style="display:flex;gap:5px;">
+          ${!banned
+            ? `<button class="adm-btn adm-btn-red" style="padding:4px 8px;font-size:11px;" onclick="App._admBanUser('${u.id}','${(u.displayName||u.email||'?').replace(/'/g,'')}')">🚫 Banear</button>`
+            : `<button class="adm-btn adm-btn-green" style="padding:4px 8px;font-size:11px;" onclick="App._admUnbanUser('${u.id}')">✅ Desbanear</button>`
+          }
+          <input type="number" min="1" max="999" value="${u.loopSlots||''}" placeholder="Slots"
+            title="Slots de loops (vacío = default del rol)"
+            class="fi" style="width:64px;font-size:11px;padding:4px 6px;"
+            onchange="App._admSetSlots('${u.id}',this.value)">
+        </div>`}
+      </td>
+    </tr>`;
+  },
+
+  _admUserCard(u) {
+    const role    = u.role || 'user';
+    const banned  = u.banned || false;
+    const isAdmin = u.id === this.ADMIN_UID || u.id === 't2twqnGmp4NniufqbVLJ0V1tDgu2';
+    const roleBadge = role==='admin'
+      ? `<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;background:#FFF3CD;color:#92400E;">👑 Admin</span>`
+      : role==='moderador'
+      ? `<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;background:#EDE9FE;color:#6D28D9;">🛡️ Mod</span>`
+      : `<span style="font-size:9px;padding:2px 7px;border-radius:8px;background:var(--bg2);color:var(--gr);">👤 Usuario</span>`;
+    const fecha = u.createdAt ? new Date(u.createdAt).toLocaleDateString('es-AR') : '—';
+    const avatar = u.photoURL
+      ? `<img src="${u.photoURL}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
+      : `<div style="width:38px;height:38px;border-radius:50%;background:var(--orL);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--or);font-size:16px;flex-shrink:0;">${(u.displayName||u.email||'?')[0].toUpperCase()}</div>`;
+
+    return `<div class="adm-item" style="${isAdmin?'border-left:3px solid #F59E0B;':''}${banned?'opacity:.6;':''}">
+      <div class="adm-item-row">
+        ${avatar}
+        <div class="adm-item-info" style="flex:1;min-width:0;">
+          <div class="adm-item-name" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+            ${App._esc(u.displayName||u.email||u.id)} ${roleBadge} ${banned?'<span style="font-size:9px;padding:2px 7px;border-radius:8px;background:#FEE2E2;color:#991B1B;">🚫</span>':''}
+          </div>
+          <div class="adm-item-meta">${u.email||''}</div>
+          <div class="adm-item-meta">🔁 ${u._loops||0} loops · ⭐ ${u.pts||0} pts · 📅 ${fecha}</div>
+        </div>
+      </div>
+      ${isAdmin ? '' : `
+      <div style="padding:10px 0 4px;border-top:0.5px solid var(--bd);margin-top:8px;display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select class="fi" style="flex:1;font-size:12px;padding:6px 8px;" onchange="App._admSetRole('${u.id}',this.value)">
+            <option value="user"      ${role==='user'?'selected':''}>👤 Usuario</option>
+            <option value="moderador" ${role==='moderador'?'selected':''}>🛡️ Moderador</option>
+            <option value="admin"     ${role==='admin'?'selected':''}>👑 Admin</option>
+          </select>
+          <input type="number" min="1" max="999" value="${u.loopSlots||''}" placeholder="Slots"
+            class="fi" style="width:80px;font-size:12px;padding:6px 8px;"
+            onchange="App._admSetSlots('${u.id}',this.value)">
+        </div>
+        <div style="display:flex;gap:6px;">
+          ${!banned
+            ? `<button class="adm-btn adm-btn-red" onclick="App._admBanUser('${u.id}','${(u.displayName||u.email||'?').replace(/'/g,'')}')">🚫 Banear</button>`
+            : `<button class="adm-btn adm-btn-green" onclick="App._admUnbanUser('${u.id}')">✅ Desbanear</button>`
+          }
+        </div>
+      </div>`}
+    </div>`;
   },
 
   async _admSetRole(uid, role) {
