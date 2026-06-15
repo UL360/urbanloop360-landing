@@ -1,0 +1,35 @@
+{
+  "name": "Urban Loop 360°",
+  "short_name": "UL360",
+  "description": "Descubrí, grabá y compartí loops urbanos en Argentina. Running, ciclismo, caminatas y más.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#16161C",
+  "theme_color": "#FF5F00",
+  "orientation": "portrait-primary",
+  "lang": "es-AR",
+  "categories": ["sports", "lifestyle", "navigation"],
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/LOGO%20SOLO.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/LOGO%20SOLO.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/7bbb8010-ce20-49d8-b000-36686d53db3b.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ]
+}
