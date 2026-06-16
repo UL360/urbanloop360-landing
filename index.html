@@ -2152,6 +2152,21 @@ body.day .layer-chip.all  { background:var(--orL); border-color:var(--or); color
         </div>
       </div>
 
+      <!-- Botón instalar PWA -->
+      <div id="pf-install-wrap" style="margin-bottom:16px;">
+        <button id="pf-install-btn" onclick="App._pwaShowFromProfile()"
+          style="width:100%;padding:15px;border:none;border-radius:16px;
+          background:linear-gradient(135deg,#FF5F00,#FF8C42);
+          color:#fff;font-family:var(--fH);font-size:15px;font-weight:800;
+          cursor:pointer;display:flex;align-items:center;justify-content:center;
+          gap:10px;box-shadow:0 6px 20px rgba(255,95,0,.4);letter-spacing:.2px;">
+          📲 Instalar Urban Loop 360°
+        </button>
+        <div style="font-size:11px;color:var(--gr);text-align:center;margin-top:6px;">
+          Gratis · Sin App Store · Funciona offline
+        </div>
+      </div>
+
       <div style="font-family:var(--fH);font-size:12px;font-weight:700;color:var(--gr);letter-spacing:.8px;margin-bottom:8px;">CONFIGURACIÓN</div>
 
       <div class="set-item" id="notif-setting-row" onclick="App._requestNotifPerm()" style="cursor:pointer;">
@@ -4232,6 +4247,12 @@ const App = {
   },
 
   _updateProfileUI() {
+    // Ocultar botón instalar si ya está instalada
+    const installWrap = document.getElementById('pf-install-wrap');
+    if (installWrap) {
+      const isInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+      installWrap.style.display = isInstalled ? 'none' : 'block';
+    }
     const loginPanel = document.getElementById('pf-login-panel');
     const userPanel  = document.getElementById('pf-user-panel');
     if (!loginPanel || !userPanel) return;
@@ -4678,6 +4699,25 @@ const App = {
     });
   },
 
+  _pwaShowFromProfile() {
+    // Detectar dispositivo y mostrar el banner correcto
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+    const isInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+    if (isInstalled) {
+      this.toast('✅ Urban Loop 360° ya está instalada en tu dispositivo');
+      return;
+    }
+    if (isIOS) {
+      this._pwaShowBanner('ios');
+    } else if (this._pwaPrompt) {
+      this._pwaShowBanner('android');
+    } else {
+      // No hay prompt disponible — mostrar instrucciones generales
+      this._pwaShowBanner('manual');
+    }
+  },
+
   _pwaShowBanner(type) {
     const banner  = document.getElementById('pwa-install-banner');
     const android = document.getElementById('pwa-android-content');
@@ -4686,6 +4726,19 @@ const App = {
     if (type === 'ios') {
       if (android) android.style.display = 'none';
       if (ios)     ios.style.display     = 'block';
+    } else if (type === 'manual') {
+      // Mostrar instrucciones para Chrome desktop u otros
+      if (android) android.innerHTML = `
+        <div style="font-size:13px;color:var(--md);line-height:1.6;margin-bottom:14px;">
+          En Chrome o Edge desktop buscá el ícono
+          <strong style="color:var(--or);">⊕</strong> en la barra de direcciones
+          y hacé click en <strong style="color:var(--or);">"Instalar"</strong>.
+          <br><br>
+          En Android, abrí el menú del navegador
+          <strong style="color:var(--or);">⋮</strong> →
+          <strong style="color:var(--or);">"Agregar a pantalla de inicio"</strong>.
+        </div>
+        <button class="pwa-dismiss-btn" onclick="App._pwaHideBanner()">Entendido</button>`;
     }
     banner.classList.add('show');
   },
