@@ -8,7 +8,7 @@
      Define exactamente qué dominios pueden ejecutar scripts, cargar estilos,
      conectarse a APIs, etc. El navegador bloquea todo lo que no esté acá.
 -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.gstatic.com https://unpkg.com https://apis.google.com; worker-src blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://raw.githubusercontent.com https://api.maptiler.com https://*.tile.openstreetmap.org; connect-src 'self' https://www.urbanloop360.com.ar https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://urbanloop360.firebaseapp.com https://accounts.google.com https://api.maptiler.com https://api.bigdatacloud.net https://nominatim.openstreetmap.org https://router.project-osrm.org https://raw.githubusercontent.com; frame-src https://urbanloop360.firebaseapp.com; object-src 'none'; base-uri 'self';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.gstatic.com https://unpkg.com https://apis.google.com https://static.cloudflareinsights.com; worker-src blob: https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://raw.githubusercontent.com https://api.maptiler.com https://*.tile.openstreetmap.org https://firebasestorage.googleapis.com https://lh3.googleusercontent.com; connect-src 'self' https://www.urbanloop360.com.ar https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://urbanloop360.firebaseapp.com https://accounts.google.com https://api.maptiler.com https://api.bigdatacloud.net https://nominatim.openstreetmap.org https://router.project-osrm.org https://raw.githubusercontent.com https://firebasestorage.googleapis.com https://cloudflareinsights.com; frame-src https://urbanloop360.firebaseapp.com; object-src 'none'; base-uri 'self';">
 <!-- ═══════════════════════════════════════
      SEO — Urban Loop 360°
      urbanloop360.com.ar
@@ -156,6 +156,7 @@
 
 <!-- ── Favicon y app icons ── -->
 <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/LOGO%20SOLO.png">
+<link rel="shortcut icon" href="https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/LOGO%20SOLO.png">
 <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/LOGO%20SOLO.png">
 <!-- ── Fuente: preload para evitar flash de texto sin estilo ── -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3677,7 +3678,12 @@ const App = {
       }
       App.go((e.state && e.state.screen) || 'explore', false);
     });
-    history.replaceState({ screen: 'explore' }, '', '#explore');
+    // Limpiar parámetros OAuth de Google que quedan en la URL
+    if (location.search && (location.search.includes('code=') || location.search.includes('state='))) {
+      history.replaceState({}, '', location.pathname + '#explore');
+    } else {
+      history.replaceState({ screen: 'explore' }, '', '#explore');
+    }
 
     // Cerrar visor con Escape
     document.addEventListener('keydown', e => {
@@ -14797,11 +14803,7 @@ document.addEventListener('DOMContentLoaded',()=>{
             );
           });
         `;
-        const blob = new Blob([swCode], { type: 'application/javascript' });
-        const swUrl = URL.createObjectURL(blob);
-        navigator.serviceWorker.register(swUrl)
-          .then(() => console.log('[UL360] SW registrado'))
-          .catch(e => console.warn('[UL360] SW error:', e));
+        // SW via blob no soportado en producción — omitido
       });
     }
   </script>
