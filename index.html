@@ -1291,26 +1291,98 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
    CITY NOTIFICATION
 ═══════════════════════ */
 #city-notif{
-  position:fixed;top:80px;left:50%;
-  transform:translateX(-50%) translateY(-160px);
-  width:calc(100% - 28px);max-width:400px;
-  background:#1C1C1E;border:0.5px solid #FF5F00;border-radius:var(--r);
-  box-shadow:0 8px 40px rgba(0,0,0,.6);
-  z-index:60;transition:transform .4s cubic-bezier(.34,1.56,.64,1);
+  position:fixed;top:72px;left:50%;
+  transform:translateX(-50%) translateY(-220px);
+  width:calc(100% - 24px);max-width:420px;
+  background:#1C1C1E;
+  border-radius:20px;
+  box-shadow:0 16px 60px rgba(0,0,0,.7), 0 0 0 1px rgba(255,95,0,.3);
+  z-index:60;
+  transition:transform .45s cubic-bezier(.34,1.4,.64,1);
   display:none;
+  overflow:hidden;
 }
 #city-notif.show{transform:translateX(-50%) translateY(0);}
-.cn-hdr{padding:12px 14px 8px;display:flex;align-items:center;gap:8px;border-bottom:0.5px solid #2C2C2E;}
-.cn-icon{width:32px;height:32px;border-radius:50%;background:var(--orL);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.cn-title{flex:1;font-family:var(--fH);font-size:14px;font-weight:700;color:var(--dk);}
-.cn-close{background:none;border:none;cursor:pointer;color:var(--gr);font-size:22px;line-height:1;padding:0;}
-.cn-symbols{display:flex;gap:8px;padding:4px 14px 12px;flex-wrap:wrap;}
-.cn-sym{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:48px;}
-.cn-sym-bubble{width:42px;height:42px;border-radius:12px;background:#252528;border:0.5px solid #2C2C2E;display:flex;align-items:center;justify-content:center;font-size:19px;}
-.cn-sym-lbl{font-size:9px;color:var(--gr);text-align:center;line-height:1.2;}
-.cn-footer{border-top:0.5px solid #2C2C2E;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;}
-.cn-loops-ct{font-size:12px;color:var(--gr);}
-.cn-ver-btn{background:#FF5F00;color:white;border:none;border-radius:var(--rs);padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--fH);}
+
+/* Cabecera naranja degradada */
+.cn-hero {
+  background:linear-gradient(135deg,#FF5F00 0%,#FF8C42 60%,#FFB347 100%);
+  padding:18px 16px 16px;
+  position:relative;
+  overflow:hidden;
+}
+.cn-hero::before {
+  content:'';position:absolute;
+  right:-30px;top:-30px;
+  width:120px;height:120px;border-radius:50%;
+  background:rgba(255,255,255,.1);
+}
+.cn-hero::after {
+  content:'';position:absolute;
+  right:20px;bottom:-40px;
+  width:80px;height:80px;border-radius:50%;
+  background:rgba(255,255,255,.07);
+}
+.cn-hero-top {
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;
+}
+.cn-novedad-badge {
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(255,255,255,.25);
+  border-radius:20px;padding:3px 10px;
+  font-size:10px;font-weight:700;color:#fff;letter-spacing:.1em;text-transform:uppercase;
+}
+.cn-close {
+  background:rgba(0,0,0,.2);border:none;cursor:pointer;
+  color:#fff;font-size:20px;line-height:1;padding:0;
+  width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+}
+.cn-hero-title {
+  font-family:var(--fH);font-size:28px;font-weight:800;
+  color:#fff;line-height:1.05;letter-spacing:-0.5px;
+  margin-bottom:4px;position:relative;z-index:1;
+}
+.cn-hero-sub {
+  font-size:12px;color:rgba(255,255,255,.8);
+  line-height:1.5;position:relative;z-index:1;
+}
+
+/* Cuerpo */
+.cn-body {
+  padding:14px 16px 16px;
+  display:flex;align-items:center;gap:14px;
+}
+.cn-wheel-wrap { position:relative;flex-shrink:0; }
+
+/* Chips categorías */
+.cn-chips {
+  display:flex;flex-wrap:wrap;gap:6px;
+  padding:0 16px 14px;
+}
+.cn-chip {
+  display:flex;align-items:center;gap:5px;
+  border-radius:20px;padding:5px 11px;
+  font-size:11px;font-weight:700;
+}
+
+/* CTA */
+.cn-cta {
+  margin:0 16px 16px;
+  width:calc(100% - 32px);
+  padding:13px;border:none;border-radius:13px;
+  background:var(--or);color:#fff;
+  font-family:var(--fH);font-size:14px;font-weight:800;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 4px 16px rgba(255,95,0,.5);
+  transition:all .15s;
+}
+.cn-cta:active{transform:scale(.98);}
+
+/* ocultar elementos viejos */
+.cn-hdr,.cn-icon,.cn-title,.cn-symbols,.cn-sym,.cn-sym-bubble,.cn-sym-lbl,
+.cn-footer,.cn-loops-ct,.cn-ver-btn{display:none !important;}
 
 /* ═══════════════════════
    QR MODAL
@@ -3090,68 +3162,71 @@ body.day .layer-chip.all  { background:var(--orL); border-color:var(--or); color
 <!-- ════════════ CITY NOTIFICATION ════════════ -->
 <div id="city-notif">
 
-  <!-- Badge novedad + close -->
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px 0;">
-    <div style="display:flex;align-items:center;gap:6px;">
-      <div style="width:7px;height:7px;border-radius:50%;background:#FF5F00;animation:pulse 1.5s ease infinite;"></div>
-      <span style="font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#FF5F00;">✨ Novedad</span>
+  <!-- Hero naranja degradado -->
+  <div class="cn-hero">
+    <div class="cn-hero-top">
+      <div class="cn-novedad-badge">
+        <div style="width:6px;height:6px;border-radius:50%;background:#fff;animation:pulse 1.5s ease infinite;"></div>
+        ✨ Novedad
+      </div>
+      <button class="cn-close" onclick="App.closeCityNotif()">×</button>
     </div>
-    <button class="cn-close" onclick="App.closeCityNotif()">×</button>
+    <div class="cn-hero-title">¿Qué hacemos<br>hoy?</div>
+    <div class="cn-hero-sub">Girá la ruleta y dejá que la ciudad decida.</div>
   </div>
 
-  <!-- Cuerpo: mini ruleta SVG + copy -->
-  <div style="padding:10px 14px 14px;display:flex;align-items:center;gap:14px;">
-
+  <!-- Cuerpo: ruleta + descripción -->
+  <div class="cn-body">
     <!-- Mini ruleta animada -->
-    <div style="flex-shrink:0;width:72px;height:72px;position:relative;">
-      <svg id="cn-wheel-svg" viewBox="0 0 72 72" width="72" height="72" style="animation:cnSpin 6s linear infinite;">
-        <!-- segmentos -->
-        <path d="M36,36 L36,4 A32,32 0 0,1 68,36 Z" fill="#FF5F00" opacity=".9"/>
-        <path d="M36,36 L68,36 A32,32 0 0,1 36,68 Z" fill="#185FA5" opacity=".9"/>
-        <path d="M36,36 L36,68 A32,32 0 0,1 4,36 Z" fill="#1D9E75" opacity=".9"/>
-        <path d="M36,36 L4,36 A32,32 0 0,1 36,4 Z" fill="#9333EA" opacity=".9"/>
-        <!-- iconos -->
-        <text x="50" y="22" text-anchor="middle" font-size="11" style="dominant-baseline:middle;">☀️</text>
-        <text x="50" y="50" text-anchor="middle" font-size="11" style="dominant-baseline:middle;">⚡</text>
-        <text x="22" y="50" text-anchor="middle" font-size="11" style="dominant-baseline:middle;">🌿</text>
-        <text x="22" y="22" text-anchor="middle" font-size="11" style="dominant-baseline:middle;">🍻</text>
-        <!-- centro -->
-        <circle cx="36" cy="36" r="10" fill="#0a0f1a"/>
-        <text x="36" y="36" text-anchor="middle" font-size="10" style="dominant-baseline:middle;">🎡</text>
+    <div class="cn-wheel-wrap">
+      <svg id="cn-wheel-svg" viewBox="0 0 80 80" width="80" height="80" style="animation:cnSpin 7s linear infinite;">
+        <path d="M40,40 L40,4 A36,36 0 0,1 76,40 Z" fill="#FF5F00"/>
+        <path d="M40,40 L76,40 A36,36 0 0,1 40,76 Z" fill="#185FA5"/>
+        <path d="M40,40 L40,76 A36,36 0 0,1 4,40 Z" fill="#1D9E75"/>
+        <path d="M40,40 L4,40 A36,36 0 0,1 40,4 Z" fill="#9333EA"/>
+        <text x="56" y="24" text-anchor="middle" dominant-baseline="middle" font-size="13">☀️</text>
+        <text x="56" y="56" text-anchor="middle" dominant-baseline="middle" font-size="13">⚡</text>
+        <text x="24" y="56" text-anchor="middle" dominant-baseline="middle" font-size="13">🌿</text>
+        <text x="24" y="24" text-anchor="middle" dominant-baseline="middle" font-size="13">🍻</text>
+        <circle cx="40" cy="40" r="13" fill="#1C1C1E"/>
+        <text x="40" y="40" text-anchor="middle" dominant-baseline="middle" font-size="14">🎯</text>
       </svg>
-      <!-- puntero -->
-      <div style="position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:10px solid #FF5F00;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4));"></div>
+      <!-- Puntero -->
+      <div style="position:absolute;top:-6px;left:50%;transform:translateX(-50%);
+        width:0;height:0;
+        border-left:6px solid transparent;border-right:6px solid transparent;
+        border-top:12px solid #FF5F00;
+        filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));"></div>
     </div>
 
     <!-- Texto -->
     <div style="flex:1;min-width:0;">
-      <div style="font-family:var(--fH);font-size:16px;font-weight:800;color:var(--dk);line-height:1.2;margin-bottom:4px;">
-        ¿Qué hacemos<br><span style="color:#FF5F00;">hoy?</span>
+      <div style="font-family:var(--fH);font-size:14px;font-weight:700;color:var(--dk);line-height:1.4;margin-bottom:6px;">
+        4 categorías,<br>infinitas opciones
       </div>
-      <div style="font-size:11px;color:var(--gr);line-height:1.5;">
-        Girá la ruleta y dejá que<br>la ciudad decida por vos.
+      <div style="font-size:11px;color:var(--gr);line-height:1.6;">
+        Ocio · Deporte<br>Aventuras · Amigos
       </div>
     </div>
   </div>
 
-  <!-- Chips categorías -->
-  <div style="display:flex;gap:6px;padding:0 14px 14px;flex-wrap:wrap;">
-    <span style="font-size:10px;font-weight:600;color:var(--or);background:var(--orL);border-radius:20px;padding:3px 10px;">☀️ Ocio</span>
-    <span style="font-size:10px;font-weight:600;color:#185FA5;background:#E6F1FB;border-radius:20px;padding:3px 10px;">⚡ Deporte</span>
-    <span style="font-size:10px;font-weight:600;color:#1D9E75;background:#EAF3DE;border-radius:20px;padding:3px 10px;">🌿 Aventuras</span>
-    <span style="font-size:10px;font-weight:600;color:#9333EA;background:#F3E8FF;border-radius:20px;padding:3px 10px;">🍻 Amigos</span>
+  <!-- Chips -->
+  <div class="cn-chips">
+    <span class="cn-chip" style="color:#FF5F00;background:rgba(255,95,0,.12);">☀️ Ocio</span>
+    <span class="cn-chip" style="color:#185FA5;background:#E6F1FB;">⚡ Deporte</span>
+    <span class="cn-chip" style="color:#1D9E75;background:#EAF3DE;">🌿 Aventuras</span>
+    <span class="cn-chip" style="color:#9333EA;background:#F3E8FF;">🍻 Amigos</span>
   </div>
-
-  <div id="cn-symbols" style="display:none;"></div>
-  <div id="cn-loops-ct" style="display:none;"></div>
-  <div id="cn-title" style="display:none;">¿Qué hacemos hoy?</div>
 
   <!-- CTA -->
-  <div style="border-top:0.5px solid #2C2C2E;padding:10px 14px;">
-    <button class="cn-ver-btn" style="width:100%;padding:12px;font-size:13px;border-radius:10px;" onclick="App.closeCityNotif();App.sideNav('actividades')">
-      🎡 ¡Girar la ruleta ahora!
-    </button>
-  </div>
+  <button class="cn-cta" onclick="App.closeCityNotif();App.sideNav('actividades')">
+    🎡 ¡Girar la ruleta ahora!
+  </button>
+
+  <!-- IDs que necesita el JS -->
+  <div id="cn-title"    style="display:none;">¿Qué hacemos hoy?</div>
+  <div id="cn-symbols"  style="display:none;"></div>
+  <div id="cn-loops-ct" style="display:none;"></div>
 
 </div>
 
@@ -10386,66 +10461,283 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     this._hwDraw(this._hwAngle);
   },
 
+  // Librería de iconos SVG para la ruleta — paths dibujados directo en canvas
+  _hwIcons: {
+    // ☀️ Sol — ocio
+    'sol': (ctx,x,y,s) => {
+      ctx.beginPath(); ctx.arc(x,y,s*.38,0,Math.PI*2); ctx.fill();
+      for(let a=0;a<8;a++){
+        const r=a*Math.PI/4, x1=x+Math.cos(r)*s*.52, y1=y+Math.sin(r)*s*.52;
+        const x2=x+Math.cos(r)*s*.7, y2=y+Math.sin(r)*s*.7;
+        ctx.beginPath(); ctx.lineWidth=s*.11; ctx.lineCap='round';
+        ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+      }
+    },
+    // ⚡ Rayo — deportes
+    'rayo': (ctx,x,y,s) => {
+      ctx.beginPath();
+      ctx.moveTo(x+s*.15,y-s*.55);
+      ctx.lineTo(x-s*.12,y-.05);
+      ctx.lineTo(x+s*.08,y-.05);
+      ctx.lineTo(x-s*.15,y+s*.55);
+      ctx.lineTo(x+s*.22,y+.05);
+      ctx.lineTo(x-.04,y+.05);
+      ctx.closePath(); ctx.fill();
+    },
+    // 🏃 Corredor — deportes alt
+    'corredor': (ctx,x,y,s) => {
+      // cabeza
+      ctx.beginPath(); ctx.arc(x+s*.12,y-s*.42,s*.14,0,Math.PI*2); ctx.fill();
+      // cuerpo
+      ctx.beginPath(); ctx.lineWidth=s*.13; ctx.lineCap='round'; ctx.lineJoin='round';
+      ctx.moveTo(x+s*.12,y-s*.28);
+      ctx.lineTo(x,y+s*.05);
+      ctx.lineTo(x-s*.18,y+s*.38);
+      ctx.moveTo(x,y+s*.05);
+      ctx.lineTo(x+s*.22,y+s*.32);
+      ctx.moveTo(x-s*.08,y-s*.14);
+      ctx.lineTo(x+s*.22,y-.02);
+      ctx.stroke();
+    },
+    // 🌿 Hoja — aventuras
+    'hoja': (ctx,x,y,s) => {
+      ctx.beginPath();
+      ctx.moveTo(x,y+s*.5);
+      ctx.bezierCurveTo(x-s*.45,y+s*.1, x-s*.5,y-s*.4, x,y-s*.5);
+      ctx.bezierCurveTo(x+s*.5,y-s*.4, x+s*.45,y+s*.1, x,y+s*.5);
+      ctx.fill();
+      ctx.beginPath(); ctx.lineWidth=s*.07; ctx.strokeStyle='rgba(255,255,255,.6)';
+      ctx.moveTo(x,y+s*.5); ctx.lineTo(x,y-s*.5); ctx.stroke();
+      // nervaduras
+      for(let i=-2;i<=2;i++){
+        ctx.beginPath(); ctx.lineWidth=s*.04;
+        ctx.moveTo(x,y+i*s*.15);
+        ctx.lineTo(x+s*.25,y+i*s*.15-s*.08);
+        ctx.stroke();
+      }
+    },
+    // 🍺 Copa — amigos
+    'copa': (ctx,x,y,s) => {
+      // vaso
+      ctx.beginPath();
+      ctx.moveTo(x-s*.28,y-s*.45);
+      ctx.lineTo(x-s*.18,y+s*.1);
+      ctx.lineTo(x+s*.18,y+s*.1);
+      ctx.lineTo(x+s*.28,y-s*.45);
+      ctx.closePath(); ctx.fill();
+      // base
+      ctx.beginPath(); ctx.lineWidth=s*.1; ctx.lineCap='round';
+      ctx.moveTo(x,y+s*.1); ctx.lineTo(x,y+s*.4); ctx.stroke();
+      ctx.beginPath(); ctx.lineWidth=s*.1;
+      ctx.moveTo(x-s*.2,y+s*.4); ctx.lineTo(x+s*.2,y+s*.4); ctx.stroke();
+      // espuma
+      ctx.beginPath(); ctx.fillStyle='rgba(255,255,255,.5)';
+      ctx.ellipse(x,y-s*.38,s*.2,s*.08,0,0,Math.PI*2); ctx.fill();
+    },
+    // 🏕️ Carpa — camping
+    'carpa': (ctx,x,y,s) => {
+      ctx.beginPath();
+      ctx.moveTo(x-s*.5,y+s*.35);
+      ctx.lineTo(x,y-s*.45);
+      ctx.lineTo(x+s*.5,y+s*.35);
+      ctx.closePath(); ctx.fill();
+      // entrada
+      ctx.beginPath(); ctx.fillStyle='rgba(0,0,0,.3)';
+      ctx.moveTo(x-s*.12,y+s*.35);
+      ctx.lineTo(x,y+s*.05);
+      ctx.lineTo(x+s*.12,y+s*.35);
+      ctx.closePath(); ctx.fill();
+    },
+    // 🎸 Música — fogón
+    'nota': (ctx,x,y,s) => {
+      ctx.beginPath();
+      ctx.ellipse(x-s*.12,y+s*.35,s*.15,s*.1,-.4,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.lineWidth=s*.1; ctx.lineCap='round';
+      ctx.moveTo(x+.03,y+s*.35); ctx.lineTo(x+.03,y-s*.4);
+      ctx.lineTo(x+s*.35,y-s*.55); ctx.lineTo(x+s*.35,y-s*.2); ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(x+s*.35,y-s*.12,s*.15,s*.1,-.4,0,Math.PI*2); ctx.fill();
+    },
+    // 🎮 Gamepad — videojuegos
+    'gamepad': (ctx,x,y,s) => {
+      ctx.beginPath();
+      ctx.roundRect(x-s*.45,y-s*.22,s*.9,s*.44,s*.1); ctx.fill();
+      // cruz izq
+      ctx.beginPath(); ctx.fillStyle='rgba(255,255,255,.5)';
+      ctx.roundRect(x-s*.3,y-s*.1,s*.2,s*.08,2);ctx.fill();
+      ctx.roundRect(x-s*.22,y-s*.18,s*.08,s*.24,2);ctx.fill();
+      // botones der
+      for(const [bx,by] of [[.15,-.08],[.25,.02],[.2,-.18],[.3,-.12]]){
+        ctx.beginPath(); ctx.arc(x+s*bx,y+s*by,s*.06,0,Math.PI*2); ctx.fill();
+      }
+    },
+    // 🍷 Copa vino — degustación
+    'vino': (ctx,x,y,s) => {
+      ctx.beginPath();
+      ctx.moveTo(x-s*.28,y-s*.45);
+      ctx.bezierCurveTo(x-s*.32,y+s*.05, x-.02,y+s*.18, x,y+s*.18);
+      ctx.bezierCurveTo(x+.02,y+s*.18, x+s*.32,y+s*.05, x+s*.28,y-s*.45);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.lineWidth=s*.08; ctx.lineCap='round';
+      ctx.moveTo(x,y+s*.18); ctx.lineTo(x,y+s*.4); ctx.stroke();
+      ctx.moveTo(x-s*.18,y+s*.4); ctx.lineTo(x+s*.18,y+s*.4); ctx.stroke();
+    },
+    // 🧗 Escalada — aventuras
+    'montaña': (ctx,x,y,s) => {
+      ctx.beginPath();
+      ctx.moveTo(x-s*.5,y+s*.4);
+      ctx.lineTo(x-s*.1,y-s*.45);
+      ctx.lineTo(x+s*.2,y-.02);
+      ctx.lineTo(x+s*.5,y+s*.4);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.fillStyle='rgba(255,255,255,.4)';
+      ctx.moveTo(x-s*.1,y-s*.45);
+      ctx.lineTo(x+s*.05,y-s*.2);
+      ctx.lineTo(x-s*.1,y-s*.2); ctx.closePath(); ctx.fill();
+    },
+    // 📷 Cámara — fotoloop
+    'camara': (ctx,x,y,s) => {
+      ctx.beginPath();
+      ctx.roundRect(x-s*.38,y-s*.18,s*.76,s*.5,s*.08); ctx.fill();
+      ctx.beginPath(); ctx.fillStyle='rgba(0,0,0,.25)';
+      ctx.roundRect(x-s*.12,y-s*.28,s*.24,s*.14,s*.04); ctx.fill();
+      ctx.beginPath(); ctx.fillStyle='rgba(255,255,255,.35)';
+      ctx.arc(x,y+s*.1,s*.18,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.fillStyle='rgba(255,255,255,.15)';
+      ctx.arc(x,y+s*.1,s*.1,0,Math.PI*2); ctx.fill();
+    },
+  },
+
+  _hwDrawIcon(ctx, key, x, y, size, color) {
+    ctx.save();
+    ctx.fillStyle   = color || '#fff';
+    ctx.strokeStyle = color || '#fff';
+    const fn = this._hwIcons[key];
+    if (fn) fn(ctx, x, y, size);
+    ctx.restore();
+  },
+
   _hwDraw(angle) {
     const canvas = document.getElementById('hw-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const data = this._hwData[this._hwCat];
+    const data  = this._hwData[this._hwCat];
     const items = data.items;
-    const n = items.length;
+    const n     = items.length;
     const slice = Math.PI*2/n;
-    const cx=140, cy=140, r=134, rIn=40;
+    const cx=140, cy=140, r=134, rIn=42;
 
     ctx.clearRect(0,0,280,280);
 
+    // Sombra externa de la rueda
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,.45)'; ctx.shadowBlur=18;
+    ctx.beginPath(); ctx.arc(cx,cy,r+2,0,Math.PI*2);
+    ctx.fillStyle='#111'; ctx.fill();
+    ctx.restore();
+
+    const palette = [
+      '#FF5F00','#1D9E75','#185FA5','#9333EA',
+      '#E53E3E','#D69E2E','#0F6E56','#C44D00'
+    ];
+    const paletteLight = [
+      '#FF8C42','#26B589','#2E73C4','#A855F7',
+      '#F56565','#ECC94B','#1D9E75','#E05500'
+    ];
+
+    // Mapeo icon → clave SVG
+    const iconMap = {
+      '☀️':'sol','⚡':'rayo','🏃':'corredor','🌿':'hoja',
+      '🍻':'copa','⛺':'carpa','🎸':'nota','🎮':'gamepad',
+      '🍷':'vino','🧗':'montaña','📷':'camara','🛶':'hoja',
+      '🎣':'nota','🥾':'montaña','🐴':'corredor','🏄':'rayo',
+      '🌾':'hoja','🔥':'sol','🧀':'copa','🏠':'carpa',
+      '🎤':'nota','🃏':'gamepad','🏋️':'rayo','🚴':'corredor',
+      '🏊':'rayo','⚽':'sol','🎾':'sol','🏀':'sol',
+    };
+
     for (let i=0; i<n; i++) {
-      const s = angle + i*slice;
-      const e = s + slice;
-      // Alternar claro/más claro para distinguir sectores
-      const fills = [data.accent, data.light];
-      // Colores tipo Preguntados — rotar paleta vibrante
-      const palette = ['#FF5F00','#1D9E75','#185FA5','#B794F4','#E53E3E','#D69E2E','#FF5F00','#1D9E75'];
+      const s   = angle + i*slice;
+      const e   = s + slice;
+      const mid = s + slice/2;
+
+      // Segmento con degradado radial
+      const grd = ctx.createRadialGradient(cx,cy,rIn,cx,cy,r);
+      grd.addColorStop(0, paletteLight[i%paletteLight.length]);
+      grd.addColorStop(1, palette[i%palette.length]);
+
       ctx.beginPath();
       ctx.moveTo(cx,cy);
       ctx.arc(cx,cy,r,s,e);
       ctx.closePath();
-      ctx.fillStyle = palette[i % palette.length];
+      ctx.fillStyle = grd;
       ctx.fill();
-      ctx.strokeStyle='#fff';
-      ctx.lineWidth=3;
+
+      // Borde blanco entre sectores
+      ctx.strokeStyle='rgba(255,255,255,.85)';
+      ctx.lineWidth=2.5;
       ctx.stroke();
 
-      const mid = s+slice/2;
-      const ir = n>6 ? 86 : 90;
-      const ex = cx+Math.cos(mid)*ir;
-      const ey = cy+Math.sin(mid)*ir;
+      // Posición del icono + label
+      const ir  = n>6 ? 84 : 90;
+      const ex  = cx + Math.cos(mid)*ir;
+      const ey  = cy + Math.sin(mid)*ir;
 
+      // Burbuja blanca detrás del icono
       ctx.save();
-      ctx.font = `${n>6?'17':'20'}px serif`;
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText(items[i].icon, ex, ey-8);
-      ctx.shadowColor='rgba(0,0,0,.3)'; ctx.shadowBlur=3;
-      ctx.font = `800 ${n>6?'8.5':'9.5'}px "Bai Jamjuree",system-ui`;
+      ctx.fillStyle='rgba(255,255,255,.18)';
+      ctx.beginPath(); ctx.arc(ex, ey-6, n>6?16:19, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+
+      // Icono SVG
+      ctx.save();
+      ctx.translate(ex, ey-6);
+      ctx.rotate(mid + Math.PI/2);
+      const icoKey = iconMap[items[i].icon] || 'sol';
+      this._hwDrawIcon(ctx, icoKey, 0, 0, n>6?12:15, '#fff');
+      ctx.restore();
+
+      // Label texto
+      ctx.save();
+      ctx.translate(ex, ey);
+      ctx.rotate(mid + Math.PI/2);
+      ctx.shadowColor='rgba(0,0,0,.5)'; ctx.shadowBlur=4;
+      ctx.font = `800 ${n>6?'8':'9'}px "Bai Jamjuree",system-ui`;
       ctx.fillStyle='#fff';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
       const words = items[i].label.split('/');
+      const lY = n>6 ? 10 : 12;
       if (words.length===2) {
-        ctx.fillText(words[0].trim(), ex, ey+5);
-        ctx.fillText(words[1].trim(), ex, ey+16);
-      } else { ctx.fillText(items[i].label, ex, ey+8); }
-      ctx.shadowBlur=0;
+        ctx.fillText(words[0].trim(), 0, lY);
+        ctx.fillText(words[1].trim(), 0, lY+11);
+      } else {
+        ctx.fillText(items[i].label, 0, lY);
+      }
       ctx.restore();
     }
 
-    // Centro
+    // Anillo exterior decorativo
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=4; ctx.stroke();
+
+    // Centro con gradiente
+    const cGrd = ctx.createRadialGradient(cx-8,cy-8,2,cx,cy,rIn);
+    cGrd.addColorStop(0,'#FF8C42');
+    cGrd.addColorStop(1,'#FF5F00');
     ctx.beginPath(); ctx.arc(cx,cy,rIn,0,Math.PI*2);
-    ctx.fillStyle=data.accent; ctx.fill();
-    ctx.strokeStyle='#fff'; ctx.lineWidth=3; ctx.stroke();
+    ctx.fillStyle=cGrd; ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.9)'; ctx.lineWidth=3; ctx.stroke();
+
+    // Logo UL360 en el centro
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,.4)'; ctx.shadowBlur=6;
     ctx.fillStyle='#fff';
-    ctx.font='bold 12px "Bai Jamjuree",system-ui';
+    ctx.font='bold 13px "Bai Jamjuree",system-ui';
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText('UL',cx,cy-5);
-    ctx.font='9px "Bai Jamjuree",system-ui';
-    ctx.fillText('360°',cx,cy+8);
+    ctx.fillText('UL',cx,cy-6);
+    ctx.font='800 9px "Bai Jamjuree",system-ui';
+    ctx.fillText('360°',cx,cy+7);
+    ctx.restore();
   },
 
   hwSpin() {
