@@ -10652,6 +10652,27 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   },
 
   // Librería de iconos SVG para la ruleta — paths dibujados directo en canvas
+  // Polyfill de roundRect para navegadores que no lo soportan
+  _hwRoundRectPolyfill() {
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+        if (typeof r === 'number') r = {tl:r,tr:r,br:r,bl:r};
+        this.beginPath();
+        this.moveTo(x+r.tl, y);
+        this.lineTo(x+w-r.tr, y);
+        this.arcTo(x+w, y, x+w, y+r.tr, r.tr);
+        this.lineTo(x+w, y+h-r.br);
+        this.arcTo(x+w, y+h, x+w-r.br, y+h, r.br);
+        this.lineTo(x+r.bl, y+h);
+        this.arcTo(x, y+h, x, y+h-r.bl, r.bl);
+        this.lineTo(x, y+r.tl);
+        this.arcTo(x, y, x+r.tl, y, r.tl);
+        this.closePath();
+        return this;
+      };
+    }
+  },
+
   _hwIcons: {
     // ☀️ sol — ocio genérico
     'sol': (ctx,x,y,s) => {
@@ -10689,10 +10710,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       ctx.lineTo(x+s*.35,y+s*.05);
       ctx.lineTo(x+s*.35,y+s*.22);
       ctx.closePath(); ctx.fill();
-      ctx.fillStyle = ctx.fillStyle === '#fff' ? ctx.strokeStyle : ctx.fillStyle;
-      ctx.save(); ctx.globalCompositeOperation='destination-out';
+      // Agujeros como pequeños círculos huecos (borde, sin recortar el canvas)
+      ctx.save();
+      ctx.globalAlpha = 0.001;
       ctx.beginPath(); ctx.arc(x-s*.05,y, s*.05,0,Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(x+s*.12,y+s*.1, s*.04,0,Math.PI*2); ctx.fill();
       ctx.restore();
     },
     // 🏠 casa — juntada
@@ -10704,7 +10725,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       ctx.lineTo(x+s*.32,y-s*.02);
       ctx.lineTo(x+s*.32,y+s*.32);
       ctx.closePath(); ctx.fill();
-      ctx.save(); ctx.globalCompositeOperation='destination-out';
+      // Puerta: usar el path con evenodd en vez de destination-out
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,.001)';
       ctx.beginPath(); ctx.rect(x-s*.08,y+s*.06,s*.16,s*.26); ctx.fill();
       ctx.restore();
     },
@@ -10738,13 +10761,6 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     // 🎮 gamepad — videojuegos
     'gamepad': (ctx,x,y,s) => {
       ctx.beginPath(); ctx.roundRect(x-s*.42,y-s*.2,s*.84,s*.4,s*.16); ctx.fill();
-      ctx.save(); ctx.globalCompositeOperation='destination-out';
-      ctx.beginPath(); ctx.roundRect(x-s*.28,y-s*.05,s*.16,s*.07,1); ctx.fill();
-      ctx.beginPath(); ctx.roundRect(x-s*.215,y-s*.115,s*.07,s*.16,1); ctx.fill();
-      ctx.beginPath(); ctx.arc(x+s*.18,y-s*.06,s*.045,0,Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(x+s*.28,y+.01,s*.045,0,Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(x+s*.23,y-s*.13,s*.045,0,Math.PI*2); ctx.fill();
-      ctx.restore();
     },
     // 🍷 vino — degustación
     'vino': (ctx,x,y,s) => {
@@ -10786,11 +10802,6 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       ctx.lineTo(x+s*.22,y-s*.2);
       ctx.lineTo(x+s*.4,y+s*.32);
       ctx.closePath(); ctx.fill();
-      ctx.save(); ctx.globalCompositeOperation='destination-out';
-      ctx.beginPath();
-      ctx.moveTo(x-s*.1,y-s*.36); ctx.lineTo(x,y-s*.16); ctx.lineTo(x-s*.12,y-s*.16);
-      ctx.closePath(); ctx.fill();
-      ctx.restore();
     },
     // 🛶 kayak
     'kayak': (ctx,x,y,s) => {
@@ -10817,20 +10828,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       ctx.lineTo(x,y-s*.38);
       ctx.lineTo(x+s*.4,y+s*.3);
       ctx.closePath(); ctx.fill();
-      ctx.save(); ctx.globalCompositeOperation='destination-out';
-      ctx.beginPath();
-      ctx.moveTo(x-s*.1,y+s*.3); ctx.lineTo(x,y+s*.04); ctx.lineTo(x+s*.1,y+s*.3);
-      ctx.closePath(); ctx.fill();
-      ctx.restore();
     },
     // 🏄 surf/SUP
     'surf': (ctx,x,y,s) => {
       ctx.beginPath();
       ctx.ellipse(x,y,s*.12,s*.4,.5,0,Math.PI*2); ctx.fill();
-      ctx.save(); ctx.globalCompositeOperation='destination-out';
-      ctx.beginPath(); ctx.lineWidth=s*.03;
-      ctx.moveTo(x-s*.05,y-s*.2); ctx.lineTo(x+s*.05,y+s*.2); ctx.stroke();
-      ctx.restore();
     },
     // 🌾 caminata/campo
     'campo': (ctx,x,y,s) => {
@@ -10854,11 +10856,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     // 📷 cámara — fotoloop
     'camara': (ctx,x,y,s) => {
       ctx.beginPath(); ctx.roundRect(x-s*.36,y-s*.16,s*.72,s*.46,s*.07); ctx.fill();
-      ctx.save(); ctx.globalCompositeOperation='destination-out';
-      ctx.beginPath(); ctx.roundRect(x-s*.1,y-s*.26,s*.2,s*.12,s*.04); ctx.fill();
-      ctx.beginPath(); ctx.arc(x,y+s*.08,s*.16,0,Math.PI*2); ctx.fill();
-      ctx.restore();
-      ctx.beginPath(); ctx.arc(x,y+s*.08,s*.09,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(x-s*.1,y-s*.32,s*.2,s*.12,s*.04); ctx.fill();
     },
     // 🧘 yoga/relax
     'yoga': (ctx,x,y,s) => {
@@ -10872,12 +10870,6 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     // ⚽ pelota / deportes genérico
     'pelota': (ctx,x,y,s) => {
       ctx.beginPath(); ctx.arc(x,y,s*.32,0,Math.PI*2); ctx.fill();
-      ctx.save(); ctx.globalCompositeOperation='destination-out';
-      ctx.beginPath(); ctx.lineWidth=s*.035;
-      ctx.moveTo(x-s*.2,y-s*.1); ctx.lineTo(x,y); ctx.lineTo(x+s*.2,y-s*.1);
-      ctx.moveTo(x,y); ctx.lineTo(x,y+s*.24);
-      ctx.stroke();
-      ctx.restore();
     },
     // 🐕 perro — vuelta al perro
     'perro': (ctx,x,y,s) => {
@@ -10990,17 +10982,18 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       const ey  = cy + Math.sin(mid)*ir;
 
       // Burbuja blanca detrás del icono
+      const bubbleR = n>6 ? 17 : 20;
       ctx.save();
-      ctx.fillStyle='rgba(255,255,255,.18)';
-      ctx.beginPath(); ctx.arc(ex, ey-6, n>6?16:19, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,.25)';
+      ctx.beginPath(); ctx.arc(ex, ey-6, bubbleR, 0, Math.PI*2); ctx.fill();
       ctx.restore();
 
-      // Icono SVG
+      // Icono: emoji nativo sin rotar (se lee mejor que rotado)
       ctx.save();
-      ctx.translate(ex, ey-6);
-      ctx.rotate(mid + Math.PI/2);
-      const icoKey = iconMap[items[i].icon] || 'sol';
-      this._hwDrawIcon(ctx, icoKey, 0, 0, n>6?12:15, '#fff');
+      ctx.font = `${n>6?'18':'21'}px serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(items[i].icon, ex, ey-6);
       ctx.restore();
 
       // Label texto
@@ -14834,6 +14827,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   } else {
     document.body.classList.add('day');
   }
+  App._hwRoundRectPolyfill();
   App.init();
 });
 </script>
