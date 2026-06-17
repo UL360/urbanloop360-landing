@@ -9975,7 +9975,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           ${ev.lat ? `<div id="ev-map-${ev.id}" style="height:130px;border-radius:10px;overflow:hidden;margin-bottom:10px;border:0.5px solid var(--bd);background:var(--bg0);" data-lat="${ev.lat}" data-lng="${ev.lng}">
             <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--gr);gap:6px;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              <a href="https://www.google.com/maps?q=${ev.lat},${ev.lng}" target="_blank" style="color:var(--or);font-weight:600;text-decoration:none;">Ver en Google Maps →</a>
+              <span onclick="App._eventoIrAlMapa(${ev.lat},${ev.lng})" style="color:var(--or);font-weight:600;cursor:pointer;">📍 Ver en el mapa →</span>
             </div>
           </div>` : ''}
           <div style="font-size:11px;color:var(--gr);margin-bottom:8px;">Organiza: <strong>${ev.authorName||'Looper'}</strong></div>
@@ -9983,7 +9983,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
             ${!past ? `<button class="ev-action-btn ${joined?'':'primary'}" onclick="App._joinEvento('${ev.id}')">
               ${joined ? '✓ Me sumé' : (full ? 'Lista de espera' : '+ Sumarme')}
             </button>` : ''}
-            ${ev.lat ? `<button class="ev-action-btn" onclick="window.open('https://www.google.com/maps?q=${ev.lat},${ev.lng}','_blank')" style="display:flex;align-items:center;gap:5px;">
+            ${ev.lat ? `<button class="ev-action-btn" onclick="App._eventoIrAlMapa(${ev.lat},${ev.lng})" style="display:flex;align-items:center;gap:5px;">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/></svg> Cómo llegar
             </button>` : ''}
             ${ev.authorId === this._uid ? `<button class="ev-action-btn" onclick="App._deleteEvento('${ev.id}')" style="color:var(--err);border-color:var(--err)20;">Cancelar</button>` : ''}
@@ -9991,6 +9991,25 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         </div>
       </div>`;
     }).join('');
+  },
+
+  _eventoIrAlMapa(lat, lng) {
+    // Navegar al mapa interno con el pin del evento
+    this.go('explore');
+    // Esperar a que el mapa esté listo y hacer flyTo
+    const doFly = () => {
+      if (this.mainMap) {
+        this.mainMap.flyTo({ center: [lng, lat], zoom: 17, duration: 1000, pitch: 45 });
+        // Mostrar popup con pin
+        new maplibregl.Popup({ offset: 25, closeButton: true })
+          .setLngLat([lng, lat])
+          .setHTML(`<div style="font-family:'Bai Jamjuree',sans-serif;font-size:13px;font-weight:700;color:#FF5F00;padding:4px 2px;">📍 Lugar del evento</div>`)
+          .addTo(this.mainMap);
+      } else {
+        setTimeout(doFly, 300);
+      }
+    };
+    setTimeout(doFly, 400);
   },
 
   async _deleteEvento(evId) {
