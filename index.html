@@ -1422,15 +1422,18 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
   right:-30px;top:-30px;
   width:120px;height:120px;border-radius:50%;
   background:rgba(255,255,255,.1);
+  z-index:0;pointer-events:none;
 }
 .cn-hero::after {
   content:'';position:absolute;
   right:20px;bottom:-40px;
   width:80px;height:80px;border-radius:50%;
   background:rgba(255,255,255,.07);
+  z-index:0;pointer-events:none;
 }
 .cn-hero-top {
   display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;
+  position:relative;z-index:2;
 }
 .cn-novedad-badge {
   display:inline-flex;align-items:center;gap:5px;
@@ -1443,6 +1446,7 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
   color:#fff;font-size:20px;line-height:1;padding:0;
   width:28px;height:28px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
+  position:relative;z-index:3;flex-shrink:0;
 }
 .cn-hero-title {
   font-family:var(--fH);font-size:28px;font-weight:800;
