@@ -10653,152 +10653,267 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
   // Librería de iconos SVG para la ruleta — paths dibujados directo en canvas
   _hwIcons: {
-    // ☀️ Sol — ocio
+    // ☀️ sol — ocio genérico
     'sol': (ctx,x,y,s) => {
-      ctx.beginPath(); ctx.arc(x,y,s*.38,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x,y,s*.34,0,Math.PI*2); ctx.fill();
       for(let a=0;a<8;a++){
-        const r=a*Math.PI/4, x1=x+Math.cos(r)*s*.52, y1=y+Math.sin(r)*s*.52;
-        const x2=x+Math.cos(r)*s*.7, y2=y+Math.sin(r)*s*.7;
-        ctx.beginPath(); ctx.lineWidth=s*.11; ctx.lineCap='round';
+        const r=a*Math.PI/4, x1=x+Math.cos(r)*s*.5, y1=y+Math.sin(r)*s*.5;
+        const x2=x+Math.cos(r)*s*.68, y2=y+Math.sin(r)*s*.68;
+        ctx.beginPath(); ctx.lineWidth=s*.1; ctx.lineCap='round';
         ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
       }
     },
-    // ⚡ Rayo — deportes
-    'rayo': (ctx,x,y,s) => {
+    // ☕ café
+    'cafe': (ctx,x,y,s) => {
+      ctx.beginPath(); ctx.roundRect(x-s*.28,y-s*.15,s*.5,s*.36,s*.06); ctx.fill();
+      ctx.beginPath(); ctx.lineWidth=s*.08; ctx.arc(x+s*.26,y-s*.02,s*.13,-.6,2.2); ctx.stroke();
+      ctx.beginPath(); ctx.lineWidth=s*.06; ctx.lineCap='round';
+      ctx.moveTo(x-s*.16,y-s*.22); ctx.quadraticCurveTo(x-s*.1,y-s*.32,x-s*.16,y-s*.4); ctx.stroke();
+      ctx.moveTo(x,y-s*.22); ctx.quadraticCurveTo(x+s*.06,y-s*.32,x,y-s*.4); ctx.stroke();
+    },
+    // 🔥 fuego — asado
+    'fuego': (ctx,x,y,s) => {
       ctx.beginPath();
-      ctx.moveTo(x+s*.15,y-s*.55);
-      ctx.lineTo(x-s*.12,y-.05);
-      ctx.lineTo(x+s*.08,y-.05);
-      ctx.lineTo(x-s*.15,y+s*.55);
-      ctx.lineTo(x+s*.22,y+.05);
-      ctx.lineTo(x-.04,y+.05);
+      ctx.moveTo(x,y+s*.45);
+      ctx.bezierCurveTo(x-s*.32,y+s*.25, x-s*.36,y-s*.15, x-s*.08,y-s*.5);
+      ctx.bezierCurveTo(x-s*.18,y-s*.2, x-s*.02,y-s*.1, x+s*.05,y-s*.3);
+      ctx.bezierCurveTo(x+s*.1,y-s*.1, x+s*.32,y, x+s*.2,y+s*.3);
+      ctx.bezierCurveTo(x+s*.3,y+s*.18, x+s*.3,y+s*.42, x,y+s*.45);
       ctx.closePath(); ctx.fill();
     },
-    // 🏃 Corredor — deportes alt
+    // 🧀 picada/queso
+    'queso': (ctx,x,y,s) => {
+      ctx.beginPath();
+      ctx.moveTo(x-s*.35,y+s*.22);
+      ctx.lineTo(x-s*.05,y-s*.32);
+      ctx.lineTo(x+s*.35,y+s*.05);
+      ctx.lineTo(x+s*.35,y+s*.22);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = ctx.fillStyle === '#fff' ? ctx.strokeStyle : ctx.fillStyle;
+      ctx.save(); ctx.globalCompositeOperation='destination-out';
+      ctx.beginPath(); ctx.arc(x-s*.05,y, s*.05,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x+s*.12,y+s*.1, s*.04,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    },
+    // 🏠 casa — juntada
+    'casa': (ctx,x,y,s) => {
+      ctx.beginPath();
+      ctx.moveTo(x-s*.32,y+s*.32);
+      ctx.lineTo(x-s*.32,y-s*.02);
+      ctx.lineTo(x,y-s*.42);
+      ctx.lineTo(x+s*.32,y-s*.02);
+      ctx.lineTo(x+s*.32,y+s*.32);
+      ctx.closePath(); ctx.fill();
+      ctx.save(); ctx.globalCompositeOperation='destination-out';
+      ctx.beginPath(); ctx.rect(x-s*.08,y+s*.06,s*.16,s*.26); ctx.fill();
+      ctx.restore();
+    },
+    // 🎤 micrófono — karaoke
+    'mic': (ctx,x,y,s) => {
+      ctx.beginPath(); ctx.roundRect(x-s*.12,y-s*.42,s*.24,s*.34,s*.12); ctx.fill();
+      ctx.beginPath(); ctx.lineWidth=s*.07; ctx.lineCap='round';
+      ctx.arc(x,y-s*.08,s*.2,.4,Math.PI-.4); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x,y+s*.12); ctx.lineTo(x,y+s*.32); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x-s*.14,y+s*.32); ctx.lineTo(x+s*.14,y+s*.32); ctx.stroke();
+    },
+    // 🃏 cartas — truco
+    'cartas': (ctx,x,y,s) => {
+      ctx.save(); ctx.translate(x-s*.1,y); ctx.rotate(-.18);
+      ctx.beginPath(); ctx.roundRect(-s*.18,-s*.26,s*.36,s*.52,s*.05); ctx.fill();
+      ctx.restore();
+      ctx.save(); ctx.translate(x+s*.1,y); ctx.rotate(.18);
+      ctx.globalAlpha=.92;
+      ctx.beginPath(); ctx.roundRect(-s*.18,-s*.26,s*.36,s*.52,s*.05); ctx.fill();
+      ctx.restore();
+    },
+    // 🎸 guitarra — fogón
+    'guitarra': (ctx,x,y,s) => {
+      ctx.beginPath();
+      ctx.ellipse(x-s*.1,y+s*.28,s*.22,s*.16,-.35,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.lineWidth=s*.09; ctx.lineCap='round';
+      ctx.moveTo(x+s*.02,y+s*.28); ctx.lineTo(x+s*.02,y-s*.32);
+      ctx.lineTo(x+s*.3,y-s*.46); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(x+s*.28,y-s*.18,s*.13,s*.09,-.35,0,Math.PI*2); ctx.fill();
+    },
+    // 🎮 gamepad — videojuegos
+    'gamepad': (ctx,x,y,s) => {
+      ctx.beginPath(); ctx.roundRect(x-s*.42,y-s*.2,s*.84,s*.4,s*.16); ctx.fill();
+      ctx.save(); ctx.globalCompositeOperation='destination-out';
+      ctx.beginPath(); ctx.roundRect(x-s*.28,y-s*.05,s*.16,s*.07,1); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(x-s*.215,y-s*.115,s*.07,s*.16,1); ctx.fill();
+      ctx.beginPath(); ctx.arc(x+s*.18,y-s*.06,s*.045,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x+s*.28,y+.01,s*.045,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x+s*.23,y-s*.13,s*.045,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    },
+    // 🍷 vino — degustación
+    'vino': (ctx,x,y,s) => {
+      ctx.beginPath();
+      ctx.moveTo(x-s*.22,y-s*.4);
+      ctx.bezierCurveTo(x-s*.26,y, x-.015,y+s*.14, x,y+s*.14);
+      ctx.bezierCurveTo(x+.015,y+s*.14, x+s*.26,y, x+s*.22,y-s*.4);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.lineWidth=s*.07; ctx.lineCap='round';
+      ctx.moveTo(x,y+s*.14); ctx.lineTo(x,y+s*.34); ctx.stroke();
+      ctx.moveTo(x-s*.14,y+s*.34); ctx.lineTo(x+s*.14,y+s*.34); ctx.stroke();
+    },
+    // 🏃 corredor — running
     'corredor': (ctx,x,y,s) => {
-      // cabeza
-      ctx.beginPath(); ctx.arc(x+s*.12,y-s*.42,s*.14,0,Math.PI*2); ctx.fill();
-      // cuerpo
-      ctx.beginPath(); ctx.lineWidth=s*.13; ctx.lineCap='round'; ctx.lineJoin='round';
-      ctx.moveTo(x+s*.12,y-s*.28);
-      ctx.lineTo(x,y+s*.05);
-      ctx.lineTo(x-s*.18,y+s*.38);
-      ctx.moveTo(x,y+s*.05);
-      ctx.lineTo(x+s*.22,y+s*.32);
-      ctx.moveTo(x-s*.08,y-s*.14);
-      ctx.lineTo(x+s*.22,y-.02);
+      ctx.beginPath(); ctx.arc(x+s*.1,y-s*.36,s*.1,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.lineWidth=s*.11; ctx.lineCap='round'; ctx.lineJoin='round';
+      ctx.moveTo(x+s*.1,y-s*.22); ctx.lineTo(x-s*.02,y+s*.06); ctx.lineTo(x-s*.22,y+s*.36);
+      ctx.moveTo(x-s*.02,y+s*.06); ctx.lineTo(x+s*.24,y+s*.3);
+      ctx.moveTo(x-s*.08,y-s*.1); ctx.lineTo(x+s*.24,y+.0);
       ctx.stroke();
     },
-    // 🌿 Hoja — aventuras
-    'hoja': (ctx,x,y,s) => {
+    // 🚴 bicicleta — ciclismo
+    'bici': (ctx,x,y,s) => {
+      ctx.beginPath(); ctx.lineWidth=s*.08; ctx.lineCap='round'; ctx.lineJoin='round';
+      ctx.arc(x-s*.24,y+s*.2,s*.18,0,Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x+s*.24,y+s*.2,s*.18,0,Math.PI*2); ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(x,y+s*.5);
-      ctx.bezierCurveTo(x-s*.45,y+s*.1, x-s*.5,y-s*.4, x,y-s*.5);
-      ctx.bezierCurveTo(x+s*.5,y-s*.4, x+s*.45,y+s*.1, x,y+s*.5);
-      ctx.fill();
-      ctx.beginPath(); ctx.lineWidth=s*.07; ctx.strokeStyle='rgba(255,255,255,.6)';
-      ctx.moveTo(x,y+s*.5); ctx.lineTo(x,y-s*.5); ctx.stroke();
-      // nervaduras
+      ctx.moveTo(x-s*.24,y+s*.2); ctx.lineTo(x-s*.02,y-s*.18); ctx.lineTo(x+s*.24,y+s*.2);
+      ctx.moveTo(x-s*.02,y-s*.18); ctx.lineTo(x+s*.1,y-s*.18);
+      ctx.moveTo(x-s*.02,y-s*.18); ctx.lineTo(x-s*.1,y+s*.06); ctx.lineTo(x+s*.14,y+s*.06);
+      ctx.stroke();
+    },
+    // 🥾 montaña/trekking — también escalada y aventura
+    'montaña': (ctx,x,y,s) => {
+      ctx.beginPath();
+      ctx.moveTo(x-s*.4,y+s*.32);
+      ctx.lineTo(x-s*.1,y-s*.36);
+      ctx.lineTo(x+s*.08,y-s*.04);
+      ctx.lineTo(x+s*.22,y-s*.2);
+      ctx.lineTo(x+s*.4,y+s*.32);
+      ctx.closePath(); ctx.fill();
+      ctx.save(); ctx.globalCompositeOperation='destination-out';
+      ctx.beginPath();
+      ctx.moveTo(x-s*.1,y-s*.36); ctx.lineTo(x,y-s*.16); ctx.lineTo(x-s*.12,y-s*.16);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+    },
+    // 🛶 kayak
+    'kayak': (ctx,x,y,s) => {
+      ctx.beginPath(); ctx.lineWidth=s*.1; ctx.lineCap='round';
+      ctx.ellipse(x,y,s*.32,s*.09,0,0,Math.PI*2); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x-s*.32,y-s*.28); ctx.lineTo(x+s*.32,y+s*.28);
+      ctx.moveTo(x-s*.4,y-s*.34); ctx.lineTo(x-s*.22,y-s*.22);
+      ctx.moveTo(x+s*.22,y+s*.22); ctx.lineTo(x+s*.4,y+s*.34);
+      ctx.stroke();
+    },
+    // 🐴 caballo — cabalgata
+    'caballo': (ctx,x,y,s) => {
+      ctx.beginPath(); ctx.lineWidth=s*.1; ctx.lineCap='round'; ctx.lineJoin='round';
+      ctx.moveTo(x-s*.28,y+s*.3); ctx.lineTo(x-s*.2,y-s*.02); ctx.lineTo(x-s*.32,y-s*.3);
+      ctx.lineTo(x-s*.06,y-s*.36); ctx.lineTo(x+s*.16,y-s*.14); ctx.lineTo(x+s*.3,y-s*.16);
+      ctx.moveTo(x-s*.06,y-s*.06); ctx.lineTo(x+s*.04,y+s*.3);
+      ctx.stroke();
+    },
+    // ⛺ carpa — camping
+    'carpa': (ctx,x,y,s) => {
+      ctx.beginPath();
+      ctx.moveTo(x-s*.4,y+s*.3);
+      ctx.lineTo(x,y-s*.38);
+      ctx.lineTo(x+s*.4,y+s*.3);
+      ctx.closePath(); ctx.fill();
+      ctx.save(); ctx.globalCompositeOperation='destination-out';
+      ctx.beginPath();
+      ctx.moveTo(x-s*.1,y+s*.3); ctx.lineTo(x,y+s*.04); ctx.lineTo(x+s*.1,y+s*.3);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+    },
+    // 🏄 surf/SUP
+    'surf': (ctx,x,y,s) => {
+      ctx.beginPath();
+      ctx.ellipse(x,y,s*.12,s*.4,.5,0,Math.PI*2); ctx.fill();
+      ctx.save(); ctx.globalCompositeOperation='destination-out';
+      ctx.beginPath(); ctx.lineWidth=s*.03;
+      ctx.moveTo(x-s*.05,y-s*.2); ctx.lineTo(x+s*.05,y+s*.2); ctx.stroke();
+      ctx.restore();
+    },
+    // 🌾 caminata/campo
+    'campo': (ctx,x,y,s) => {
       for(let i=-2;i<=2;i++){
-        ctx.beginPath(); ctx.lineWidth=s*.04;
-        ctx.moveTo(x,y+i*s*.15);
-        ctx.lineTo(x+s*.25,y+i*s*.15-s*.08);
+        ctx.beginPath(); ctx.lineWidth=s*.06; ctx.lineCap='round';
+        ctx.moveTo(x+i*s*.14,y+s*.3);
+        ctx.quadraticCurveTo(x+i*s*.14+s*.06,y, x+i*s*.14,y-s*.34);
         ctx.stroke();
       }
     },
-    // 🍺 Copa — amigos
-    'copa': (ctx,x,y,s) => {
-      // vaso
+    // 🧗 escalada
+    'escalada': (ctx,x,y,s) => {
       ctx.beginPath();
-      ctx.moveTo(x-s*.28,y-s*.45);
-      ctx.lineTo(x-s*.18,y+s*.1);
-      ctx.lineTo(x+s*.18,y+s*.1);
-      ctx.lineTo(x+s*.28,y-s*.45);
+      ctx.moveTo(x-s*.36,y+s*.32);
+      ctx.lineTo(x-s*.04,y-s*.34);
+      ctx.lineTo(x+s*.18,y-s*.02);
+      ctx.lineTo(x+s*.36,y+s*.32);
       ctx.closePath(); ctx.fill();
-      // base
-      ctx.beginPath(); ctx.lineWidth=s*.1; ctx.lineCap='round';
-      ctx.moveTo(x,y+s*.1); ctx.lineTo(x,y+s*.4); ctx.stroke();
-      ctx.beginPath(); ctx.lineWidth=s*.1;
-      ctx.moveTo(x-s*.2,y+s*.4); ctx.lineTo(x+s*.2,y+s*.4); ctx.stroke();
-      // espuma
-      ctx.beginPath(); ctx.fillStyle='rgba(255,255,255,.5)';
-      ctx.ellipse(x,y-s*.38,s*.2,s*.08,0,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x-s*.04,y-s*.34,s*.07,0,Math.PI*2); ctx.fill();
     },
-    // 🏕️ Carpa — camping
-    'carpa': (ctx,x,y,s) => {
-      ctx.beginPath();
-      ctx.moveTo(x-s*.5,y+s*.35);
-      ctx.lineTo(x,y-s*.45);
-      ctx.lineTo(x+s*.5,y+s*.35);
-      ctx.closePath(); ctx.fill();
-      // entrada
-      ctx.beginPath(); ctx.fillStyle='rgba(0,0,0,.3)';
-      ctx.moveTo(x-s*.12,y+s*.35);
-      ctx.lineTo(x,y+s*.05);
-      ctx.lineTo(x+s*.12,y+s*.35);
-      ctx.closePath(); ctx.fill();
-    },
-    // 🎸 Música — fogón
-    'nota': (ctx,x,y,s) => {
-      ctx.beginPath();
-      ctx.ellipse(x-s*.12,y+s*.35,s*.15,s*.1,-.4,0,Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.lineWidth=s*.1; ctx.lineCap='round';
-      ctx.moveTo(x+.03,y+s*.35); ctx.lineTo(x+.03,y-s*.4);
-      ctx.lineTo(x+s*.35,y-s*.55); ctx.lineTo(x+s*.35,y-s*.2); ctx.stroke();
-      ctx.beginPath();
-      ctx.ellipse(x+s*.35,y-s*.12,s*.15,s*.1,-.4,0,Math.PI*2); ctx.fill();
-    },
-    // 🎮 Gamepad — videojuegos
-    'gamepad': (ctx,x,y,s) => {
-      ctx.beginPath();
-      ctx.roundRect(x-s*.45,y-s*.22,s*.9,s*.44,s*.1); ctx.fill();
-      // cruz izq
-      ctx.beginPath(); ctx.fillStyle='rgba(255,255,255,.5)';
-      ctx.roundRect(x-s*.3,y-s*.1,s*.2,s*.08,2);ctx.fill();
-      ctx.roundRect(x-s*.22,y-s*.18,s*.08,s*.24,2);ctx.fill();
-      // botones der
-      for(const [bx,by] of [[.15,-.08],[.25,.02],[.2,-.18],[.3,-.12]]){
-        ctx.beginPath(); ctx.arc(x+s*bx,y+s*by,s*.06,0,Math.PI*2); ctx.fill();
-      }
-    },
-    // 🍷 Copa vino — degustación
-    'vino': (ctx,x,y,s) => {
-      ctx.beginPath();
-      ctx.moveTo(x-s*.28,y-s*.45);
-      ctx.bezierCurveTo(x-s*.32,y+s*.05, x-.02,y+s*.18, x,y+s*.18);
-      ctx.bezierCurveTo(x+.02,y+s*.18, x+s*.32,y+s*.05, x+s*.28,y-s*.45);
-      ctx.closePath(); ctx.fill();
-      ctx.beginPath(); ctx.lineWidth=s*.08; ctx.lineCap='round';
-      ctx.moveTo(x,y+s*.18); ctx.lineTo(x,y+s*.4); ctx.stroke();
-      ctx.moveTo(x-s*.18,y+s*.4); ctx.lineTo(x+s*.18,y+s*.4); ctx.stroke();
-    },
-    // 🧗 Escalada — aventuras
-    'montaña': (ctx,x,y,s) => {
-      ctx.beginPath();
-      ctx.moveTo(x-s*.5,y+s*.4);
-      ctx.lineTo(x-s*.1,y-s*.45);
-      ctx.lineTo(x+s*.2,y-.02);
-      ctx.lineTo(x+s*.5,y+s*.4);
-      ctx.closePath(); ctx.fill();
-      ctx.beginPath(); ctx.fillStyle='rgba(255,255,255,.4)';
-      ctx.moveTo(x-s*.1,y-s*.45);
-      ctx.lineTo(x+s*.05,y-s*.2);
-      ctx.lineTo(x-s*.1,y-s*.2); ctx.closePath(); ctx.fill();
-    },
-    // 📷 Cámara — fotoloop
+    // 📷 cámara — fotoloop
     'camara': (ctx,x,y,s) => {
+      ctx.beginPath(); ctx.roundRect(x-s*.36,y-s*.16,s*.72,s*.46,s*.07); ctx.fill();
+      ctx.save(); ctx.globalCompositeOperation='destination-out';
+      ctx.beginPath(); ctx.roundRect(x-s*.1,y-s*.26,s*.2,s*.12,s*.04); ctx.fill();
+      ctx.beginPath(); ctx.arc(x,y+s*.08,s*.16,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+      ctx.beginPath(); ctx.arc(x,y+s*.08,s*.09,0,Math.PI*2); ctx.fill();
+    },
+    // 🧘 yoga/relax
+    'yoga': (ctx,x,y,s) => {
+      ctx.beginPath(); ctx.arc(x,y-s*.32,s*.09,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.lineWidth=s*.09; ctx.lineCap='round';
+      ctx.moveTo(x,y-s*.2); ctx.lineTo(x,y+s*.06);
+      ctx.moveTo(x,y+s*.06); ctx.quadraticCurveTo(x-s*.3,y+s*.1, x-s*.32,y+s*.32);
+      ctx.moveTo(x,y+s*.06); ctx.quadraticCurveTo(x+s*.3,y+s*.1, x+s*.32,y+s*.32);
+      ctx.stroke();
+    },
+    // ⚽ pelota / deportes genérico
+    'pelota': (ctx,x,y,s) => {
+      ctx.beginPath(); ctx.arc(x,y,s*.32,0,Math.PI*2); ctx.fill();
+      ctx.save(); ctx.globalCompositeOperation='destination-out';
+      ctx.beginPath(); ctx.lineWidth=s*.035;
+      ctx.moveTo(x-s*.2,y-s*.1); ctx.lineTo(x,y); ctx.lineTo(x+s*.2,y-s*.1);
+      ctx.moveTo(x,y); ctx.lineTo(x,y+s*.24);
+      ctx.stroke();
+      ctx.restore();
+    },
+    // 🐕 perro — vuelta al perro
+    'perro': (ctx,x,y,s) => {
       ctx.beginPath();
-      ctx.roundRect(x-s*.38,y-s*.18,s*.76,s*.5,s*.08); ctx.fill();
-      ctx.beginPath(); ctx.fillStyle='rgba(0,0,0,.25)';
-      ctx.roundRect(x-s*.12,y-s*.28,s*.24,s*.14,s*.04); ctx.fill();
-      ctx.beginPath(); ctx.fillStyle='rgba(255,255,255,.35)';
-      ctx.arc(x,y+s*.1,s*.18,0,Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.fillStyle='rgba(255,255,255,.15)';
-      ctx.arc(x,y+s*.1,s*.1,0,Math.PI*2); ctx.fill();
+      ctx.ellipse(x,y+s*.1,s*.26,s*.16,0,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x+s*.24,y-s*.1,s*.13,0,Math.PI*2); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(x+s*.34,y-s*.2); ctx.lineTo(x+s*.42,y-s*.32); ctx.lineTo(x+s*.3,y-s*.28);
+      ctx.closePath(); ctx.fill();
+    },
+    // 🏓 ping pong / 🎾 tenis (paleta+pelota genérico)
+    'paleta': (ctx,x,y,s) => {
+      ctx.beginPath(); ctx.ellipse(x-s*.06,y-s*.1,s*.2,s*.26,-.3,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.lineWidth=s*.08; ctx.lineCap='round';
+      ctx.moveTo(x+s*.12,y+s*.12); ctx.lineTo(x+s*.32,y+s*.34); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x-s*.28,y+s*.26,s*.08,0,Math.PI*2); ctx.fill();
+    },
+    // 🎭 teatro/cultura
+    'teatro': (ctx,x,y,s) => {
+      ctx.beginPath();
+      ctx.arc(x-s*.1,y-s*.04,s*.22,Math.PI*.15,Math.PI*1.1); ctx.fill();
+      ctx.save(); ctx.globalAlpha=.6;
+      ctx.beginPath();
+      ctx.arc(x+s*.12,y+s*.06,s*.22,Math.PI*1.15,Math.PI*2.1); ctx.fill();
+      ctx.restore();
+    },
+    // 🧺 picnic/canasta
+    'canasta': (ctx,x,y,s) => {
+      ctx.beginPath();
+      ctx.moveTo(x-s*.3,y); ctx.lineTo(x-s*.22,y+s*.3); ctx.lineTo(x+s*.22,y+s*.3); ctx.lineTo(x+s*.3,y);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.lineWidth=s*.07; ctx.arc(x,y-s*.06,s*.18,Math.PI,0); ctx.stroke();
     },
   },
 
-  _hwDrawIcon(ctx, key, x, y, size, color) {
+    _hwDrawIcon(ctx, key, x, y, size, color) {
     ctx.save();
     ctx.fillStyle   = color || '#fff';
     ctx.strokeStyle = color || '#fff';
@@ -10837,13 +10952,14 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     // Mapeo icon → clave SVG
     const iconMap = {
-      '☀️':'sol','⚡':'rayo','🏃':'corredor','🌿':'hoja',
-      '🍻':'copa','⛺':'carpa','🎸':'nota','🎮':'gamepad',
-      '🍷':'vino','🧗':'montaña','📷':'camara','🛶':'hoja',
-      '🎣':'nota','🥾':'montaña','🐴':'corredor','🏄':'rayo',
-      '🌾':'hoja','🔥':'sol','🧀':'copa','🏠':'carpa',
-      '🎤':'nota','🃏':'gamepad','🏋️':'rayo','🚴':'corredor',
-      '🏊':'rayo','⚽':'sol','🎾':'sol','🏀':'sol',
+      '☕':'cafe', '☀️':'sol', '🔥':'fuego', '🧀':'queso',
+      '🏠':'casa', '🎤':'mic', '🃏':'cartas', '🎸':'guitarra',
+      '🎮':'gamepad', '🍷':'vino', '🏃':'corredor', '🚴':'bici',
+      '🚲':'bici', '🥾':'montaña', '🧗':'escalada', '🛶':'kayak',
+      '🐴':'caballo', '⛺':'carpa', '🏄':'surf', '🌾':'campo',
+      '📷':'camara', '🧘':'yoga', '⚽':'pelota', '🏊':'pelota',
+      '🏓':'paleta', '🎾':'paleta', '🎭':'teatro', '🧺':'canasta',
+      '🐕':'perro',
     };
 
     for (let i=0; i<n; i++) {
@@ -11462,8 +11578,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
   // ── Construir el mapa de ciudades desde this.routes ──
   async _explorarBuildCities() {
-    const TYPE_LBL = {trad:'☕',pesca:'🎣',gastro:'🍽️',atardecer:'🌅',running:'🏃',mtb:'🚵',ciclismo:'🚴',caminata:'🥾',paseo:'🌳',relax:'🧘',trabajo:'💼',vacaciones:'🏖️',salidas:'🎉',fotoloop:'📸',otra:'🗺️'};
-    const routes = (this.routes || []).filter(r => r.type !== 'fotostop');
+    const TYPE_LBL = {trad:'☕',pesca:'🎣',gastro:'🍽️',atardecer:'🌅',running:'🏃',mtb:'🚵',ciclismo:'🚴',caminata:'🥾',paseo:'🌳',relax:'🧘',trabajo:'💼',vacaciones:'🏖️',salidas:'🎉',fotoloop:'📸',fotostop:'📸',otra:'🗺️'};
+    // Incluir TODOS los routes, incluyendo fotostops (= FotoLoops reales)
+    const routes = (this.routes || []);
     const cityMap = {}; // key: cityName -> { name, prov, pais, loops:[], color, iconColor }
 
     for (const r of routes) {
