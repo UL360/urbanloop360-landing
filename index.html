@@ -11624,11 +11624,24 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const resSec  = document.getElementById('explorar-results-section');
     const resList = document.getElementById('explorar-results-list');
     const feedSec = document.getElementById('explorar-feed-section');
-    if (!q) {
+    if (!q || !q.trim()) {
       if (resSec)  resSec.style.display  = 'none';
       if (feedSec) feedSec.style.display = 'block';
       return;
     }
+
+    // ── Detectar si es coordenadas: "lat, lng" o "lat lng" ──
+    const coordMatch = q.trim().match(/^(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)$/);
+    if (coordMatch) {
+      const lat = parseFloat(coordMatch[1]);
+      const lng = parseFloat(coordMatch[2]);
+      if (!isNaN(lat) && !isNaN(lng) && Math.abs(lat)<=90 && Math.abs(lng)<=180) {
+        this._filterExplorarByCoords(lat, lng);
+        return;
+      }
+    }
+
+    // ── Búsqueda normal por texto en ciudades ya cargadas ──
     const ql = q.toLowerCase();
     const cities = this._explorarCities || [];
     const found = cities.filter(c =>
@@ -11636,11 +11649,97 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       (c.prov||'').toLowerCase().includes(ql) ||
       (c.pais||'').toLowerCase().includes(ql)
     );
+
     if (feedSec) feedSec.style.display = 'none';
     if (resSec)  resSec.style.display  = 'block';
-    if (resList) resList.innerHTML = found.length
-      ? found.map(c => this._explorarCityCard(c)).join('')
-      : `<div style="text-align:center;padding:24px;color:var(--gr);font-size:13px;">Sin resultados para "<strong>${q}</strong>"</div>`;
+
+    if (found.length) {
+      if (resList) resList.innerHTML = found.map(c => this._explorarCityCard(c)).join('');
+    } else {
+      // Sin resultados locales — ofrecer buscar la ciudad en el mapa global (geocoding)
+      if (resList) resList.innerHTML = `
+        <div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">
+          Sin loops todavía en "<strong>${App._esc(q)}</strong>".
+        </div>
+        <button onclick="App._explorarBuscarUbicacion('${q.replace(/'/g,"\\'")}')"
+          style="width:100%;padding:13px;border:none;border-radius:12px;background:var(--or);color:#fff;
+          font-family:var(--fH);font-size:13px;font-weight:700;cursor:pointer;margin-top:6px;">
+          🌍 Buscar "${App._esc(q)}" en el mapa mundial
+        </button>`;
+    }
+  },
+
+  // Buscar por coordenadas exactas
+  async _filterExplorarByCoords(lat, lng) {
+    const resSec  = document.getElementById('explorar-results-section');
+    const resList = document.getElementById('explorar-results-list');
+    const feedSec = document.getElementById('explorar-feed-section');
+    if (feedSec) feedSec.style.display = 'none';
+    if (resSec)  resSec.style.display  = 'block';
+    if (resList) resList.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">⏳ Buscando ubicación...</div>`;
+
+    try {
+      const geo = await this._explorarGeoOf(lat, lng);
+      const cities = this._explorarCities || [];
+      // Ver si ya existe esa ciudad en los loops cargados
+      const existing = cities.find(c => c.name === geo.ciudad);
+
+      if (resList) {
+        resList.innerHTML = `
+          <div style="background:var(--bg1);border:0.5px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:10px;">
+            <div style="font-size:11px;color:var(--or);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">📍 Coordenadas</div>
+            <div style="font-family:var(--fH);font-size:16px;font-weight:700;color:var(--dk);">${geo.ciudad || 'Ubicación desconocida'}</div>
+            <div style="font-size:12px;color:var(--gr);margin-top:2px;">${[geo.prov, geo.pais].filter(Boolean).join(', ')}</div>
+            <div style="font-size:11px;color:var(--gr);margin-top:6px;">Lat: ${lat.toFixed(4)} · Lng: ${lng.toFixed(4)}</div>
+            <button onclick="App.mainMap?.flyTo({center:[${lng},${lat}],zoom:13,duration:1000});App.go('explore');"
+              style="width:100%;padding:11px;border:none;border-radius:10px;background:var(--or);color:#fff;
+              font-family:var(--fH);font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;">
+              🗺️ Ver en el mapa
+            </button>
+          </div>
+        ` + (existing ? this._explorarCityCard(existing) : `
+          <div style="text-align:center;padding:16px;color:var(--gr);font-size:12px;">
+            Todavía no hay loops registrados en esta zona.
+          </div>`);
+      }
+    } catch(e) {
+      if (resList) resList.innerHTML = `<div style="text-align:center;padding:20px;color:#EF4444;font-size:13px;">Error buscando esa ubicación.</div>`;
+    }
+  },
+
+  // Buscar ciudad por nombre vía geocoding global (Nominatim)
+  async _explorarBuscarUbicacion(query) {
+    const resList = document.getElementById('explorar-results-list');
+    if (resList) resList.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">⏳ Buscando "${App._esc(query)}"...</div>`;
+
+    try {
+      const resp = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`);
+      const results = await resp.json();
+
+      if (!results.length) {
+        if (resList) resList.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">No se encontró "${App._esc(query)}"</div>`;
+        return;
+      }
+
+      if (resList) resList.innerHTML = results.map(r => {
+        const addr = r.address || {};
+        const ciudad = addr.city || addr.town || addr.village || addr.county || r.display_name.split(',')[0];
+        const prov   = addr.state || '';
+        const pais   = addr.country || '';
+        return `<div class="explorar-city-card" onclick="App.mainMap?.flyTo({center:[${r.lon},${r.lat}],zoom:12,duration:1000});App.go('explore');" style="cursor:pointer;">
+          <div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--bg1);border:0.5px solid var(--bd);border-radius:12px;margin-bottom:8px;">
+            <div style="font-size:24px;">📍</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-family:var(--fH);font-weight:700;font-size:14px;color:var(--dk);">${App._esc(ciudad)}</div>
+              <div style="font-size:11px;color:var(--gr);">${App._esc([prov,pais].filter(Boolean).join(', '))}</div>
+            </div>
+            <div style="font-size:11px;color:var(--or);font-weight:600;">Ver →</div>
+          </div>
+        </div>`;
+      }).join('');
+    } catch(e) {
+      if (resList) resList.innerHTML = `<div style="text-align:center;padding:20px;color:#EF4444;font-size:13px;">Error en la búsqueda. Probá de nuevo.</div>`;
+    }
   },
 
   // Abrir ciudad remota
