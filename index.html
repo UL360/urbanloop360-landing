@@ -10976,41 +10976,41 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       ctx.lineWidth=2.5;
       ctx.stroke();
 
-      // Posición del icono + label
-      const ir  = n>6 ? 84 : 90;
-      const ex  = cx + Math.cos(mid)*ir;
-      const ey  = cy + Math.sin(mid)*ir;
+      // Posición del icono (más cerca del borde) y del label (más cerca del centro)
+      const irIcon  = n>6 ? 100 : 105;
+      const irLabel = n>6 ? 62  : 64;
+      const exI = cx + Math.cos(mid)*irIcon;
+      const eyI = cy + Math.sin(mid)*irIcon;
+      const exL = cx + Math.cos(mid)*irLabel;
+      const eyL = cy + Math.sin(mid)*irLabel;
 
       // Burbuja blanca detrás del icono
-      const bubbleR = n>6 ? 17 : 20;
+      const bubbleR = n>6 ? 16 : 19;
       ctx.save();
-      ctx.fillStyle='rgba(255,255,255,.25)';
-      ctx.beginPath(); ctx.arc(ex, ey-6, bubbleR, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,.28)';
+      ctx.beginPath(); ctx.arc(exI, eyI, bubbleR, 0, Math.PI*2); ctx.fill();
       ctx.restore();
 
-      // Icono: emoji nativo sin rotar (se lee mejor que rotado)
+      // Icono: emoji nativo sin rotar, pegado al borde exterior
       ctx.save();
-      ctx.font = `${n>6?'18':'21'}px serif`;
+      ctx.font = `${n>6?'17':'20'}px serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(items[i].icon, ex, ey-6);
+      ctx.fillText(items[i].icon, exI, eyI);
       ctx.restore();
 
-      // Label texto
+      // Label texto: zona propia cerca del centro, sin rotar, en negro/oscuro
       ctx.save();
-      ctx.translate(ex, ey);
-      ctx.rotate(mid + Math.PI/2);
-      ctx.shadowColor='rgba(0,0,0,.5)'; ctx.shadowBlur=4;
-      ctx.font = `800 ${n>6?'8':'9'}px "Bai Jamjuree",system-ui`;
-      ctx.fillStyle='#fff';
+      ctx.font = `800 ${n>6?'9':'10'}px "Bai Jamjuree",system-ui`;
+      ctx.fillStyle = 'rgba(20,20,20,.92)';
       ctx.textAlign='center'; ctx.textBaseline='middle';
       const words = items[i].label.split('/');
-      const lY = n>6 ? 10 : 12;
+      const lineH = n>6 ? 10 : 11;
       if (words.length===2) {
-        ctx.fillText(words[0].trim(), 0, lY);
-        ctx.fillText(words[1].trim(), 0, lY+11);
+        ctx.fillText(words[0].trim(), exL, eyL - lineH/2);
+        ctx.fillText(words[1].trim(), exL, eyL + lineH/2);
       } else {
-        ctx.fillText(items[i].label, 0, lY);
+        ctx.fillText(items[i].label, exL, eyL);
       }
       ctx.restore();
     }
