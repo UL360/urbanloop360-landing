@@ -4326,6 +4326,8 @@ const App = {
           }
           // Marcar como comunidad si no tiene source explícito
           if (!loop.source) loop.source = 'comunidad';
+          // Ocultar contenido marcado por reportes (salvo para el propio autor o admin)
+          if (loop.hidden && loop.authorId !== this._uid && !this._isAdmin()) return;
           // Solo loops públicos (visibility public o undefined) o del propio usuario
           if (loop.visibility === 'private' && loop.authorId !== this._uid) return;
           allLoops.push(loop);
@@ -4399,6 +4401,8 @@ const App = {
           flSnap.forEach(d => {
             const p = { ...d.data(), id: d.id };
             if (p.img === '[[base64]]') p.img = ''; // compatibilidad datos viejos
+            // Ocultar contenido marcado por reportes (salvo para el propio autor o admin)
+            if (p.hidden && p.authorId !== this._uid && p.uid !== this._uid && !this._isAdmin()) return;
             this._fotoPosts.push(p);
           });
           // Resolver imágenes en Firestore (marcador 'firestore:col/id')
@@ -5657,8 +5661,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     const liked = (App._likedFotos||new Set()).has(p.id);
     const buildHTML = (imgSrc) => `
-      <div id="fl-popup-inner" style="font-family:'Bai Jamjuree',sans-serif;width:215px;border-radius:12px;overflow:hidden;background:#1E1E26;box-shadow:0 8px 32px rgba(0,0,0,.7);">
+      <div id="fl-popup-inner" style="font-family:'Bai Jamjuree',sans-serif;width:215px;border-radius:12px;overflow:hidden;background:#1E1E26;box-shadow:0 8px 32px rgba(0,0,0,.7);position:relative;">
         ${thumbHtml(imgSrc)}
+        <button onclick="App._reportContent('${p.id}','fotoloop')" title="Reportar contenido"
+          style="position:absolute;top:6px;left:6px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.45);border:none;color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;">🚩</button>
         <div style="padding:10px 10px 10px;">
           <div style="font-size:13px;font-weight:800;color:#F0F0F8;line-height:1.3;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${emoji} ${App._esc(p.name || 'Foto Loop')}</div>
           <div style="font-size:10px;color:#9898B8;margin-bottom:10px;">${p.ciudad || ''} · ${p.cat || 'lugar'}</div>
@@ -13276,6 +13282,78 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
           Firestore → Indexes → Agregar: colección <code style="color:var(--or);">reports</code>, campos <code style="color:var(--or);">status ASC</code> + <code style="color:var(--or);">ts DESC</code>
         </div>
       </div>`;
+    }
+  },
+
+  // ── REPORTAR CONTENIDO (usuario) ──
+  _reportContent(targetId, targetType) {
+    if (!targetId) return;
+    // Mostrar sheet simple con motivo
+    const ov = document.createElement('div');
+    ov.id = 'report-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:400;display:flex;align-items:flex-end;justify-content:center;';
+    ov.innerHTML = `
+      <div style="background:var(--bg1);border-radius:20px 20px 0 0;width:100%;max-width:420px;padding:20px 18px 36px;">
+        <div style="width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 16px;"></div>
+        <div style="text-align:center;margin-bottom:16px;">
+          <div style="font-size:38px;margin-bottom:8px;">🚩</div>
+          <div style="font-family:var(--fH);font-size:17px;font-weight:800;color:var(--dk);">¿Por qué reportás esto?</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${['Contenido inapropiado','Spam o publicidad','Ofensivo o discriminatorio','Información falsa','Otro motivo'].map(reason => `
+            <button onclick="App._sendReport('${targetId}','${targetType}','${reason}')"
+              style="width:100%;padding:13px;border:0.5px solid var(--bd);border-radius:12px;background:var(--bg2);color:var(--dk);font-family:var(--fH);font-size:13px;font-weight:600;cursor:pointer;text-align:left;">
+              ${reason}
+            </button>`).join('')}
+          <button onclick="document.getElementById('report-overlay').remove();"
+            style="width:100%;padding:10px;border:none;background:transparent;color:var(--gr);font-size:13px;cursor:pointer;margin-top:4px;">
+            Cancelar
+          </button>
+        </div>
+      </div>`;
+    ov.addEventListener('click', e => { if(e.target===ov) ov.remove(); });
+    document.body.appendChild(ov);
+  },
+
+  async _sendReport(targetId, targetType, reason) {
+    document.getElementById('report-overlay')?.remove();
+    if (!this._db) { this.toast('❌ Sin conexión para reportar'); return; }
+
+    try {
+      await this._db.collection('reports').add({
+        targetId, targetType, reason,
+        reporterId: this._uid || 'anonimo',
+        reporterName: this._user?.displayName || 'Anónimo',
+        status: 'pending',
+        ts: Date.now(),
+      });
+
+      // Contar reportes acumulados para este contenido específico
+      const countSnap = await this._db.collection('reports')
+        .where('targetId','==',targetId)
+        .where('status','==','pending')
+        .get();
+      const count = countSnap.size;
+
+      // Auto-ocultar si llega a 3+ reportes pendientes
+      if (count >= 3) {
+        const col = {loop:'loops', fotoloop:'fotoloops', evento:'eventos', post:'feed_posts'}[targetType];
+        if (col) {
+          try {
+            await this._db.collection(col).doc(targetId).update({ hidden: true, hiddenReason: 'auto_reportes' });
+            // Reflejar en memoria local
+            if (targetType === 'loop') this.routes = this.routes.filter(r => r.id !== targetId);
+            if (targetType === 'fotoloop' && this._fotoPosts) this._fotoPosts = this._fotoPosts.filter(p => p.id !== targetId);
+          } catch(e) { console.warn('[autoHide]', e); }
+        }
+      }
+
+      this.toast('✅ Gracias, revisaremos este contenido.');
+      // Cerrar popup si está abierto
+      if (this._fotoPopup) { try { this._fotoPopup.remove(); } catch(e){} this._fotoPopup = null; }
+    } catch(e) {
+      console.error('[_sendReport]', e);
+      this.toast('❌ No se pudo enviar el reporte');
     }
   },
 
