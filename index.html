@@ -1720,10 +1720,12 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
 .layer-chip.muni     { border-color:#0F6E56; color:#0F6E56; background:#E1F5EE; }
 .layer-chip.com      { border-color:#534AB7; color:#534AB7; background:#EEEDFE; }
 .layer-chip.all      { border-color:var(--or); color:var(--or); background:var(--orL); }
+.layer-chip.foto     { border-color:#DB2777; color:#DB2777; background:#FCE7F3; }
 body.day .layer-chip { background:#FFFFFF; border-color:#DCDCEC; color:#44445A; }
 body.day .layer-chip.muni { background:#E1F5EE; border-color:#0F6E56; color:#0F6E56; }
 body.day .layer-chip.com  { background:#EEEDFE; border-color:#534AB7; color:#534AB7; }
 body.day .layer-chip.all  { background:var(--orL); border-color:var(--or); color:var(--or); }
+body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2777; }
 
 /* Badge municipal sobre las rutas */
 .badge-muni {
@@ -1922,8 +1924,8 @@ body.day .layer-chip.all  { background:var(--orL); border-color:var(--or); color
 
   <!-- ── SELECTOR DE CAPAS — flota sobre el mapa ── -->
   <div id="layer-selector"
-    style="position:absolute;bottom:88px;left:12px;z-index:10;
-           display:flex;gap:7px;padding:7px 10px;
+    style="position:absolute;bottom:88px;left:12px;right:12px;z-index:10;
+           display:flex;gap:6px;padding:7px 8px;overflow-x:auto;
            background:rgba(30,30,38,.82);backdrop-filter:blur(8px);
            border-radius:24px;border:0.5px solid rgba(255,255,255,.1);
            box-shadow:0 4px 20px rgba(0,0,0,.45);">
@@ -1933,6 +1935,8 @@ body.day .layer-chip.all  { background:var(--orL); border-color:var(--or); color
       onclick="App._setLayer('muni')" title="Solo loops de la ciudad">🏙️ Ciudad</button>
     <button id="lbtn-com"  class="layer-chip" aria-label="Mostrar loops de la comunidad" aria-pressed="false"
       onclick="App._setLayer('com')"  title="Solo loops de loopers">👟 Loopers</button>
+    <button id="lbtn-foto" class="layer-chip" aria-label="Mostrar solo FotoLoops" aria-pressed="false"
+      onclick="App._setLayer('foto')" title="Solo fotos geolocalizadas">📸 FotoLoop</button>
   </div>
 
   <!-- ── SEARCH BAR movida al menú lateral — se mantienen los ids para el JS ── -->
@@ -5836,33 +5840,51 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   _setLayer(mode) {
     this._layerMode = mode;
     // Actualizar estilos de chips
-    ['all','muni','com'].forEach(m => {
+    ['all','muni','com','foto'].forEach(m => {
       const btn = document.getElementById('lbtn-' + m);
       if (!btn) return;
       btn.className = 'layer-chip' + (m === mode ? ' ' + m : '');
     });
     this._applyLayer();
-    const labels = { all:'🔀 Todos los loops', muni:'🏛 Loops municipales', com:'👥 Loops de la comunidad' };
+    const labels = { all:'🔀 Todos los loops y fotos', muni:'🏛 Loops municipales', com:'👥 Loops de la comunidad', foto:'📸 Solo FotoLoops' };
     this.toast(labels[mode] || '');
   },
 
   _applyLayer() {
     const mode = this._layerMode;
     let visible = [];
+    let showLoops = true;
+    let showFotos = true;
+
     if (mode === 'muni') {
       visible = this.routes.filter(r => r.source === 'municipio');
+      showFotos = false;
     } else if (mode === 'com') {
       visible = this.routes.filter(r => r.source !== 'municipio');
+      showFotos = false;
+    } else if (mode === 'foto') {
+      visible = [];
+      showLoops = false;
     } else {
       visible = [...this.routes];
     }
-    // Mostrar u ocultar rutas en el mapa
+
+    // Mostrar u ocultar rutas (loops) en el mapa
     if (this._layers) {
       this.routes.forEach(r => {
-        const show = visible.find(v => v.id === r.id);
+        const show = showLoops && visible.find(v => v.id === r.id);
         this._setRouteVisible(r.id, !!show);
       });
     }
+
+    // Mostrar u ocultar markers de FotoLoop
+    (this._fotoMarkers || []).forEach(m => {
+      try {
+        const el = m.getElement ? m.getElement() : null;
+        if (el) el.style.display = showFotos ? '' : 'none';
+      } catch(e) {}
+    });
+
     // Refrescar cards con el subconjunto visible
     this._renderCards('', this._activeFilter || 'all', visible);
   },
