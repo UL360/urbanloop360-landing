@@ -3429,34 +3429,23 @@ body.day .layer-chip.all  { background:var(--orL); border-color:var(--or); color
     <div style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;text-transform:uppercase;margin-bottom:7px;">Etiqueta</div>
     <select id="fl-cat-select" class="fi" aria-label="Etiqueta del lugar" style="width:100%;margin-bottom:14px;" onchange="App._setFLCatSelect(this)">
       <option value="lugar">📍 Lugar</option>
-      <option value="gastro">🍽️ Gastro</option>
-      <option value="resto">🥩 Resto</option>
+      <option value="gastro">🍽️ Gastronomía</option>
+      <option value="bar">🍸 Bar y tragos</option>
       <option value="cafe">☕ Café</option>
-      <option value="vino">🍷 Vino</option>
-      <option value="cerveza">🍺 Cerveza</option>
-      <option value="coctel">🍸 Cóctel</option>
-      <option value="vineria">🍾 Viñería</option>
-      <option value="bar">🥂 Bar</option>
-      <option value="boliche">🪩 Boliche</option>
-      <option value="teatro">🎭 Teatro</option>
-      <option value="cine">🎬 Cine</option>
+      <option value="nocturno">🌙 Boliche/Nocturno</option>
+      <option value="cultura">🎭 Cultura</option>
+      <option value="arte">🎨 Arte callejero</option>
+      <option value="patrimonio">🏛️ Patrimonio e historia</option>
       <option value="musica">🎵 Música</option>
-      <option value="museo">🖼️ Museo</option>
-      <option value="arte">🎨 Arte</option>
-      <option value="naturaleza">🌿 Natural</option>
-      <option value="rio">🌊 Río</option>
+      <option value="naturaleza">🌿 Naturaleza</option>
       <option value="playa">🏖️ Playa</option>
-      <option value="parque">🌳 Parque</option>
-      <option value="plaza">🏛️ Plaza</option>
+      <option value="parque">🌳 Parques y plazas</option>
       <option value="pesca">🎣 Pesca</option>
       <option value="aventura">🧗 Aventura</option>
-      <option value="campo">🌾 Campo</option>
       <option value="deporte">⚽ Deporte</option>
-      <option value="ciclismo">🚴 Ciclismo</option>
-      <option value="nocturno">🌙 Noche</option>
-      <option value="perro">🐕 Pet</option>
-      <option value="foto">📸 Foto</option>
-      <option value="otro">✳️ Otro</option>
+      <option value="bienestar">🧘 Bienestar</option>
+      <option value="eventos">📅 Eventos</option>
+      <option value="perro">🐕 Mascotas</option>
     </select>
 
     <!-- Mapa de ubicación -->
@@ -5372,13 +5361,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       return isApproved || (isOwn && isPending);
     });
 
-    const FL_CATS = {
-      lugar:'📍',gastro:'🍽️',resto:'🥩',cafe:'☕',vino:'🍷',cerveza:'🍺',
-      coctel:'🍸',vineria:'🍾',bar:'🥂',boliche:'🪩',teatro:'🎭',cine:'🎬',
-      musica:'🎵',museo:'🖼️',arte:'🎨',naturaleza:'🌿',rio:'🌊',playa:'🏖️',
-      parque:'🌳',plaza:'🏛️',pesca:'🎣',aventura:'🧗',campo:'🌾',deporte:'⚽',
-      ciclismo:'🚴',nocturno:'🌙',perro:'🐕',foto:'📸',otro:'✳️'
-    };
+    const FL_CATS = {lugar:'📍',gastro:'🍽️',bar:'🍸',cafe:'☕',nocturno:'🌙',cultura:'🎭',arte:'🎨',patrimonio:'🏛️',musica:'🎵',naturaleza:'🌿',playa:'🏖️',parque:'🌳',pesca:'🎣',aventura:'🧗',deporte:'⚽',bienestar:'🧘',eventos:'📅',perro:'🐕'};
 
     // Si no hay supercluster disponible o pocos puntos, dibujar directo
     if (!window.Supercluster || visible.length < 10) {
@@ -5645,13 +5628,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     // Cerrar popup anterior si existe
     if (this._fotoPopup) { try { this._fotoPopup.remove(); } catch(e){} this._fotoPopup = null; }
 
-    const FL_CATS = {
-      lugar:'📍',gastro:'🍽️',resto:'🥩',cafe:'☕',vino:'🍷',cerveza:'🍺',
-      coctel:'🍸',vineria:'🍾',bar:'🥂',boliche:'🪩',teatro:'🎭',cine:'🎬',
-      musica:'🎵',museo:'🖼️',arte:'🎨',naturaleza:'🌿',rio:'🌊',playa:'🏖️',
-      parque:'🌳',plaza:'🏛️',pesca:'🎣',aventura:'🧗',campo:'🌾',deporte:'⚽',
-      ciclismo:'🚴',nocturno:'🌙',perro:'🐕',foto:'📸',otro:'✳️'
-    };
+    const FL_CATS = {lugar:'📍',gastro:'🍽️',bar:'🍸',cafe:'☕',nocturno:'🌙',cultura:'🎭',arte:'🎨',patrimonio:'🏛️',musica:'🎵',naturaleza:'🌿',playa:'🏖️',parque:'🌳',pesca:'🎣',aventura:'🧗',deporte:'⚽',bienestar:'🧘',eventos:'📅',perro:'🐕'};
     const emoji = FL_CATS[p.cat] || p.emoji || '📍';
 
     // Placeholder mientras resuelve imagen
@@ -7008,21 +6985,17 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const cityId = _flLoc.ciudad || this._luCity || 'La Paz';
 
     const catEmojis = {
-      lugar:'📍', gastro:'🍽️', resto:'🥩', cafe:'☕', vino:'🍷', cerveza:'🍺',
-      coctel:'🍸', vineria:'🍾', bar:'🥂', boliche:'🪩', teatro:'🎭', cine:'🎬',
-      musica:'🎵', museo:'🖼️', arte:'🎨', naturaleza:'🌿', rio:'🌊', playa:'🏖️',
-      parque:'🌳', plaza:'🏛️', pesca:'🎣', aventura:'🧗', campo:'🌾', deporte:'⚽',
-      ciclismo:'🚴', nocturno:'🌙', perro:'🐕', foto:'📸', otro:'✳️'
+      lugar:'📍', gastro:'🍽️', bar:'🍸', cafe:'☕', nocturno:'🌙',
+      cultura:'🎭', arte:'🎨', patrimonio:'🏛️', musica:'🎵', naturaleza:'🌿',
+      playa:'🏖️', parque:'🌳', pesca:'🎣', aventura:'🧗', deporte:'⚽',
+      bienestar:'🧘', eventos:'📅', perro:'🐕'
     };
     const catColors = {
-      lugar:'#FF5F00', gastro:'#DB2777', resto:'#B91C1C', cafe:'#92400E',
-      vino:'#7C2D8E', cerveza:'#B45309', coctel:'#0E7490', vineria:'#6B21A8',
-      bar:'#0F766E', boliche:'#4F46E5', teatro:'#9333EA', cine:'#1D4ED8',
-      musica:'#BE185D', museo:'#9333EA', arte:'#C026D3', naturaleza:'#059669',
-      rio:'#0891B2', playa:'#0284C7', parque:'#16A34A', plaza:'#7C3AED',
-      pesca:'#0369A1', aventura:'#EA580C', campo:'#65A30D', deporte:'#DC2626',
-      ciclismo:'#D97706', nocturno:'#4F46E5', perro:'#CA8A04',
-      foto:'#0F766E', otro:'#6B7280'
+      lugar:'#FF5F00', gastro:'#DB2777', bar:'#0F766E', cafe:'#92400E',
+      nocturno:'#4F46E5', cultura:'#9333EA', arte:'#C026D3', patrimonio:'#7C3AED',
+      musica:'#BE185D', naturaleza:'#059669', playa:'#0284C7', parque:'#16A34A',
+      pesca:'#0369A1', aventura:'#EA580C', deporte:'#DC2626', bienestar:'#0891B2',
+      eventos:'#D97706', perro:'#CA8A04'
     };
     const cat = this._fotoLoopCat;
     const emoji = catEmojis[cat] || '📍';
@@ -7348,7 +7321,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     }
     const img  = resolvedImg || null;
     const city = r.cityId || r.ciudad || 'La Paz';
-    const FL_CATS = { lugar:'📍',gastro:'🍽️',resto:'🥩',cafe:'☕',vino:'🍷',cerveza:'🍺',coctel:'🍸',vineria:'🍾',bar:'🥂',boliche:'🪩',teatro:'🎭',cine:'🎬',musica:'🎵',museo:'🖼️',arte:'🎨',naturaleza:'🌿',rio:'🌊',playa:'🏖️',parque:'🌳',plaza:'🏛️',pesca:'🎣',aventura:'🧗',campo:'🌾',deporte:'⚽',ciclismo:'🚴',nocturno:'🌙',perro:'🐕',foto:'📸',otro:'✳️' };
+    const FL_CATS = {lugar:'📍',gastro:'🍽️',bar:'🍸',cafe:'☕',nocturno:'🌙',cultura:'🎭',arte:'🎨',patrimonio:'🏛️',musica:'🎵',naturaleza:'🌿',playa:'🏖️',parque:'🌳',pesca:'🎣',aventura:'🧗',deporte:'⚽',bienestar:'🧘',eventos:'📅',perro:'🐕'};
     const catIcon = FL_CATS[r.cat||r.type] || r.emoji || '🔄';
 
     // Crear/reusar modal
@@ -7408,7 +7381,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   },
 
   _showImgViewerSpinner(r) {
-    const FL_CATS = { lugar:'📍',gastro:'🍽️',resto:'🥩',cafe:'☕',vino:'🍷',cerveza:'🍺',coctel:'🍸',vineria:'🍾',bar:'🥂',boliche:'🪩',teatro:'🎭',cine:'🎬',musica:'🎵',museo:'🖼️',arte:'🎨',naturaleza:'🌿',rio:'🌊',playa:'🏖️',parque:'🌳',plaza:'🏛️',pesca:'🎣',aventura:'🧗',campo:'🌾',deporte:'⚽',ciclismo:'🚴',nocturno:'🌙',perro:'🐕',foto:'📸',otro:'✳️' };
+    const FL_CATS = {lugar:'📍',gastro:'🍽️',bar:'🍸',cafe:'☕',nocturno:'🌙',cultura:'🎭',arte:'🎨',patrimonio:'🏛️',musica:'🎵',naturaleza:'🌿',playa:'🏖️',parque:'🌳',pesca:'🎣',aventura:'🧗',deporte:'⚽',bienestar:'🧘',eventos:'📅',perro:'🐕'};
     const catIcon = FL_CATS[r.cat||r.type] || r.emoji || '📸';
     let modal = document.getElementById('img-viewer-modal');
     if (!modal) {
@@ -8386,7 +8359,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if (!list) return;
     if (body) body.style.padding = '0';
 
-    const FL_CATS = {lugar:'📍',gastro:'🍽️',resto:'🥩',cafe:'☕',vino:'🍷',cerveza:'🍺',coctel:'🍸',vineria:'🍾',bar:'🥂',boliche:'🪩',teatro:'🎭',cine:'🎬',musica:'🎵',museo:'🖼️',arte:'🎨',naturaleza:'🌿',rio:'🌊',playa:'🏖️',parque:'🌳',plaza:'🏛️',pesca:'🎣',aventura:'🧗',campo:'🌾',deporte:'⚽',ciclismo:'🚴',nocturno:'🌙',perro:'🐕',foto:'📸',otro:'✳️'};
+    const FL_CATS = {lugar:'📍',gastro:'🍽️',bar:'🍸',cafe:'☕',nocturno:'🌙',cultura:'🎭',arte:'🎨',patrimonio:'🏛️',musica:'🎵',naturaleza:'🌿',playa:'🏖️',parque:'🌳',pesca:'🎣',aventura:'🧗',deporte:'⚽',bienestar:'🧘',eventos:'📅',perro:'🐕'};
 
     const normCity = c => (c||'').replace(/ciudad aut[oó]noma de /i,'').replace(/partido de /i,'').trim().toLowerCase();
     const uCityLu = normCity(city);
@@ -9289,7 +9262,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
   // ─── Tab: FOTO LOOPS de la ciudad ───
   _renderComFoto(body, city) {
-    const FL_CATS = {lugar:'📍',gastro:'🍽️',resto:'🥩',cafe:'☕',vino:'🍷',cerveza:'🍺',coctel:'🍸',vineria:'🍾',bar:'🥂',boliche:'🪩',teatro:'🎭',cine:'🎬',musica:'🎵',museo:'🖼️',arte:'🎨',naturaleza:'🌿',rio:'🌊',playa:'🏖️',parque:'🌳',plaza:'🏛️',pesca:'🎣',aventura:'🧗',campo:'🌾',deporte:'⚽',ciclismo:'🚴',nocturno:'🌙',perro:'🐕',foto:'📸',otro:'✳️'};
+    const FL_CATS = {lugar:'📍',gastro:'🍽️',bar:'🍸',cafe:'☕',nocturno:'🌙',cultura:'🎭',arte:'🎨',patrimonio:'🏛️',musica:'🎵',naturaleza:'🌿',playa:'🏖️',parque:'🌳',pesca:'🎣',aventura:'🧗',deporte:'⚽',bienestar:'🧘',eventos:'📅',perro:'🐕'};
     // FotoLoops: mostrar TODOS los aprobados (red social, no filtro local)
     // + los del usuario actual aunque estén pendientes (preview inmediato)
     const myUid = this._auth && this._auth.currentUser ? this._auth.currentUser.uid : null;
@@ -12142,7 +12115,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const m     = Math.floor(this.grabSecs/60);
     const s     = this.grabSecs % 60;
     const t     = this.grabType||'running';
-    const emoji = {running:'🏃',mtb:'🚵',ciclismo:'🚴',caminata:'🥾',paseo:'🌳',perro:'🐕',pesca:'🎣',atardecer:'🌅',gastro:'🍽️',trad:'☕',relax:'🧘',salidas:'🎉',trabajo:'💼',vacaciones:'🏖️',lugar:'📍',resto:'🥩',cafe:'☕',vino:'🍷',cerveza:'🍺',coctel:'🍸',vineria:'🍾',bar:'🥂',boliche:'🪩',teatro:'🎭',cine:'🎬',musica:'🎵',museo:'🖼️',arte:'🎨',naturaleza:'🌿',rio:'🌊',playa:'🏖️',parque:'🌳',plaza:'🏛️',aventura:'🧗',campo:'🌾',deporte:'⚽',nocturno:'🌙',foto:'📸',otro:'✳️'}[t]||'🔄';
+    const emoji = {running:'🏃',mtb:'🚵',ciclismo:'🚴',caminata:'🥾',paseo:'🌳',perro:'🐕',pesca:'🎣',atardecer:'🌅',gastro:'🍽️',trad:'☕',relax:'🧘',salidas:'🎉',trabajo:'💼',vacaciones:'🏖️',lugar:'📍',cafe:'☕',bar:'🍸',nocturno:'🌙',cultura:'🎭',arte:'🎨',patrimonio:'🏛️',musica:'🎵',naturaleza:'🌿',playa:'🏖️',parque:'🌳',aventura:'🧗',deporte:'⚽',bienestar:'🧘',eventos:'📅',otra:'🗺️'}[t]||'🔄';
     const autoName = `${emoji} Loop ${new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'short'})}`;
 
     // Crear modal dinámico
@@ -12271,7 +12244,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     loc.ciudad = city; loc.provincia = grabProv; loc.pais = grabPais;
 
     const t = this.grabType||'running';
-    const types={running:{emoji:'🏃',color:'#7C3AED',badge:'bsport'},mtb:{emoji:'🚵',color:'#16A34A',badge:'bmtb'},ciclismo:{emoji:'🚴',color:'#0891B2',badge:'brelax'},caminata:{emoji:'🥾',color:'#D97706',badge:'btrab'},paseo:{emoji:'🌳',color:'#059669',badge:'bg'},perro:{emoji:'🐕',color:'#D97706',badge:'btrab'},pesca:{emoji:'🎣',color:'#0E7490',badge:'btrab'},atardecer:{emoji:'🌅',color:'#7C3AED',badge:'ba'},gastro:{emoji:'🍽️',color:'#B45309',badge:'bg'},trad:{emoji:'☕',color:'#92400E',badge:'bg'},relax:{emoji:'🧘',color:'#0891B2',badge:'brelax'},salidas:{emoji:'🎉',color:'#7C3AED',badge:'bsport'},trabajo:{emoji:'💼',color:'#D97706',badge:'btrab'},vacaciones:{emoji:'🏖️',color:'#DB2777',badge:'ba'},lugar:{emoji:'📍',color:'#FF5F00',badge:'bg'},resto:{emoji:'🥩',color:'#B91C1C',badge:'bg'},cafe:{emoji:'☕',color:'#92400E',badge:'bg'},vino:{emoji:'🍷',color:'#7C2D8E',badge:'bg'},cerveza:{emoji:'🍺',color:'#B45309',badge:'bg'},coctel:{emoji:'🍸',color:'#0E7490',badge:'bg'},vineria:{emoji:'🍾',color:'#6B21A8',badge:'bg'},bar:{emoji:'🥂',color:'#0F766E',badge:'bg'},boliche:{emoji:'🪩',color:'#4F46E5',badge:'ba'},teatro:{emoji:'🎭',color:'#9333EA',badge:'ba'},cine:{emoji:'🎬',color:'#1D4ED8',badge:'ba'},musica:{emoji:'🎵',color:'#BE185D',badge:'ba'},museo:{emoji:'🖼️',color:'#9333EA',badge:'ba'},arte:{emoji:'🎨',color:'#C026D3',badge:'ba'},naturaleza:{emoji:'🌿',color:'#059669',badge:'bg'},rio:{emoji:'🌊',color:'#0891B2',badge:'bg'},playa:{emoji:'🏖️',color:'#0284C7',badge:'bg'},parque:{emoji:'🌳',color:'#16A34A',badge:'bg'},plaza:{emoji:'🏛️',color:'#7C3AED',badge:'bg'},aventura:{emoji:'🧗',color:'#EA580C',badge:'bsport'},campo:{emoji:'🌾',color:'#65A30D',badge:'bg'},deporte:{emoji:'⚽',color:'#DC2626',badge:'bsport'},nocturno:{emoji:'🌙',color:'#4F46E5',badge:'ba'},foto:{emoji:'📸',color:'#0F766E',badge:'ba'},otro:{emoji:'✳️',color:'#6B7280',badge:'bg'}};
+    const types={running:{emoji:'🏃',color:'#7C3AED',badge:'bsport'},mtb:{emoji:'🚵',color:'#16A34A',badge:'bmtb'},ciclismo:{emoji:'🚴',color:'#0891B2',badge:'brelax'},caminata:{emoji:'🥾',color:'#D97706',badge:'btrab'},paseo:{emoji:'🌳',color:'#059669',badge:'bg'},perro:{emoji:'🐕',color:'#D97706',badge:'btrab'},pesca:{emoji:'🎣',color:'#0E7490',badge:'btrab'},atardecer:{emoji:'🌅',color:'#7C3AED',badge:'ba'},gastro:{emoji:'🍽️',color:'#B45309',badge:'bg'},trad:{emoji:'☕',color:'#92400E',badge:'bg'},relax:{emoji:'🧘',color:'#0891B2',badge:'brelax'},salidas:{emoji:'🎉',color:'#7C3AED',badge:'bsport'},trabajo:{emoji:'💼',color:'#D97706',badge:'btrab'},vacaciones:{emoji:'🏖️',color:'#DB2777',badge:'ba'},lugar:{emoji:'📍',color:'#FF5F00',badge:'bg'},cafe:{emoji:'☕',color:'#92400E',badge:'bg'},bar:{emoji:'🍸',color:'#0F766E',badge:'bg'},nocturno:{emoji:'🌙',color:'#4F46E5',badge:'ba'},cultura:{emoji:'🎭',color:'#9333EA',badge:'ba'},arte:{emoji:'🎨',color:'#C026D3',badge:'ba'},patrimonio:{emoji:'🏛️',color:'#7C3AED',badge:'ba'},musica:{emoji:'🎵',color:'#BE185D',badge:'ba'},naturaleza:{emoji:'🌿',color:'#059669',badge:'bg'},playa:{emoji:'🏖️',color:'#0284C7',badge:'bg'},parque:{emoji:'🌳',color:'#16A34A',badge:'bg'},aventura:{emoji:'🧗',color:'#EA580C',badge:'bsport'},deporte:{emoji:'⚽',color:'#DC2626',badge:'bsport'},bienestar:{emoji:'🧘',color:'#0891B2',badge:'brelax'},eventos:{emoji:'📅',color:'#D97706',badge:'btrab'},otra:{emoji:'🗺️',color:'#6B7280',badge:'bt'}};
     const c = types[t]||{emoji:'🏃',color:'#7C3AED',badge:'bsport'};
     const dist = this._calcDist(this.grabPts);
     const m = Math.floor(this.grabSecs/60), s = this.grabSecs%60;
