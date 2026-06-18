@@ -1727,6 +1727,15 @@ body.day .layer-chip.com  { background:#EEEDFE; border-color:#534AB7; color:#534
 body.day .layer-chip.all  { background:var(--orL); border-color:var(--or); color:var(--or); }
 body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2777; }
 
+/* Mobile: achicar chips para que los 4 entren sin scroll */
+@media (max-width:768px) {
+  #layer-selector { gap:4px; padding:6px 6px; bottom:84px; }
+  .layer-chip { height:30px; padding:0 9px; font-size:11px; gap:3px; }
+}
+@media (max-width:360px) {
+  .layer-chip { padding:0 7px; font-size:10px; }
+}
+
 /* Badge municipal sobre las rutas */
 .badge-muni {
   display:inline-flex; align-items:center; gap:3px;
