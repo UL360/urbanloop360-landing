@@ -1708,14 +1708,13 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
 .explorar-prov-chip { padding:5px 13px;border-radius:20px;font-size:12px;color:var(--md);background:var(--wh);border:0.5px solid var(--bd);cursor:pointer;transition:all .2s; }
 .explorar-prov-chip:hover { border-color:var(--or);color:var(--or); }
 
-/* ═══ SELECTOR DE CAPAS ═══ */
+/* ═══ SELECTOR DE CAPAS (dentro del mini-menú) ═══ */
 .layer-chip {
-  flex-shrink:0; height:32px; padding:0 13px; border-radius:20px;
+  height:38px; padding:0 14px; border-radius:14px;
   border:1.5px solid var(--bd); background:var(--wh);
-  font-family:var(--fB); font-size:12px; font-weight:600; color:var(--md);
-  cursor:pointer; display:flex; align-items:center; gap:5px;
-  transition:all .2s; white-space:nowrap;
-  box-shadow:0 1px 6px rgba(0,0,0,.06);
+  font-family:var(--fB); font-size:13px; font-weight:600; color:var(--md);
+  cursor:pointer; display:flex; align-items:center; gap:8px;
+  transition:all .2s; white-space:nowrap; width:100%; text-align:left;
 }
 .layer-chip.muni     { border-color:#0F6E56; color:#0F6E56; background:#E1F5EE; }
 .layer-chip.com      { border-color:#534AB7; color:#534AB7; background:#EEEDFE; }
@@ -1727,14 +1726,7 @@ body.day .layer-chip.com  { background:#EEEDFE; border-color:#534AB7; color:#534
 body.day .layer-chip.all  { background:var(--orL); border-color:var(--or); color:var(--or); }
 body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2777; }
 
-/* Mobile: achicar chips para que los 4 entren sin scroll */
-@media (max-width:768px) {
-  #layer-selector { gap:4px; padding:6px 6px; bottom:84px; }
-  .layer-chip { height:30px; padding:0 9px; font-size:11px; gap:3px; }
-}
-@media (max-width:360px) {
-  .layer-chip { padding:0 7px; font-size:10px; }
-}
+#layer-fab.open { transform:rotate(180deg); }
 
 /* Badge municipal sobre las rutas */
 .badge-muni {
@@ -1931,20 +1923,31 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <button onclick="App._clearSelection()" style="background:none;border:none;color:#9CA3AF;cursor:pointer;padding:0 0 0 4px;font-size:18px;line-height:1;display:flex;align-items:center;flex-shrink:0;" aria-label="Cerrar">✕</button>
   </div>
 
-  <!-- ── SELECTOR DE CAPAS — flota sobre el mapa ── -->
-  <div id="layer-selector"
-    style="position:absolute;bottom:88px;left:12px;right:12px;z-index:10;
-           display:flex;gap:6px;padding:7px 8px;overflow-x:auto;
-           background:rgba(30,30,38,.82);backdrop-filter:blur(8px);
-           border-radius:24px;border:0.5px solid rgba(255,255,255,.1);
-           box-shadow:0 4px 20px rgba(0,0,0,.45);">
-    <button id="lbtn-all"  class="layer-chip all" aria-label="Mostrar todos los loops" aria-pressed="true"
+  <!-- ── BOTÓN FLOTANTE DE CAPAS — abre mini-menú ── -->
+  <button id="layer-fab" onclick="App._toggleLayerMenu()"
+    aria-label="Elegir qué mostrar en el mapa" aria-haspopup="true" aria-expanded="false"
+    style="position:absolute;bottom:88px;left:12px;z-index:10;
+           width:50px;height:50px;border-radius:50%;border:0.5px solid rgba(255,255,255,.15);
+           background:var(--or);color:#fff;font-size:22px;cursor:pointer;
+           display:flex;align-items:center;justify-content:center;
+           box-shadow:0 4px 20px rgba(255,95,0,.45);transition:transform .2s;">
+    🔀
+  </button>
+
+  <!-- ── MINI-MENÚ DE CAPAS — oculto por defecto ── -->
+  <div id="layer-menu"
+    style="position:absolute;bottom:144px;left:12px;z-index:11;
+           display:none;flex-direction:column;gap:6px;padding:8px;
+           background:rgba(30,30,38,.92);backdrop-filter:blur(10px);
+           border-radius:18px;border:0.5px solid rgba(255,255,255,.1);
+           box-shadow:0 8px 28px rgba(0,0,0,.5);min-width:168px;">
+    <button id="lbtn-all"  class="layer-chip all" aria-pressed="true"
       onclick="App._setLayer('all')"  title="Ver todos los loops">🔀 Todos</button>
-    <button id="lbtn-muni" class="layer-chip" aria-label="Mostrar loops municipales" aria-pressed="false"
+    <button id="lbtn-muni" class="layer-chip" aria-pressed="false"
       onclick="App._setLayer('muni')" title="Solo loops de la ciudad">🏙️ Ciudad</button>
-    <button id="lbtn-com"  class="layer-chip" aria-label="Mostrar loops de la comunidad" aria-pressed="false"
+    <button id="lbtn-com"  class="layer-chip" aria-pressed="false"
       onclick="App._setLayer('com')"  title="Solo loops de loopers">👟 Loopers</button>
-    <button id="lbtn-foto" class="layer-chip" aria-label="Mostrar solo FotoLoops" aria-pressed="false"
+    <button id="lbtn-foto" class="layer-chip" aria-pressed="false"
       onclick="App._setLayer('foto')" title="Solo fotos geolocalizadas">📸 FotoLoop</button>
   </div>
 
@@ -5846,6 +5849,16 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   routesCom:  [],        // loops cargados de loops (comunidad)
   _cmVisibility: 'public', // 'private' | 'public' | 'pending'
 
+  _toggleLayerMenu() {
+    const menu = document.getElementById('layer-menu');
+    const fab  = document.getElementById('layer-fab');
+    if (!menu || !fab) return;
+    const isOpen = menu.style.display === 'flex';
+    menu.style.display = isOpen ? 'none' : 'flex';
+    fab.classList.toggle('open', !isOpen);
+    fab.setAttribute('aria-expanded', String(!isOpen));
+  },
+
   _setLayer(mode) {
     this._layerMode = mode;
     // Actualizar estilos de chips
@@ -5854,6 +5867,15 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       if (!btn) return;
       btn.className = 'layer-chip' + (m === mode ? ' ' + m : '');
     });
+    // Actualizar ícono del botón flotante según la capa activa
+    const fab = document.getElementById('layer-fab');
+    const fabIcons = { all:'🔀', muni:'🏙️', com:'👟', foto:'📸' };
+    if (fab) fab.textContent = fabIcons[mode] || '🔀';
+    // Cerrar el mini-menú al elegir
+    const menu = document.getElementById('layer-menu');
+    if (menu) menu.style.display = 'none';
+    if (fab) { fab.classList.remove('open'); fab.setAttribute('aria-expanded','false'); }
+
     this._applyLayer();
     const labels = { all:'🔀 Todos los loops y fotos', muni:'🏛 Loops municipales', com:'👥 Loops de la comunidad', foto:'📸 Solo FotoLoops' };
     this.toast(labels[mode] || '');
