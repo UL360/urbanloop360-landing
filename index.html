@@ -782,12 +782,26 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
   background:#FF5F00;
   flex-shrink:0;
 }
+/* Mobile: imagen vertical */
 .home-hero-img img {
   width:100%;
   aspect-ratio:2/3;
   display:block;
   object-fit:cover;
   object-position:center top;
+}
+/* Desktop: imagen horizontal */
+@media (min-width:768px) {
+  .home-hero-img img.home-img-mobile { display:none; }
+  .home-hero-img img.home-img-desktop {
+    display:block;
+    aspect-ratio:16/7;
+    object-position:center center;
+  }
+}
+@media (max-width:767px) {
+  .home-hero-img img.home-img-desktop { display:none; }
+  .home-hero-img img.home-img-mobile { display:block; }
 }
 .home-hero-img::after {
   content:''; position:absolute;
@@ -1779,9 +1793,20 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
         </div>
         <div class="home-avatar" id="home-avatar" onclick="App.sideNav('profile')" style="border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.15);">👤</div>
       </div>
-      <!-- Imagen principal SIN hero encima -->
+      <!-- Imagen mobile (vertical) -->
       <img
-        src="https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/7bbb8010-ce20-49d8-b000-36686d53db3b.png"
+        class="home-img-mobile"
+        src="https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/7bbb8010-ce20-49d8-b000-36686d53db3b%20(1).png"
+        alt=""
+        aria-hidden="true"
+        crossorigin="anonymous"
+        style="color:transparent;"
+        onerror="this.style.opacity='0'">
+      <!-- Imagen desktop (horizontal) -->
+      <img
+        class="home-img-desktop"
+        id="home-img-desktop"
+        src="https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/ChatGPT%20Image%2011%20jun%202026%2C%2012_21_26%20p.m..png"
         alt=""
         aria-hidden="true"
         crossorigin="anonymous"
