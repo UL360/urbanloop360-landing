@@ -1644,8 +1644,6 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
 /* Safe area for notch phones (iPhone X+) */
 
 
-#fab-loop{transition:transform .3s ease;}
-#fab-loop:hover{filter:brightness(1.1);}
 #mini-cards::-webkit-scrollbar{display:none;}
 #mini-cards{scrollbar-width:none;}
 
@@ -1726,8 +1724,6 @@ body.day .layer-chip.muni { background:#E1F5EE; border-color:#0F6E56; color:#0F6
 body.day .layer-chip.com  { background:#EEEDFE; border-color:#534AB7; color:#534AB7; }
 body.day .layer-chip.all  { background:var(--orL); border-color:var(--or); color:var(--or); }
 body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2777; }
-
-#layer-fab.open { transform:rotate(180deg); }
 
 /* Badge municipal sobre las rutas */
 .badge-muni {
@@ -1924,20 +1920,58 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <button onclick="App._clearSelection()" style="background:none;border:none;color:#9CA3AF;cursor:pointer;padding:0 0 0 4px;font-size:18px;line-height:1;display:flex;align-items:center;flex-shrink:0;" aria-label="Cerrar">✕</button>
   </div>
 
-  <!-- ── BOTÓN FLOTANTE DE CAPAS — abre mini-menú ── -->
-  <button id="layer-fab" onclick="App._toggleLayerMenu()"
-    aria-label="Elegir qué mostrar en el mapa" aria-haspopup="true" aria-expanded="false"
-    style="position:absolute;bottom:160px;right:12px;z-index:10;
-           width:50px;height:50px;border-radius:50%;border:2px solid var(--or);
-           background:#1a1a1a;color:#fff;font-size:22px;cursor:pointer;
-           display:flex;align-items:center;justify-content:center;
-           box-shadow:0 4px 20px rgba(0,0,0,.5);transition:transform .2s;">
-    🔀
-  </button>
+
+  <!-- ── PILL FLOTANTE DE ACCIONES (glass, expande hacia la izquierda) ── -->
+  <div id="map-pill"
+    style="position:absolute;bottom:28px;right:12px;z-index:15;
+           display:none;flex-direction:column;gap:6px;padding:7px;
+           background:rgba(20,26,32,.82);backdrop-filter:blur(14px);
+           border:1px solid rgba(255,255,255,.12);border-radius:28px;
+           box-shadow:0 4px 24px rgba(0,0,0,.5);">
+
+    <!-- Botón 1: Opciones de loop -->
+    <div id="pill-layers" onclick="App._pillAction('layers')"
+      style="display:flex;align-items:center;border-radius:22px;cursor:pointer;
+             background:#FF5F00;overflow:hidden;transition:background .2s;">
+      <div style="width:38px;height:38px;border-radius:50%;flex-shrink:0;
+                  background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+      </div>
+      <span id="pill-lbl-layers" style="font-size:13px;font-weight:600;color:#fff;white-space:nowrap;
+            max-width:0;opacity:0;overflow:hidden;padding-right:0;
+            transition:max-width .35s cubic-bezier(.4,0,.2,1),opacity .25s,padding .35s;">Opciones</span>
+    </div>
+
+    <!-- Botón 2: FotoLoop -->
+    <div id="pill-foto" onclick="App._pillAction('foto')"
+      style="display:flex;align-items:center;border-radius:22px;cursor:pointer;
+             background:transparent;overflow:hidden;transition:background .2s;">
+      <div style="width:38px;height:38px;border-radius:50%;flex-shrink:0;
+                  background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="6" width="13" height="10" rx="2"/><circle cx="8.5" cy="11" r="2.2"/><path d="M5.5 6V4.5C5.5 4 5.9 3.5 6.5 3.5H10.5C11.1 3.5 11.5 4 11.5 4.5V6"/><path d="M19 8c-1.7 0-3 1.3-3 3 0 2.5 3 7 3 7s3-4.5 3-7c0-1.7-1.3-3-3-3z" fill="rgba(255,255,255,.75)" stroke="none"/><circle cx="19" cy="10.8" r="1.5" fill="rgba(20,26,32,1)" stroke="none"/></svg>
+      </div>
+      <span id="pill-lbl-foto" style="font-size:13px;font-weight:600;color:rgba(255,255,255,.75);white-space:nowrap;
+            max-width:0;opacity:0;overflow:hidden;padding-right:0;
+            transition:max-width .35s cubic-bezier(.4,0,.2,1),opacity .25s,padding .35s;">FotoLoop</span>
+    </div>
+
+    <!-- Botón 3: + Loop -->
+    <div id="pill-loop" onclick="App._pillAction('loop')"
+      style="display:flex;align-items:center;border-radius:22px;cursor:pointer;
+             background:transparent;overflow:hidden;transition:background .2s;">
+      <div style="width:38px;height:38px;border-radius:50%;flex-shrink:0;
+                  background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+      <span id="pill-lbl-loop" style="font-size:13px;font-weight:600;color:rgba(255,255,255,.75);white-space:nowrap;
+            max-width:0;opacity:0;overflow:hidden;padding-right:0;
+            transition:max-width .35s cubic-bezier(.4,0,.2,1),opacity .25s,padding .35s;">+ Loop</span>
+    </div>
+  </div>
 
   <!-- ── MINI-MENÚ DE CAPAS — oculto por defecto ── -->
   <div id="layer-menu"
-    style="position:absolute;bottom:216px;right:12px;z-index:11;
+    style="position:absolute;bottom:180px;right:12px;z-index:16;
            display:none;flex-direction:column;gap:6px;padding:8px;
            background:rgba(20,20,24,.96);backdrop-filter:blur(10px);
            border-radius:18px;border:0.5px solid rgba(255,255,255,.1);
@@ -3619,38 +3653,6 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 </div>
 
 <!-- ════════════ FAB FotoLoop (circular) ════════════ -->
-<div id="fab-fotoloop" onclick="App.openFotoLoop()"
-  style="position:fixed;bottom:92px;right:20px;z-index:50;
-         width:52px;height:52px;background:#FF5F00;border-radius:50%;
-         display:flex;align-items:center;justify-content:center;
-         box-shadow:0 6px 24px rgba(255,95,0,.55);
-         cursor:pointer;transition:all .2s;"
-  onmouseenter="this.style.filter='brightness(1.1)'"
-  onmouseleave="this.style.filter=''"
-  title="FotoLoop">
-  <svg width="34" height="34" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="1" y="7" width="18" height="13" rx="2.2" stroke="white" stroke-width="1.8" fill="none"/>
-    <circle cx="10" cy="13.5" r="4" stroke="white" stroke-width="1.8" fill="none"/>
-    <circle cx="10" cy="13.5" r="1.5" fill="white"/>
-    <path d="M7 7V5.5C7 5 7.4 4.5 8 4.5H12C12.6 4.5 13 5 13 5.5V7" stroke="white" stroke-width="1.5" fill="none"/>
-    <path d="M23.5 8C20.4 8 18 10.4 18 13.5C18 17.8 23.5 25 23.5 25C23.5 25 29 17.8 29 13.5C29 10.4 26.6 8 23.5 8Z" fill="white"/>
-    <circle cx="23.5" cy="13.2" r="2.8" fill="#FF5F00"/>
-  </svg>
-</div>
-
-<!-- ════════════ FAB +Loop ════════════ -->
-<div id="fab-loop" onclick="App.openLoopModal()"
-  style="position:fixed;bottom:28px;right:20px;z-index:50;
-         height:52px;background:#FF5F00;border-radius:26px;
-         display:flex;align-items:center;justify-content:center;
-         gap:8px;padding:0 22px;
-         box-shadow:0 6px 24px rgba(255,95,0,.55);
-         cursor:pointer;transition:all .2s;
-         font-family:var(--fH);font-size:15px;font-weight:700;color:white;">
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-  Loop
-</div>
-
 <!-- ════════════ MODAL CREAR LOOP ════════════ -->
 <div id="loop-modal-overlay" onclick="App.closeLoopModal()"
   style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:95;backdrop-filter:blur(3px);"></div>
@@ -4663,13 +4665,12 @@ const App = {
     if (target) target.classList.add('active');
 
     const navScreens = ['explore','loops','loops-urbanos','saved','profile','comunidad','eventos','ranking','grabar','detail','admin','explorar-ciudades','ciudad-remota','crear-manual'];
-    const fab = document.getElementById('fab-loop');
-    const fabFoto = document.getElementById('fab-fotoloop');
     const showFab = sid === 'explore';
-    if (fab) fab.style.display = showFab ? 'flex' : 'none';
-    if (fabFoto) fabFoto.style.display = showFab ? 'flex' : 'none';
+    const pill = document.getElementById('map-pill');
+    if (pill) pill.style.display = showFab ? 'flex' : 'none';
+    if (!showFab) { App._pillExpanded = false; App._pillCollapse && App._pillCollapse(); }
     const bnav = document.getElementById('bnav');
-    if (bnav) bnav.style.display = 'none'; // siempre oculto, usamos menú
+    if (bnav) bnav.style.display = 'none';
 
     if (sid==='explore') {
       if (!this.mainMap) setTimeout(()=>this._initMainMap(),180);
@@ -5889,14 +5890,55 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   routesCom:  [],        // loops cargados de loops (comunidad)
   _cmVisibility: 'public', // 'private' | 'public' | 'pending'
 
+  _pillExpanded: false,
+
+  _pillExpand() {
+    this._pillExpanded = true;
+    ['layers','foto','loop'].forEach(k => {
+      const lbl = document.getElementById('pill-lbl-' + k);
+      if (lbl) { lbl.style.maxWidth = '140px'; lbl.style.opacity = '1'; lbl.style.paddingRight = '14px'; }
+    });
+    setTimeout(() => {
+      const close = (e) => {
+        const pill = document.getElementById('map-pill');
+        const menu = document.getElementById('layer-menu');
+        if (pill && !pill.contains(e.target) && !(menu && menu.contains(e.target))) {
+          this._pillCollapse();
+        }
+        document.removeEventListener('click', close, true);
+      };
+      document.addEventListener('click', close, true);
+    }, 0);
+  },
+
+  _pillCollapse() {
+    this._pillExpanded = false;
+    ['layers','foto','loop'].forEach(k => {
+      const lbl = document.getElementById('pill-lbl-' + k);
+      if (lbl) { lbl.style.maxWidth = '0'; lbl.style.opacity = '0'; lbl.style.paddingRight = '0'; }
+    });
+    const menu = document.getElementById('layer-menu');
+    if (menu) menu.style.display = 'none';
+  },
+
+  _pillAction(action) {
+    if (!this._pillExpanded) { this._pillExpand(); return; }
+    if (action === 'layers') {
+      this._toggleLayerMenu();
+    } else if (action === 'foto') {
+      this._pillCollapse();
+      this.openFotoLoop();
+    } else if (action === 'loop') {
+      this._pillCollapse();
+      this.openLoopModal();
+    }
+  },
+
   _toggleLayerMenu() {
     const menu = document.getElementById('layer-menu');
-    const fab  = document.getElementById('layer-fab');
-    if (!menu || !fab) return;
+    if (!menu) return;
     const isOpen = menu.style.display === 'flex';
     menu.style.display = isOpen ? 'none' : 'flex';
-    fab.classList.toggle('open', !isOpen);
-    fab.setAttribute('aria-expanded', String(!isOpen));
   },
 
   _setLayer(mode) {
@@ -5907,14 +5949,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       if (!btn) return;
       btn.className = 'layer-chip' + (m === mode ? ' ' + m : '');
     });
-    // Actualizar ícono del botón flotante según la capa activa
-    const fab = document.getElementById('layer-fab');
-    const fabIcons = { all:'🔀', muni:'🏙️', com:'👟', foto:'📸' };
-    if (fab) fab.textContent = fabIcons[mode] || '🔀';
     // Cerrar el mini-menú al elegir
     const menu = document.getElementById('layer-menu');
     if (menu) menu.style.display = 'none';
-    if (fab) { fab.classList.remove('open'); fab.setAttribute('aria-expanded','false'); }
+    this._pillCollapse();
 
     this._applyLayer();
     const labels = { all:'🔀 Todos los loops y fotos', muni:'🏛 Loops municipales', com:'👥 Loops de la comunidad', foto:'📸 Solo FotoLoops' };
