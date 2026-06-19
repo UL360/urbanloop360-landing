@@ -5007,7 +5007,8 @@ const App = {
         });
 
         if (this._locCentered) {
-          this.mainMap.flyTo({ center: [lng, lat], zoom: 16, duration: 900 });
+          // No hacemos flyTo automático: dejamos el mapa mostrando toda la ciudad
+          // con todos los loops y fotoloops visibles, en vez de centrar en el usuario.
           this._locCentered = false;
         }
         // Detectar ciudad real del usuario y actualizar filtros
