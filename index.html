@@ -1009,6 +1009,7 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
   body.sb-rail-mode #ciudad-remota,
   body.sb-rail-mode #home,
   body.sb-rail-mode #actividades,
+  body.sb-rail-mode #eventos,
   body.sb-rail-mode #crear-manual { margin-left: var(--side-w-rail) !important; left: var(--side-w-rail) !important; right: 0 !important; width: auto !important; }
 
   body.sb-open-mode #explore,
@@ -2852,7 +2853,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 
 <!-- ════════════ EVENTOS ════════════ -->
 <div id="eventos" class="screen" style="background:var(--bg0);">
-  <div style="flex-shrink:0;background:var(--wh);border-bottom:0.5px solid var(--bd);">
+  <div style="flex-shrink:0;background:var(--wh);border-bottom:0.5px solid var(--bd);position:relative;">
     <div style="padding:12px 14px 10px;display:flex;align-items:center;gap:10px;">
       <button class="scr-back-btn" onclick="App.go('explore')">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--md)" stroke-width="2.2"><path d="M19 12H5m0 0l7-7m-7 7l7 7"/></svg>
@@ -2866,26 +2867,45 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
         Crear
       </button>
     </div>
-    <!-- Filtro tipo -->
-    <div style="display:flex;gap:6px;overflow-x:auto;padding:0 14px 10px;scrollbar-width:none;">
-      <div class="com-city-chip on" data-evtype="all" onclick="App.evSetFilter('all',this)">Todos</div>
-      <div class="com-city-chip" data-evtype="salida" onclick="App.evSetFilter('salida',this)">🏃 Salidas</div>
-      <div class="com-city-chip" data-evtype="desafio" onclick="App.evSetFilter('desafio',this)">🏆 Desafíos</div>
-      <div class="com-city-chip" data-evtype="foto" onclick="App.evSetFilter('foto',this)">📸 Fotográficos</div>
-      <div class="com-city-chip" data-evtype="perro" onclick="App.evSetFilter('perro',this)">🐕 Pet-friendly</div>
-      <div class="com-city-chip" data-evtype="encuentro" onclick="App.evSetFilter('encuentro',this)">☕ Encuentros</div>
-      <div class="com-city-chip" data-evtype="musical" onclick="App.evSetFilter('musical',this)">🎶 Musicales</div>
-      <div class="com-city-chip" data-evtype="cultural" onclick="App.evSetFilter('cultural',this)">🎭 Culturales</div>
-      <div class="com-city-chip" data-evtype="festival" onclick="App.evSetFilter('festival',this)">🎉 Festivales</div>
-      <div class="com-city-chip" data-evtype="feria" onclick="App.evSetFilter('feria',this)">🛍️ Ferias/Expo</div>
-      <div class="com-city-chip" data-evtype="bienestar" onclick="App.evSetFilter('bienestar',this)">🧘 Bienestar</div>
-      <div class="com-city-chip" data-evtype="familia" onclick="App.evSetFilter('familia',this)">🧒 Familia/Kids</div>
-      <div class="com-city-chip" data-evtype="rural" onclick="App.evSetFilter('rural',this)">🐄 Rural</div>
-      <div class="com-city-chip" data-evtype="mirador" onclick="App.evSetFilter('mirador',this)">🔭 Miradores/Vistas</div>
-      <div class="com-city-chip" data-evtype="innovacion" onclick="App.evSetFilter('innovacion',this)">💡 Innovación/Tech</div>
-      <div class="com-city-chip" data-evtype="comunidad" onclick="App.evSetFilter('comunidad',this)">🤝 Comunidad</div>
+    <!-- Filtro tipo — botón FAB + menú desplegable -->
+    <div style="padding:0 14px 10px;display:flex;align-items:center;gap:10px;">
+      <button id="ev-filter-fab" onclick="App._toggleEvFilterMenu()"
+        aria-label="Filtrar eventos por tipo" aria-haspopup="true" aria-expanded="false"
+        style="display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:20px;border:1.5px solid var(--or);
+               background:var(--or);color:#fff;font-size:13px;font-weight:700;cursor:pointer;
+               font-family:var(--fB);white-space:nowrap;transition:all .2s;box-shadow:0 2px 10px rgba(255,95,0,.3);">
+        <span id="ev-filter-fab-icon">🗂️</span>
+        <span id="ev-filter-fab-label">Todos</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" id="ev-filter-caret" style="transition:transform .2s;"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
     </div>
   </div>
+
+  <!-- Menú desplegable de filtros — fuera del header para no ser recortado -->
+  <div id="ev-filter-menu"
+    style="display:none;position:fixed;z-index:300;
+           flex-direction:column;gap:5px;padding:8px;
+           background:rgba(30,30,38,.97);backdrop-filter:blur(14px);
+           border-radius:18px;border:0.5px solid rgba(255,255,255,.12);
+           box-shadow:0 8px 32px rgba(0,0,0,.6);min-width:200px;max-height:70vh;overflow-y:auto;">
+    <button class="layer-chip all" data-evtype="all"        onclick="App.evSetFilter('all',this)">🗂️ Todos</button>
+    <button class="layer-chip"     data-evtype="salida"     onclick="App.evSetFilter('salida',this)">🏃 Salidas</button>
+    <button class="layer-chip"     data-evtype="desafio"    onclick="App.evSetFilter('desafio',this)">🏆 Desafíos</button>
+    <button class="layer-chip"     data-evtype="foto"       onclick="App.evSetFilter('foto',this)">📸 Fotográficos</button>
+    <button class="layer-chip"     data-evtype="perro"      onclick="App.evSetFilter('perro',this)">🐕 Pet-friendly</button>
+    <button class="layer-chip"     data-evtype="encuentro"  onclick="App.evSetFilter('encuentro',this)">☕ Encuentros</button>
+    <button class="layer-chip"     data-evtype="musical"    onclick="App.evSetFilter('musical',this)">🎶 Musicales</button>
+    <button class="layer-chip"     data-evtype="cultural"   onclick="App.evSetFilter('cultural',this)">🎭 Culturales</button>
+    <button class="layer-chip"     data-evtype="festival"   onclick="App.evSetFilter('festival',this)">🎉 Festivales</button>
+    <button class="layer-chip"     data-evtype="feria"      onclick="App.evSetFilter('feria',this)">🛍️ Ferias/Expo</button>
+    <button class="layer-chip"     data-evtype="bienestar"  onclick="App.evSetFilter('bienestar',this)">🧘 Bienestar</button>
+    <button class="layer-chip"     data-evtype="familia"    onclick="App.evSetFilter('familia',this)">🧒 Familia/Kids</button>
+    <button class="layer-chip"     data-evtype="rural"      onclick="App.evSetFilter('rural',this)">🐄 Rural</button>
+    <button class="layer-chip"     data-evtype="mirador"    onclick="App.evSetFilter('mirador',this)">🔭 Miradores/Vistas</button>
+    <button class="layer-chip"     data-evtype="innovacion" onclick="App.evSetFilter('innovacion',this)">💡 Innovación/Tech</button>
+    <button class="layer-chip"     data-evtype="comunidad"  onclick="App.evSetFilter('comunidad',this)">🤝 Comunidad</button>
+  </div>
+
   <div id="eventos-body" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px;"></div>
 </div>
 
@@ -9707,10 +9727,70 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   // ── EVENTOS ──
   _evFilter: 'all',
 
+  _toggleEvFilterMenu() {
+    const menu  = document.getElementById('ev-filter-menu');
+    const fab   = document.getElementById('ev-filter-fab');
+    const caret = document.getElementById('ev-filter-caret');
+    if (!menu || !fab) return;
+    const isOpen = menu.style.display === 'flex';
+    if (isOpen) {
+      menu.style.display = 'none';
+      if (caret) caret.style.transform = '';
+      fab.setAttribute('aria-expanded', 'false');
+    } else {
+      const r = fab.getBoundingClientRect();
+      menu.style.top  = (r.bottom + 6) + 'px';
+      menu.style.left = r.left + 'px';
+      menu.style.display = 'flex';
+      const mw = menu.offsetWidth;
+      if (r.left + mw > window.innerWidth - 8) {
+        menu.style.left = Math.max(8, r.right - mw) + 'px';
+      }
+      if (caret) caret.style.transform = 'rotate(180deg)';
+      fab.setAttribute('aria-expanded', 'true');
+      setTimeout(() => {
+        const close = (e) => {
+          if (!menu.contains(e.target) && e.target !== fab && !fab.contains(e.target)) {
+            menu.style.display = 'none';
+            if (caret) caret.style.transform = '';
+            fab.setAttribute('aria-expanded','false');
+          }
+          document.removeEventListener('click', close, true);
+        };
+        document.addEventListener('click', close, true);
+      }, 0);
+    }
+  },
+
   evSetFilter(type, el) {
     this._evFilter = type;
     document.querySelectorAll('[data-evtype]').forEach(c => c.classList.remove('on'));
     if (el) el.classList.add('on');
+    // Actualizar label y emoji del botón FAB
+    const EV_LABELS = {
+      all:'Todos', salida:'Salidas', desafio:'Desafíos', foto:'Fotográficos',
+      perro:'Pet-friendly', encuentro:'Encuentros', musical:'Musicales',
+      cultural:'Culturales', festival:'Festivales', feria:'Ferias/Expo',
+      bienestar:'Bienestar', familia:'Familia/Kids', rural:'Rural',
+      mirador:'Miradores/Vistas', innovacion:'Innovación/Tech', comunidad:'Comunidad'
+    };
+    const EV_ICONS = {
+      all:'🗂️', salida:'🏃', desafio:'🏆', foto:'📸', perro:'🐕',
+      encuentro:'☕', musical:'🎶', cultural:'🎭', festival:'🎉', feria:'🛍️',
+      bienestar:'🧘', familia:'🧒', rural:'🐄', mirador:'🔭',
+      innovacion:'💡', comunidad:'🤝'
+    };
+    const fabLabel = document.getElementById('ev-filter-fab-label');
+    const fabIcon  = document.getElementById('ev-filter-fab-icon');
+    const caret    = document.getElementById('ev-filter-caret');
+    if (fabLabel) fabLabel.textContent = EV_LABELS[type] || 'Todos';
+    if (fabIcon)  fabIcon.textContent  = EV_ICONS[type]  || '🗂️';
+    // Cerrar menú
+    const menu = document.getElementById('ev-filter-menu');
+    if (menu) menu.style.display = 'none';
+    if (caret) caret.style.transform = '';
+    const fab = document.getElementById('ev-filter-fab');
+    if (fab) fab.setAttribute('aria-expanded','false');
     this._renderEventos();
   },
 
