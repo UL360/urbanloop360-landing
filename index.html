@@ -775,41 +775,34 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
 .home-brand span { color:var(--or); }
 .home-avatar { width:38px;height:38px;border-radius:50%;background:var(--orL);border:2px solid var(--or);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--or);font-family:var(--fH);cursor:pointer;flex-shrink:0; }
 
-/* ── LOOP HERO BANNER ── */
+/* ── LOOP HERO BANNER — mapa estilizado ── */
 .home-hero-img {
   position:relative;
   width:100%;
-  background:#FF5F00;
+  height:300px;
+  background:
+    linear-gradient(rgba(20,24,28,.0) 0%, rgba(20,24,28,.0) 60%, #14181c 100%),
+    #14181c;
   flex-shrink:0;
+  overflow:hidden;
 }
-/* Mobile: imagen vertical */
-.home-hero-img img {
-  width:100%;
-  aspect-ratio:2/3;
-  display:block;
-  object-fit:cover;
-  object-position:center top;
-}
-/* Desktop: imagen horizontal */
 @media (min-width:768px) {
-  .home-hero-img img.home-img-mobile { display:none; }
-  .home-hero-img img.home-img-desktop {
-    display:block;
-    aspect-ratio:16/7;
-    object-position:center center;
-  }
+  .home-hero-img { height:220px; }
 }
-@media (max-width:767px) {
-  .home-hero-img img.home-img-desktop { display:none; }
-  .home-hero-img img.home-img-mobile { display:block; }
+.home-hero-map-svg {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  display:block;
 }
 .home-hero-img::after {
   content:''; position:absolute;
-  bottom:0; left:0; right:0; height:160px;
+  bottom:0; left:0; right:0; height:140px;
   background:linear-gradient(to bottom,
     transparent 0%,
-    rgba(255,95,0,.5) 55%,
-    #FF5F00 100%
+    rgba(20,24,28,.55) 55%,
+    #14181c 100%
   );
   pointer-events:none;
 }
@@ -818,7 +811,7 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
   z-index:2;
   padding:12px 16px 28px;
   display:grid; grid-template-columns:1fr 1fr; gap:12px;
-  background:#FF5F00;
+  background:#14181c;
   margin-top:-2px;
 }
 .hero-btn-primary {
@@ -1784,7 +1777,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 <div id="home" class="screen" style="background:var(--bg0);">
   <div class="home-wrap">
 
-    <!-- ══ HERO IMAGEN FULL-WIDTH ══ -->
+    <!-- ══ HERO MAPA ESTILIZADO FULL-WIDTH (decorativo) ══ -->
     <div class="home-hero-img">
       <!-- Topbar flotante -->
       <div style="position:absolute;top:0;left:0;right:0;z-index:3;padding:14px 14px 0;display:flex;align-items:center;justify-content:space-between;">
@@ -1793,25 +1786,44 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
         </div>
         <div class="home-avatar" id="home-avatar" onclick="App.sideNav('profile')" style="border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.15);">👤</div>
       </div>
-      <!-- Imagen mobile (vertical) -->
-      <img
-        class="home-img-mobile"
-        src="https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/7bbb8010-ce20-49d8-b000-36686d53db3b%20(1).png"
-        alt=""
-        aria-hidden="true"
-        crossorigin="anonymous"
-        style="color:transparent;"
-        onerror="this.style.opacity='0'">
-      <!-- Imagen desktop (horizontal) -->
-      <img
-        class="home-img-desktop"
-        id="home-img-desktop"
-        src="https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/ChatGPT%20Image%2011%20jun%202026%2C%2012_21_26%20p.m..png"
-        alt=""
-        aria-hidden="true"
-        crossorigin="anonymous"
-        style="color:transparent;"
-        onerror="this.style.opacity='0'">
+
+      <!-- Mapa decorativo SVG (sin foto) -->
+      <svg class="home-hero-map-svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <rect width="400" height="300" fill="#14181c"/>
+        <g stroke="#222a32" stroke-width="1" opacity="0.9">
+          <line x1="0" y1="40"  x2="400" y2="40"/>
+          <line x1="0" y1="90"  x2="400" y2="90"/>
+          <line x1="0" y1="140" x2="400" y2="140"/>
+          <line x1="0" y1="190" x2="400" y2="190"/>
+          <line x1="0" y1="240" x2="400" y2="240"/>
+          <line x1="50"  y1="0" x2="50"  y2="300"/>
+          <line x1="120" y1="0" x2="120" y2="300"/>
+          <line x1="190" y1="0" x2="190" y2="300"/>
+          <line x1="260" y1="0" x2="260" y2="300"/>
+          <line x1="330" y1="0" x2="330" y2="300"/>
+        </g>
+        <g fill="#1d2329" opacity="0.8">
+          <rect x="20" y="60" width="22" height="30" rx="2"/>
+          <rect x="160" y="100" width="28" height="34" rx="2"/>
+          <rect x="290" y="50" width="24" height="28" rx="2"/>
+          <rect x="60" y="180" width="26" height="32" rx="2"/>
+          <rect x="320" y="190" width="24" height="30" rx="2"/>
+          <rect x="220" y="200" width="20" height="26" rx="2"/>
+        </g>
+        <path d="M40 230 C 90 235, 110 170, 150 165 S 220 110, 260 105 S 330 70, 360 60"
+          fill="none" stroke="#FF5F00" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="1 11" />
+        <circle cx="40" cy="230" r="7" fill="#fff" stroke="#FF5F00" stroke-width="3"/>
+        <circle cx="360" cy="60" r="7" fill="#FF5F00"/>
+        <circle cx="150" cy="165" r="4" fill="#FF5F00" opacity="0.85"/>
+        <circle cx="260" cy="105" r="4" fill="#FF5F00" opacity="0.85"/>
+      </svg>
+
+      <!-- Texto sobre el mapa -->
+      <div style="position:absolute;left:18px;bottom:148px;z-index:2;">
+        <div style="font-family:var(--fH);font-size:20px;font-weight:800;color:#fff;line-height:1.15;">Urban <span style="color:#FF5F00;">Loop</span> 360°</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.65);margin-top:2px;display:flex;align-items:center;gap:4px;">📍 La Paz, Entre Ríos</div>
+      </div>
+
       <!-- Solo gradiente sutil + dos botones -->
       <div class="home-hero-btns">
         <button class="hero-btn-ghost" onclick="App.sideNav('explore')">
@@ -2060,9 +2072,6 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 
     <!-- PRINCIPAL -->
     <span class="sb-section-label">Principal</span>
-    <button class="sb-nav-btn" id="sb-btn-home" onclick="App.sideNav('home')" aria-label="Inicio" role="menuitem">
-      <span class="sb-icon">🏠</span><span class="sb-label">Inicio</span>
-    </button>
     <button class="sb-nav-btn" id="sb-btn-explore" onclick="App.sideNav('explore')" aria-label="Explorar mapa" role="menuitem">
       <span class="sb-icon">🗺️</span><span class="sb-label">Mapa</span>
     </button>
@@ -3844,12 +3853,11 @@ const App = {
 
   _hideSplash() {
     const sp = document.getElementById('splash');
-    if (!sp) { this.go('home'); return; }
+    if (!sp) { this.go('explore'); return; }
     sp.style.opacity = '0';
     sp.style.pointerEvents = 'none';
     setTimeout(() => {
-      this.go('home');
-      this._renderHome();
+      this.go('explore');
       // Mostrar menu-btn ahora que el splash terminó
       const mb = document.getElementById('menu-btn');
       if (mb) mb.classList.remove('hidden-splash');
