@@ -2874,6 +2874,16 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       <div class="com-city-chip" data-evtype="foto" onclick="App.evSetFilter('foto',this)">📸 Fotográficos</div>
       <div class="com-city-chip" data-evtype="perro" onclick="App.evSetFilter('perro',this)">🐕 Pet-friendly</div>
       <div class="com-city-chip" data-evtype="encuentro" onclick="App.evSetFilter('encuentro',this)">☕ Encuentros</div>
+      <div class="com-city-chip" data-evtype="musical" onclick="App.evSetFilter('musical',this)">🎶 Musicales</div>
+      <div class="com-city-chip" data-evtype="cultural" onclick="App.evSetFilter('cultural',this)">🎭 Culturales</div>
+      <div class="com-city-chip" data-evtype="festival" onclick="App.evSetFilter('festival',this)">🎉 Festivales</div>
+      <div class="com-city-chip" data-evtype="feria" onclick="App.evSetFilter('feria',this)">🛍️ Ferias/Expo</div>
+      <div class="com-city-chip" data-evtype="bienestar" onclick="App.evSetFilter('bienestar',this)">🧘 Bienestar</div>
+      <div class="com-city-chip" data-evtype="familia" onclick="App.evSetFilter('familia',this)">🧒 Familia/Kids</div>
+      <div class="com-city-chip" data-evtype="rural" onclick="App.evSetFilter('rural',this)">🐄 Rural</div>
+      <div class="com-city-chip" data-evtype="mirador" onclick="App.evSetFilter('mirador',this)">🔭 Miradores/Vistas</div>
+      <div class="com-city-chip" data-evtype="innovacion" onclick="App.evSetFilter('innovacion',this)">💡 Innovación/Tech</div>
+      <div class="com-city-chip" data-evtype="comunidad" onclick="App.evSetFilter('comunidad',this)">🤝 Comunidad</div>
     </div>
   </div>
   <div id="eventos-body" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px;"></div>
@@ -2896,6 +2906,16 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       <div class="ev-type-btn" data-t="perro" onclick="App.evSelectType('perro',this)">🐕 Con mascotas</div>
       <div class="ev-type-btn" data-t="encuentro" onclick="App.evSelectType('encuentro',this)">☕ Encuentro</div>
       <div class="ev-type-btn" data-t="estreno" onclick="App.evSelectType('estreno',this)">🆕 Estreno de loop</div>
+      <div class="ev-type-btn" data-t="musical" onclick="App.evSelectType('musical',this)">🎶 Musical</div>
+      <div class="ev-type-btn" data-t="cultural" onclick="App.evSelectType('cultural',this)">🎭 Cultural</div>
+      <div class="ev-type-btn" data-t="festival" onclick="App.evSelectType('festival',this)">🎉 Festival</div>
+      <div class="ev-type-btn" data-t="feria" onclick="App.evSelectType('feria',this)">🛍️ Feria/Expo</div>
+      <div class="ev-type-btn" data-t="bienestar" onclick="App.evSelectType('bienestar',this)">🧘 Bienestar</div>
+      <div class="ev-type-btn" data-t="familia" onclick="App.evSelectType('familia',this)">🧒 Familia/Kids</div>
+      <div class="ev-type-btn" data-t="rural" onclick="App.evSelectType('rural',this)">🐄 Rural</div>
+      <div class="ev-type-btn" data-t="mirador" onclick="App.evSelectType('mirador',this)">🔭 Mirador/Vista</div>
+      <div class="ev-type-btn" data-t="innovacion" onclick="App.evSelectType('innovacion',this)">💡 Innovación/Tech</div>
+      <div class="ev-type-btn" data-t="comunidad" onclick="App.evSelectType('comunidad',this)">🤝 Comunidad</div>
     </div>
     <!-- Nombre -->
     <div class="fg" style="margin-bottom:12px;">
@@ -9825,8 +9845,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if (!name)  { this.toast('Poné un nombre al evento'); return; }
     if (!fecha) { this.toast('Elegí una fecha'); return; }
 
-    const EV_EMOJI = { salida:'🏃',desafio:'🏆',foto:'📸',perro:'🐕',encuentro:'☕',estreno:'🆕' };
-    const EV_COLOR = { salida:'#FF5F00',desafio:'#F59E0B',foto:'#7B2F9E',perro:'#10B981',encuentro:'#3B82F6',estreno:'#EC4899' };
+    const EV_EMOJI = { salida:'🏃',desafio:'🏆',foto:'📸',perro:'🐕',encuentro:'☕',estreno:'🆕',musical:'🎶',cultural:'🎭',festival:'🎉',feria:'🛍️',bienestar:'🧘',familia:'🧒',rural:'🐄',mirador:'🔭',innovacion:'💡',comunidad:'🤝' };
+    const EV_COLOR = { salida:'#FF5F00',desafio:'#F59E0B',foto:'#7B2F9E',perro:'#10B981',encuentro:'#3B82F6',estreno:'#EC4899',musical:'#8B5CF6',cultural:'#DB2777',festival:'#F97316',feria:'#0891B2',bienestar:'#059669',familia:'#F59E0B',rural:'#92400E',mirador:'#0284C7',innovacion:'#6366F1',comunidad:'#16A34A' };
 
     const btn = document.getElementById('ev-save-btn');
     if (btn) { btn.textContent = '☁️ Guardando en nube...'; btn.disabled = true; }
