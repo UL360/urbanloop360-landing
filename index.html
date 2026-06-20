@@ -4914,7 +4914,7 @@ const App = {
       this._drawFotoStopsOnMap();   // ← marcadores de fotostops + fotoloops
       this._drawNegociosOnMap();        // ← negocios activos
       this._renderCards('', this._activeFilter);
-      this._initCityNotif();
+      // this._initCityNotif();  // ← popup "Novedad" desactivado por ahora
       this._startGPSTracking();
       this._maybeShowFirstVisitHint();   // ← onboarding: pulso + tooltip, solo 1ra vez
     });
@@ -4924,44 +4924,165 @@ const App = {
     this.mainMap.on('zoomend',   () => App._showNavDelay());
   },
 
-  // ── ONBOARDING: pulso + tooltip en el primer ingreso al mapa ──
-  _maybeShowFirstVisitHint() {
+  // ── ONBOARDING: recorrido animado del logo + pulso/tooltip fijo ──
+  _resetOnboardingHint() {
+    try { localStorage.removeItem('ul360_seen_map_hint_v2'); } catch(e) {}
+    console.log('[onboarding] flag reseteado — recargá la página o entrá al mapa de nuevo');
+  },
+
+  _maybeShowFirstVisitHint(retry) {
     try {
-      if (localStorage.getItem('ul360_seen_map_hint')) return;
+      if (localStorage.getItem('ul360_seen_map_hint_v2')) return;
     } catch(e) {}
-    if (!this.routes || !this.routes.length) return;
-
-    // Elegir el loop destacado: el de más likes, o el primero disponible
-    const target = [...this.routes].sort((a,b) => (b.likes||0) - (a.likes||0))[0];
-    if (!target || !target.pts || !target.pts.length) return;
-
-    const pt = target.pts[0];
-    const lat = Array.isArray(pt) ? pt[0] : pt.lat;
-    const lng = Array.isArray(pt) ? pt[1] : pt.lng;
 
     const wrap = document.getElementById('main-map');
-    if (!wrap) return;
+    if (!wrap) { console.log('[onboarding] #main-map no existe'); return; }
 
-    // Contenedor del overlay (pulso + tooltip), posicionado sobre el mapa
-    const hint = document.createElement('div');
-    hint.id = 'map-first-hint';
-    hint.style.cssText = 'position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:70;';
-    hint.innerHTML = `
-      <div id="mfh-pulse" style="position:absolute;width:24px;height:24px;border-radius:50%;
-           border:2px solid #FF5F00;transform:translate(-50%,-50%);opacity:0;
-           animation:mfhPulse 2.2s ease-out infinite;"></div>
-      <div id="mfh-tooltip" style="position:absolute;transform:translate(-50%,calc(-100% - 24px));
-           background:rgba(255,255,255,.97);border-radius:14px;padding:10px 14px;max-width:200px;
-           box-shadow:0 6px 22px rgba(0,0,0,.4);opacity:0;transition:opacity .4s ease, transform .4s ease;
-           font-family:var(--fB);font-size:13px;font-weight:600;color:#1a1a1a;text-align:center;">
-        👆 Tocá un loop para ver el recorrido
-        <div style="position:absolute;left:50%;bottom:-6px;width:12px;height:12px;
-             background:rgba(255,255,255,.97);transform:translateX(-50%) rotate(45deg);"></div>
-      </div>`;
+    retry = retry || 0;
+    const dataNotReady = (this._fotoPosts === undefined) || !this.routes || !this.routes.length;
+    if (dataNotReady && retry < 10) {
+      setTimeout(() => this._maybeShowFirstVisitHint(retry + 1), 500);
+      return;
+    }
+
+    console.log('[onboarding] routes:', (this.routes||[]).length, 'fotoPosts:', (this._fotoPosts||[]).length);
+
     wrap.style.position = wrap.style.position || 'relative';
-    wrap.appendChild(hint);
 
-    // Inyectar keyframes del pulso una sola vez
+    // Loop elegido en el Admin como demo de bienvenida (botón "Usar como Demo")
+    const demoLoop = (this.routes||[]).find(r => r.isDemoLoop && r.pts && r.pts.length >= 2);
+
+    if (demoLoop) {
+      this._runDemoLoopAnimation(demoLoop, () => this._showFirstVisitPulseHint(wrap));
+    } else {
+      // Sin loop demo configurado: vamos directo al pulso/tooltip
+      this._showFirstVisitPulseHint(wrap);
+    }
+  },
+
+  // ── Paso 1: el logo recorre la línea del loop demo (3-4s, una sola vez) ──
+  _runDemoLoopAnimation(loop, onDone) {
+    if (!this.mainMap) { onDone(); return; }
+    const coords = loop.pts.map(p => Array.isArray(p) ? [p[1], p[0]] : [p.lng, p.lat]);
+    if (coords.length < 2) { onDone(); return; }
+
+    // Encuadrar el loop demo para que se vea completo durante el recorrido
+    const lngs = coords.map(c=>c[0]), lats = coords.map(c=>c[1]);
+    try {
+      this.mainMap.fitBounds(
+        [[Math.min(...lngs),Math.min(...lats)],[Math.max(...lngs),Math.max(...lats)]],
+        { padding: 70, maxZoom: 16, duration: 600 }
+      );
+    } catch(e) {}
+
+    const wrap = document.getElementById('main-map');
+    const logoEl = document.createElement('img');
+    logoEl.src = 'https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/LOGO%20SOLO.png';
+    logoEl.alt = '';
+    logoEl.style.cssText = 'position:absolute;width:34px;height:34px;border-radius:50%;'
+      + 'box-shadow:0 3px 14px rgba(0,0,0,.5),0 0 0 3px #FF5F00;background:#fff;object-fit:cover;'
+      + 'transform:translate(-50%,-50%);pointer-events:none;z-index:75;opacity:0;transition:opacity .25s ease;';
+    wrap.style.position = wrap.style.position || 'relative';
+    wrap.appendChild(logoEl);
+
+    // Distancia acumulada por segmento, para interpolar a velocidad pareja
+    const segLens = [];
+    let total = 0;
+    for (let i = 1; i < coords.length; i++) {
+      const d = Math.hypot(coords[i][0]-coords[i-1][0], coords[i][1]-coords[i-1][1]);
+      segLens.push(d);
+      total += d;
+    }
+    if (total === 0) { logoEl.remove(); onDone(); return; }
+
+    const DURATION = 3400; // 3.4s de recorrido
+    let startTs = null;
+    let cancelled = false;
+
+    const pointAt = (frac) => {
+      let target = frac * total, acc = 0;
+      for (let i = 0; i < segLens.length; i++) {
+        if (acc + segLens[i] >= target || i === segLens.length - 1) {
+          const segFrac = segLens[i] > 0 ? (target - acc) / segLens[i] : 0;
+          const a = coords[i], b = coords[i+1];
+          return [a[0] + (b[0]-a[0])*segFrac, a[1] + (b[1]-a[1])*segFrac];
+        }
+        acc += segLens[i];
+      }
+      return coords[coords.length-1];
+    };
+
+    const step = (ts) => {
+      if (cancelled || !this.mainMap) return;
+      if (!startTs) startTs = ts;
+      const frac = Math.min(1, (ts - startTs) / DURATION);
+      const [lng, lat] = pointAt(frac);
+      const p = this.mainMap.project([lng, lat]);
+      logoEl.style.left = p.x + 'px';
+      logoEl.style.top  = p.y + 'px';
+      if (logoEl.style.opacity !== '1') logoEl.style.opacity = '1';
+      if (frac < 1) {
+        requestAnimationFrame(step);
+      } else {
+        setTimeout(() => {
+          logoEl.style.opacity = '0';
+          setTimeout(() => { logoEl.remove(); onDone(); }, 300);
+        }, 250);
+      }
+    };
+    requestAnimationFrame(step);
+
+    // Si el usuario toca el mapa mientras el logo recorre, cortamos la demo
+    const skip = () => {
+      if (cancelled) return;
+      cancelled = true;
+      logoEl.remove();
+      this.mainMap.off('click', skip);
+      this.mainMap.off('touchstart', skip);
+      onDone();
+    };
+    this.mainMap.on('click', skip);
+    this.mainMap.on('touchstart', skip);
+  },
+
+  // ── Paso 2: pulso + tooltip, quedan FIJOS hasta que el usuario toque algo ──
+  _showFirstVisitPulseHint(wrap) {
+    // ── Elegir los dos puntos a destacar ──
+    const loopsWithPts = (this.routes||[]).filter(r => r.pts && r.pts.length);
+    let officialLoop = loopsWithPts
+      .filter(r => r.source === 'municipio')
+      .sort((a,b) => (b.likes||0) - (a.likes||0))[0];
+    if (!officialLoop) officialLoop = [...loopsWithPts].sort((a,b) => (b.likes||0) - (a.likes||0))[0];
+
+    const visibleFotos = (this._fotoPosts || []).filter(p => {
+      if (!p.lat || !p.lng) return false;
+      const isApproved = p.status === 'approved';
+      const isOwn = p.authorId && this._uid && p.authorId === this._uid;
+      const isPending = !p.status || p.status === 'pending';
+      return isApproved || (isOwn && isPending);
+    }).sort((a,b) => (b.likes||0) - (a.likes||0));
+    const fotoLoop = visibleFotos[0];
+
+    const targets = [];
+    if (officialLoop) {
+      const pt = officialLoop.pts[0];
+      targets.push({
+        lat: Array.isArray(pt) ? pt[0] : pt.lat,
+        lng: Array.isArray(pt) ? pt[1] : pt.lng,
+        text: officialLoop.source === 'municipio'
+          ? '👆 Tocá un loop oficial para ver el recorrido'
+          : '👆 Tocá un loop para ver el recorrido'
+      });
+    }
+    if (fotoLoop) {
+      targets.push({
+        lat: fotoLoop.lat,
+        lng: fotoLoop.lng,
+        text: '📸 Así se ve un FotoLoop, ¡tocalo!'
+      });
+    }
+    if (!targets.length) { console.log('[onboarding] sin targets disponibles, no se muestra nada'); return; }
+
     if (!document.getElementById('mfh-style')) {
       const st = document.createElement('style');
       st.id = 'mfh-style';
@@ -4973,52 +5094,77 @@ const App = {
       document.head.appendChild(st);
     }
 
-    const pulseEl = hint.querySelector('#mfh-pulse');
-    const tipEl = hint.querySelector('#mfh-tooltip');
-
-    const reposition = () => {
-      if (!this.mainMap) return;
-      const p = this.mainMap.project([lng, lat]);
-      pulseEl.style.left = p.x + 'px';
-      pulseEl.style.top  = p.y + 'px';
-      tipEl.style.left = p.x + 'px';
-      tipEl.style.top  = p.y + 'px';
-    };
-    // En desktop el contenedor puede terminar de ajustar su tamaño justo
-    // después del primer render — forzamos un resize antes de proyectar.
-    try { this.mainMap.resize(); } catch(e) {}
-    reposition();
-    this.mainMap.on('move', reposition);
-    this.mainMap.on('resize', reposition);
+    wrap.style.position = wrap.style.position || 'relative';
 
     const markSeen = () => {
-      try { localStorage.setItem('ul360_seen_map_hint', '1'); } catch(e) {}
+      try { localStorage.setItem('ul360_seen_map_hint_v2', '1'); } catch(e) {}
     };
 
-    const dismiss = () => {
+    const allHints = [];
+    let dismissed = false;
+
+    const dismissAll = () => {
+      if (dismissed) return;
+      dismissed = true;
       markSeen();
-      tipEl.style.opacity = '0';
-      if (pulseEl) pulseEl.style.opacity = '0';
-      setTimeout(() => {
-        hint.remove();
-        this.mainMap.off('move', reposition);
-        this.mainMap.off('resize', reposition);
-      }, 450);
-    };
-
-    // Mostrar tooltip con leve delay tras el pulso
-    setTimeout(() => { tipEl.style.opacity = '1'; }, 700);
-
-    // Auto-cerrar a los 4.5s
-    const autoTimer = setTimeout(dismiss, 4500);
-
-    // Cerrar al primer toque/click en cualquier parte del mapa
-    const onFirstTouch = () => {
-      clearTimeout(autoTimer);
-      dismiss();
+      allHints.forEach(h => {
+        h.tipEl.style.opacity = '0';
+        if (h.pulseEl) h.pulseEl.style.opacity = '0';
+      });
+      this.mainMap.off('move', repositionAll);
+      this.mainMap.off('resize', repositionAll);
       this.mainMap.off('click', onFirstTouch);
       this.mainMap.off('touchstart', onFirstTouch);
+      setTimeout(() => { allHints.forEach(h => h.el.remove()); }, 450);
     };
+
+    const onFirstTouch = () => dismissAll();
+
+    targets.forEach((t, i) => {
+      const hint = document.createElement('div');
+      hint.id = 'map-first-hint-' + i;
+      hint.style.cssText = 'position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:70;';
+      hint.innerHTML = `
+        <div class="mfh-pulse" style="position:absolute;width:24px;height:24px;border-radius:50%;
+             border:2px solid #FF5F00;transform:translate(-50%,-50%);opacity:0;
+             animation:mfhPulse 2.2s ease-out infinite;"></div>
+        <div class="mfh-tooltip" style="position:absolute;transform:translate(-50%,calc(-100% - 24px));
+             background:rgba(255,255,255,.97);border-radius:14px;padding:10px 14px;max-width:190px;
+             box-shadow:0 6px 22px rgba(0,0,0,.4);opacity:0;transition:opacity .4s ease, transform .4s ease;
+             font-family:var(--fB);font-size:12.5px;font-weight:600;color:#1a1a1a;text-align:center;">
+          ${t.text}
+          <div style="position:absolute;left:50%;bottom:-6px;width:12px;height:12px;
+               background:rgba(255,255,255,.97);transform:translateX(-50%) rotate(45deg);"></div>
+        </div>`;
+      wrap.appendChild(hint);
+      allHints.push({
+        el: hint,
+        pulseEl: hint.querySelector('.mfh-pulse'),
+        tipEl: hint.querySelector('.mfh-tooltip'),
+        lat: t.lat, lng: t.lng
+      });
+    });
+
+    const repositionAll = () => {
+      if (!this.mainMap) return;
+      allHints.forEach(h => {
+        const p = this.mainMap.project([h.lng, h.lat]);
+        h.pulseEl.style.left = p.x + 'px';
+        h.pulseEl.style.top  = p.y + 'px';
+        h.tipEl.style.left = p.x + 'px';
+        h.tipEl.style.top  = p.y + 'px';
+      });
+    };
+    try { this.mainMap.resize(); } catch(e) {}
+    repositionAll();
+    this.mainMap.on('move', repositionAll);
+    this.mainMap.on('resize', repositionAll);
+
+    allHints.forEach((h, i) => {
+      setTimeout(() => { h.tipEl.style.opacity = '1'; }, 300 + i * 350);
+    });
+
+    // Sin auto-cierre: queda fijo hasta que el usuario toque el mapa
     this.mainMap.on('click', onFirstTouch);
     this.mainMap.on('touchstart', onFirstTouch);
   },
@@ -13016,12 +13162,33 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
               ? `<button class="adm-btn" style="opacity:.5;cursor:default;" disabled>📬 Ya en Municipio</button>`
               : ''
           }
+          <button class="adm-btn" style="${r.isDemoLoop ? 'background:#FF5F00;color:#fff;border:1px solid #FF5F00;' : 'background:var(--bg2);'}" onclick="App._admSetDemoLoop('${r.id}')">${r.isDemoLoop ? '⭐ Es la Demo' : '☆ Usar como Demo'}</button>
           <button class="adm-btn adm-btn-red" onclick="App._admDeleteLoop('${r.id}','${r.name.replace(/'/g,'')}')">🗑️ Eliminar</button>
         </div>
       </div>`;
     }).join('');
     // Cargar imágenes firestore: en thumbnails
     setTimeout(() => this._lazyLoadFsImgs(document.getElementById('adm-tab-loops')), 50);
+  },
+
+  async _admSetDemoLoop(id) {
+    const r = this.routes.find(x => x.id === id);
+    if (!r) return;
+    const turningOn = !r.isDemoLoop;
+    // Solo un loop puede ser la demo a la vez: desmarcar el resto
+    this.routes.forEach(x => { x.isDemoLoop = false; });
+    if (turningOn) r.isDemoLoop = true;
+
+    if (this._db) {
+      try {
+        const batchUpdates = this.routes
+          .filter(x => x.source) // solo los que vienen de Firestore (tienen doc real)
+          .map(x => this._db.collection('loops').doc(x.id).update({ isDemoLoop: !!x.isDemoLoop }).catch(()=>{}));
+        await Promise.all(batchUpdates);
+      } catch(e) {}
+    }
+    this.toast(turningOn ? `⭐ "${App._esc(r.name)}" es ahora el loop de bienvenida` : 'Demo desactivada');
+    this._admRenderLoops();
   },
 
   async _admDeleteLoop(id, name) {
@@ -13829,7 +13996,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   // City notif banner (mantener para compatibilidad con HTML existente)
   _initCityNotif() {
     let isFirstVisit = false;
-    try { isFirstVisit = !localStorage.getItem('ul360_seen_map_hint'); } catch(e) {}
+    try { isFirstVisit = !localStorage.getItem('ul360_seen_map_hint_v2'); } catch(e) {}
     const delay = isFirstVisit ? 5800 : 4000; // esperar a que termine el hint de onboarding
     setTimeout(()=>this.showCityNotif({
       city:'La Paz, Entre Ríos',
