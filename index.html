@@ -5158,7 +5158,7 @@ const App = {
       hint.style.cssText = 'position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:70;';
       hint.innerHTML = `
         <div class="mfh-pulse" style="position:absolute;width:24px;height:24px;border-radius:50%;
-             border:2px solid #FF5F00;transform:translate(-50%,-50%);opacity:0;
+             border:2px solid #FF5F00;transform:translate(-50%,-50%);
              animation:mfhPulse 2.2s ease-out infinite;"></div>
         <div class="mfh-tooltip" style="position:absolute;transform:translate(-50%,calc(-100% - 24px));
              background:rgba(255,255,255,.97);border-radius:14px;padding:10px 14px;max-width:190px;
@@ -5195,6 +5195,7 @@ const App = {
     allHints.forEach((h, i) => {
       setTimeout(() => { h.tipEl.style.opacity = '1'; }, 300 + i * 350);
     });
+    console.log('[onboarding] hints insertados en el DOM:', allHints.length, '— deberían verse ahora');
 
     // Sin auto-cierre: queda fijo hasta que el usuario toque el mapa
     this.mainMap.on('click', onFirstTouch);
