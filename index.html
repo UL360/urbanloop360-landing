@@ -4916,11 +4916,111 @@ const App = {
       this._renderCards('', this._activeFilter);
       this._initCityNotif();
       this._startGPSTracking();
+      this._maybeShowFirstVisitHint();   // ← onboarding: pulso + tooltip, solo 1ra vez
     });
     this.mainMap.on('dragstart', () => App._hideNav());
     this.mainMap.on('moveend',   () => App._showNavDelay());
     this.mainMap.on('zoomstart', () => App._hideNav());
     this.mainMap.on('zoomend',   () => App._showNavDelay());
+  },
+
+  // ── ONBOARDING: pulso + tooltip en el primer ingreso al mapa ──
+  _maybeShowFirstVisitHint() {
+    try {
+      if (localStorage.getItem('ul360_seen_map_hint')) return;
+    } catch(e) {}
+    if (!this.routes || !this.routes.length) return;
+
+    // Elegir el loop destacado: el de más likes, o el primero disponible
+    const target = [...this.routes].sort((a,b) => (b.likes||0) - (a.likes||0))[0];
+    if (!target || !target.pts || !target.pts.length) return;
+
+    const pt = target.pts[0];
+    const lat = Array.isArray(pt) ? pt[0] : pt.lat;
+    const lng = Array.isArray(pt) ? pt[1] : pt.lng;
+
+    const wrap = document.getElementById('main-map');
+    if (!wrap) return;
+
+    // Contenedor del overlay (pulso + tooltip), posicionado sobre el mapa
+    const hint = document.createElement('div');
+    hint.id = 'map-first-hint';
+    hint.style.cssText = 'position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:70;';
+    hint.innerHTML = `
+      <div id="mfh-pulse" style="position:absolute;width:24px;height:24px;border-radius:50%;
+           border:2px solid #FF5F00;transform:translate(-50%,-50%);opacity:0;
+           animation:mfhPulse 2.2s ease-out infinite;"></div>
+      <div id="mfh-tooltip" style="position:absolute;transform:translate(-50%,calc(-100% - 24px));
+           background:rgba(255,255,255,.97);border-radius:14px;padding:10px 14px;max-width:200px;
+           box-shadow:0 6px 22px rgba(0,0,0,.4);opacity:0;transition:opacity .4s ease, transform .4s ease;
+           font-family:var(--fB);font-size:13px;font-weight:600;color:#1a1a1a;text-align:center;">
+        👆 Tocá un loop para ver el recorrido
+        <div style="position:absolute;left:50%;bottom:-6px;width:12px;height:12px;
+             background:rgba(255,255,255,.97);transform:translateX(-50%) rotate(45deg);"></div>
+      </div>`;
+    wrap.style.position = wrap.style.position || 'relative';
+    wrap.appendChild(hint);
+
+    // Inyectar keyframes del pulso una sola vez
+    if (!document.getElementById('mfh-style')) {
+      const st = document.createElement('style');
+      st.id = 'mfh-style';
+      st.textContent = `@keyframes mfhPulse {
+        0%   { opacity:.75; transform:translate(-50%,-50%) scale(0.6); }
+        70%  { opacity:0;   transform:translate(-50%,-50%) scale(2.6); }
+        100% { opacity:0;   transform:translate(-50%,-50%) scale(2.6); }
+      }`;
+      document.head.appendChild(st);
+    }
+
+    const pulseEl = hint.querySelector('#mfh-pulse');
+    const tipEl = hint.querySelector('#mfh-tooltip');
+
+    const reposition = () => {
+      if (!this.mainMap) return;
+      const p = this.mainMap.project([lng, lat]);
+      pulseEl.style.left = p.x + 'px';
+      pulseEl.style.top  = p.y + 'px';
+      tipEl.style.left = p.x + 'px';
+      tipEl.style.top  = p.y + 'px';
+    };
+    // En desktop el contenedor puede terminar de ajustar su tamaño justo
+    // después del primer render — forzamos un resize antes de proyectar.
+    try { this.mainMap.resize(); } catch(e) {}
+    reposition();
+    this.mainMap.on('move', reposition);
+    this.mainMap.on('resize', reposition);
+
+    const markSeen = () => {
+      try { localStorage.setItem('ul360_seen_map_hint', '1'); } catch(e) {}
+    };
+
+    const dismiss = () => {
+      markSeen();
+      tipEl.style.opacity = '0';
+      if (pulseEl) pulseEl.style.opacity = '0';
+      setTimeout(() => {
+        hint.remove();
+        this.mainMap.off('move', reposition);
+        this.mainMap.off('resize', reposition);
+      }, 450);
+    };
+
+    // Mostrar tooltip con leve delay tras el pulso
+    setTimeout(() => { tipEl.style.opacity = '1'; }, 700);
+
+    // Auto-cerrar a los 4.5s
+    const autoTimer = setTimeout(dismiss, 4500);
+
+    // Cerrar al primer toque/click en cualquier parte del mapa
+    const onFirstTouch = () => {
+      clearTimeout(autoTimer);
+      dismiss();
+      this.mainMap.off('click', onFirstTouch);
+      this.mainMap.off('touchstart', onFirstTouch);
+    };
+    this.mainMap.on('click', onFirstTouch);
+    this.mainMap.on('touchstart', onFirstTouch);
   },
 
   // ── GPS LIVE TRACKING (MapLibre) ──
@@ -13728,6 +13828,9 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
 
   // City notif banner (mantener para compatibilidad con HTML existente)
   _initCityNotif() {
+    let isFirstVisit = false;
+    try { isFirstVisit = !localStorage.getItem('ul360_seen_map_hint'); } catch(e) {}
+    const delay = isFirstVisit ? 5800 : 4000; // esperar a que termine el hint de onboarding
     setTimeout(()=>this.showCityNotif({
       city:'La Paz, Entre Ríos',
       symbols:[
@@ -13736,7 +13839,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
         {em:'☕',lbl:'Cafés'},{em:'🏛️',lbl:'Historia'},{em:'🚴',lbl:'Ciclovía'},
       ],
       loops: this.routes.length
-    }), 4000);
+    }), delay);
   },
   showCityNotif({city, symbols, loops}) {
     const t = document.getElementById('cn-title');
