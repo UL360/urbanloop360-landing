@@ -2517,6 +2517,11 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
           <option value="Concordia">Concordia</option><option value="Gualeguaychú">Gualeguaychú</option>
         </select>
       </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button class="adm-btn" style="flex:1;background:#1a1a1a;color:#fff;" onclick="App._testOnboardingNow()">
+          🔄 Probar onboarding ahora
+        </button>
+      </div>
       <div id="adm-loops-list" style="display:flex;flex-direction:column;gap:8px;"></div>
     </div>
 
@@ -4925,6 +4930,24 @@ const App = {
   },
 
   // ── ONBOARDING: recorrido animado del logo + pulso/tooltip fijo ──
+  _testOnboardingNow() {
+    this._resetOnboardingHint();
+    this.go('explore');
+    const waitForMap = (tries) => {
+      tries = tries || 0;
+      if (this.mainMap && this.mainMap.loaded && this.mainMap.loaded()) {
+        console.log('[onboarding] disparando prueba manual');
+        this._maybeShowFirstVisitHint();
+      } else if (tries < 20) {
+        setTimeout(() => waitForMap(tries + 1), 200);
+      } else {
+        console.log('[onboarding] el mapa nunca quedó listo, abortando prueba');
+        this.toast('⚠️ El mapa no cargó a tiempo, probá de nuevo');
+      }
+    };
+    setTimeout(() => waitForMap(), 200);
+  },
+
   _resetOnboardingHint() {
     try { localStorage.removeItem('ul360_seen_map_hint_v2'); } catch(e) {}
     console.log('[onboarding] flag reseteado — recargá la página o entrá al mapa de nuevo');
@@ -4937,6 +4960,12 @@ const App = {
 
     const wrap = document.getElementById('main-map');
     if (!wrap) { console.log('[onboarding] #main-map no existe'); return; }
+
+    // Limpiar restos de una corrida anterior (útil al usar el botón de prueba)
+    wrap.querySelectorAll('[id^="map-first-hint-"]').forEach(el => el.remove());
+    wrap.querySelectorAll('img[alt=""]').forEach(el => {
+      if (el.src && el.src.includes('LOGO%20SOLO.png')) el.remove();
+    });
 
     retry = retry || 0;
     const dataNotReady = (this._fotoPosts === undefined) || !this.routes || !this.routes.length;
@@ -4951,6 +4980,8 @@ const App = {
 
     // Loop elegido en el Admin como demo de bienvenida (botón "Usar como Demo")
     const demoLoop = (this.routes||[]).find(r => r.isDemoLoop && r.pts && r.pts.length >= 2);
+    console.log('[onboarding] loops marcados isDemoLoop:', (this.routes||[]).filter(r=>r.isDemoLoop).map(r=>({id:r.id,name:r.name,pts:r.pts?r.pts.length:0})));
+    console.log('[onboarding] demoLoop elegido:', demoLoop ? demoLoop.name : 'ninguno');
 
     if (demoLoop) {
       this._runDemoLoopAnimation(demoLoop, () => this._showFirstVisitPulseHint(wrap));
@@ -5082,6 +5113,7 @@ const App = {
       });
     }
     if (!targets.length) { console.log('[onboarding] sin targets disponibles, no se muestra nada'); return; }
+    console.log('[onboarding] targets a mostrar:', targets.map(t=>({lat:t.lat,lng:t.lng,text:t.text})));
 
     if (!document.getElementById('mfh-style')) {
       const st = document.createElement('style');
