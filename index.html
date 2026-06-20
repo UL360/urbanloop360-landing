@@ -1975,7 +1975,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
       </div>
       <span id="pill-lbl-layers" style="font-size:13px;font-weight:600;color:#fff;white-space:nowrap;
-            max-width:0;opacity:0;overflow:hidden;padding-right:0;
+            max-width:140px;opacity:1;overflow:hidden;padding-right:14px;
             transition:max-width .35s cubic-bezier(.4,0,.2,1),opacity .25s,padding .35s;">Opciones</span>
     </div>
 
@@ -1988,7 +1988,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="6" width="13" height="10" rx="2"/><circle cx="8.5" cy="11" r="2.2"/><path d="M5.5 6V4.5C5.5 4 5.9 3.5 6.5 3.5H10.5C11.1 3.5 11.5 4 11.5 4.5V6"/><path d="M19 8c-1.7 0-3 1.3-3 3 0 2.5 3 7 3 7s3-4.5 3-7c0-1.7-1.3-3-3-3z" fill="rgba(255,255,255,.75)" stroke="none"/><circle cx="19" cy="10.8" r="1.5" fill="rgba(20,26,32,1)" stroke="none"/></svg>
       </div>
       <span id="pill-lbl-foto" style="font-size:13px;font-weight:600;color:rgba(255,255,255,.75);white-space:nowrap;
-            max-width:0;opacity:0;overflow:hidden;padding-right:0;
+            max-width:140px;opacity:1;overflow:hidden;padding-right:14px;
             transition:max-width .35s cubic-bezier(.4,0,.2,1),opacity .25s,padding .35s;">FotoLoop</span>
     </div>
 
@@ -2001,7 +2001,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       </div>
       <span id="pill-lbl-loop" style="font-size:13px;font-weight:600;color:rgba(255,255,255,.75);white-space:nowrap;
-            max-width:0;opacity:0;overflow:hidden;padding-right:0;
+            max-width:140px;opacity:1;overflow:hidden;padding-right:14px;
             transition:max-width .35s cubic-bezier(.4,0,.2,1),opacity .25s,padding .35s;">+ Loop</span>
     </div>
   </div>
@@ -4929,7 +4929,7 @@ const App = {
     this.mainMap.on('zoomend',   () => App._showNavDelay());
   },
 
-  // ── ONBOARDING: recorrido animado del logo + pulso/tooltip fijo ──
+  // ── ONBOARDING: card fijo con el loop demo + botón "Iniciar Demo" ──
   _testOnboardingNow() {
     this._resetOnboardingHint();
     this.go('explore');
@@ -4958,15 +4958,6 @@ const App = {
       if (localStorage.getItem('ul360_seen_map_hint_v2')) return;
     } catch(e) {}
 
-    const wrap = document.getElementById('main-map');
-    if (!wrap) { console.log('[onboarding] #main-map no existe'); return; }
-
-    // Limpiar restos de una corrida anterior (útil al usar el botón de prueba)
-    wrap.querySelectorAll('[id^="map-first-hint-"]').forEach(el => el.remove());
-    wrap.querySelectorAll('img[alt=""]').forEach(el => {
-      if (el.src && el.src.includes('LOGO%20SOLO.png')) el.remove();
-    });
-
     retry = retry || 0;
     const dataNotReady = (this._fotoPosts === undefined) || !this.routes || !this.routes.length;
     if (dataNotReady && retry < 10) {
@@ -4976,28 +4967,83 @@ const App = {
 
     console.log('[onboarding] routes:', (this.routes||[]).length, 'fotoPosts:', (this._fotoPosts||[]).length);
 
-    wrap.style.position = wrap.style.position || 'relative';
-
-    // Loop elegido en el Admin como demo de bienvenida (botón "Usar como Demo")
     const demoLoop = (this.routes||[]).find(r => r.isDemoLoop && r.pts && r.pts.length >= 2);
-    console.log('[onboarding] loops marcados isDemoLoop:', (this.routes||[]).filter(r=>r.isDemoLoop).map(r=>({id:r.id,name:r.name,pts:r.pts?r.pts.length:0})));
     console.log('[onboarding] demoLoop elegido:', demoLoop ? demoLoop.name : 'ninguno');
 
     if (demoLoop) {
-      this._runDemoLoopAnimation(demoLoop, () => this._showFirstVisitPulseHint(wrap));
+      this._showDemoLoopCard(demoLoop);
     } else {
-      // Sin loop demo configurado: vamos directo al pulso/tooltip
-      this._showFirstVisitPulseHint(wrap);
+      console.log('[onboarding] sin loop demo configurado en el Admin, no se muestra nada');
     }
   },
 
-  // ── Paso 1: el logo recorre la línea del loop demo (3-4s, una sola vez) ──
+  // ── Card fijo presentando el loop demo, con botón "Iniciar Demo" ──
+  _showDemoLoopCard(loop) {
+    const old = document.getElementById('demo-loop-card');
+    if (old) old.remove();
+
+    const markSeen = () => {
+      try { localStorage.setItem('ul360_seen_map_hint_v2', '1'); } catch(e) {}
+    };
+
+    const imgHtml = loop.img
+      ? `<img src="${loop.img}" style="width:100%;height:150px;object-fit:cover;display:block;" loading="lazy">`
+      : `<div style="width:100%;height:110px;background:linear-gradient(135deg,${loop.color||'#FF5F00'}40,${loop.color||'#FF5F00'}80);display:flex;align-items:center;justify-content:center;font-size:44px;">${loop.emoji||'🔁'}</div>`;
+
+    const card = document.createElement('div');
+    card.id = 'demo-loop-card';
+    card.style.cssText = 'position:absolute;left:50%;bottom:160px;transform:translateX(-50%);'
+      + 'width:min(280px,calc(100% - 32px));z-index:80;border-radius:18px;overflow:hidden;'
+      + 'background:#1E1E26;box-shadow:0 14px 44px rgba(0,0,0,.6);'
+      + 'opacity:0;transition:opacity .4s ease, transform .4s ease;';
+    card.innerHTML = `
+      <button id="demo-card-close" title="Cerrar"
+        style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;
+               background:rgba(0,0,0,.5);border:none;color:#fff;font-size:14px;cursor:pointer;
+               display:flex;align-items:center;justify-content:center;z-index:2;">✕</button>
+      ${imgHtml}
+      <div style="padding:14px;">
+        <div style="font-size:11px;font-weight:700;color:#FF5F00;letter-spacing:.4px;margin-bottom:4px;text-transform:uppercase;">✨ Conocé Urban Loop</div>
+        <div style="font-size:15px;font-weight:800;color:#F0F0F8;margin-bottom:4px;">${loop.emoji||'🔁'} ${App._esc(loop.name)}</div>
+        <div style="font-size:11.5px;color:#9898B8;margin-bottom:12px;">${loop.dist||'—'} · ${loop.dur||'—'} · ${loop.pois?loop.pois.length:0} paradas</div>
+        <button id="demo-card-start"
+          style="width:100%;padding:12px;background:#FF5F00;color:white;border:none;border-radius:12px;
+                 font-family:'Bai Jamjuree',sans-serif;font-size:14px;font-weight:700;cursor:pointer;
+                 display:flex;align-items:center;justify-content:center;gap:6px;">
+          ▶ Iniciar Demo
+        </button>
+      </div>`;
+
+    const wrap = document.getElementById('main-map');
+    if (!wrap) return;
+    wrap.style.position = wrap.style.position || 'relative';
+    wrap.appendChild(card);
+
+    requestAnimationFrame(() => { card.style.opacity = '1'; });
+
+    const dismissCard = () => {
+      card.style.opacity = '0';
+      setTimeout(() => card.remove(), 350);
+    };
+
+    document.getElementById('demo-card-close').onclick = () => {
+      markSeen();
+      dismissCard();
+    };
+
+    document.getElementById('demo-card-start').onclick = () => {
+      markSeen();
+      dismissCard();
+      this._runDemoLoopAnimation(loop, () => {});
+    };
+  },
+
+  // ── El logo recorre la línea del loop demo (3-4s), disparado por el botón "Iniciar Demo" ──
   _runDemoLoopAnimation(loop, onDone) {
     if (!this.mainMap) { onDone(); return; }
     const coords = loop.pts.map(p => Array.isArray(p) ? [p[1], p[0]] : [p.lng, p.lat]);
     if (coords.length < 2) { onDone(); return; }
 
-    // Encuadrar el loop demo para que se vea completo durante el recorrido
     const lngs = coords.map(c=>c[0]), lats = coords.map(c=>c[1]);
     try {
       this.mainMap.fitBounds(
@@ -5010,13 +5056,13 @@ const App = {
     const logoEl = document.createElement('img');
     logoEl.src = 'https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/LOGO%20SOLO.png';
     logoEl.alt = '';
+    logoEl.id = 'demo-logo-marker';
     logoEl.style.cssText = 'position:absolute;width:34px;height:34px;border-radius:50%;'
       + 'box-shadow:0 3px 14px rgba(0,0,0,.5),0 0 0 3px #FF5F00;background:#fff;object-fit:cover;'
       + 'transform:translate(-50%,-50%);pointer-events:none;z-index:75;opacity:0;transition:opacity .25s ease;';
     wrap.style.position = wrap.style.position || 'relative';
     wrap.appendChild(logoEl);
 
-    // Distancia acumulada por segmento, para interpolar a velocidad pareja
     const segLens = [];
     let total = 0;
     for (let i = 1; i < coords.length; i++) {
@@ -5026,7 +5072,7 @@ const App = {
     }
     if (total === 0) { logoEl.remove(); onDone(); return; }
 
-    const DURATION = 3400; // 3.4s de recorrido
+    const DURATION = 3800;
     let startTs = null;
     let cancelled = false;
 
@@ -5063,7 +5109,6 @@ const App = {
     };
     requestAnimationFrame(step);
 
-    // Si el usuario toca el mapa mientras el logo recorre, cortamos la demo
     const skip = () => {
       if (cancelled) return;
       cancelled = true;
@@ -5074,132 +5119,6 @@ const App = {
     };
     this.mainMap.on('click', skip);
     this.mainMap.on('touchstart', skip);
-  },
-
-  // ── Paso 2: pulso + tooltip, quedan FIJOS hasta que el usuario toque algo ──
-  _showFirstVisitPulseHint(wrap) {
-    // ── Elegir los dos puntos a destacar ──
-    const loopsWithPts = (this.routes||[]).filter(r => r.pts && r.pts.length);
-    let officialLoop = loopsWithPts
-      .filter(r => r.source === 'municipio')
-      .sort((a,b) => (b.likes||0) - (a.likes||0))[0];
-    if (!officialLoop) officialLoop = [...loopsWithPts].sort((a,b) => (b.likes||0) - (a.likes||0))[0];
-
-    const visibleFotos = (this._fotoPosts || []).filter(p => {
-      if (!p.lat || !p.lng) return false;
-      const isApproved = p.status === 'approved';
-      const isOwn = p.authorId && this._uid && p.authorId === this._uid;
-      const isPending = !p.status || p.status === 'pending';
-      return isApproved || (isOwn && isPending);
-    }).sort((a,b) => (b.likes||0) - (a.likes||0));
-    const fotoLoop = visibleFotos[0];
-
-    const targets = [];
-    if (officialLoop) {
-      const pt = officialLoop.pts[0];
-      targets.push({
-        lat: Array.isArray(pt) ? pt[0] : pt.lat,
-        lng: Array.isArray(pt) ? pt[1] : pt.lng,
-        text: officialLoop.source === 'municipio'
-          ? '👆 Tocá un loop oficial para ver el recorrido'
-          : '👆 Tocá un loop para ver el recorrido'
-      });
-    }
-    if (fotoLoop) {
-      targets.push({
-        lat: fotoLoop.lat,
-        lng: fotoLoop.lng,
-        text: '📸 Así se ve un FotoLoop, ¡tocalo!'
-      });
-    }
-    if (!targets.length) { console.log('[onboarding] sin targets disponibles, no se muestra nada'); return; }
-    console.log('[onboarding] targets a mostrar:', targets.map(t=>({lat:t.lat,lng:t.lng,text:t.text})));
-
-    if (!document.getElementById('mfh-style')) {
-      const st = document.createElement('style');
-      st.id = 'mfh-style';
-      st.textContent = `@keyframes mfhPulse {
-        0%   { opacity:.75; transform:translate(-50%,-50%) scale(0.6); }
-        70%  { opacity:0;   transform:translate(-50%,-50%) scale(2.6); }
-        100% { opacity:0;   transform:translate(-50%,-50%) scale(2.6); }
-      }`;
-      document.head.appendChild(st);
-    }
-
-    wrap.style.position = wrap.style.position || 'relative';
-
-    const markSeen = () => {
-      try { localStorage.setItem('ul360_seen_map_hint_v2', '1'); } catch(e) {}
-    };
-
-    const allHints = [];
-    let dismissed = false;
-
-    const dismissAll = () => {
-      if (dismissed) return;
-      dismissed = true;
-      markSeen();
-      allHints.forEach(h => {
-        h.tipEl.style.opacity = '0';
-        if (h.pulseEl) h.pulseEl.style.opacity = '0';
-      });
-      this.mainMap.off('move', repositionAll);
-      this.mainMap.off('resize', repositionAll);
-      this.mainMap.off('click', onFirstTouch);
-      this.mainMap.off('touchstart', onFirstTouch);
-      setTimeout(() => { allHints.forEach(h => h.el.remove()); }, 450);
-    };
-
-    const onFirstTouch = () => dismissAll();
-
-    targets.forEach((t, i) => {
-      const hint = document.createElement('div');
-      hint.id = 'map-first-hint-' + i;
-      hint.style.cssText = 'position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:70;';
-      hint.innerHTML = `
-        <div class="mfh-pulse" style="position:absolute;width:24px;height:24px;border-radius:50%;
-             border:2px solid #FF5F00;transform:translate(-50%,-50%);
-             animation:mfhPulse 2.2s ease-out infinite;"></div>
-        <div class="mfh-tooltip" style="position:absolute;transform:translate(-50%,calc(-100% - 24px));
-             background:rgba(255,255,255,.97);border-radius:14px;padding:10px 14px;max-width:190px;
-             box-shadow:0 6px 22px rgba(0,0,0,.4);opacity:0;transition:opacity .4s ease, transform .4s ease;
-             font-family:var(--fB);font-size:12.5px;font-weight:600;color:#1a1a1a;text-align:center;">
-          ${t.text}
-          <div style="position:absolute;left:50%;bottom:-6px;width:12px;height:12px;
-               background:rgba(255,255,255,.97);transform:translateX(-50%) rotate(45deg);"></div>
-        </div>`;
-      wrap.appendChild(hint);
-      allHints.push({
-        el: hint,
-        pulseEl: hint.querySelector('.mfh-pulse'),
-        tipEl: hint.querySelector('.mfh-tooltip'),
-        lat: t.lat, lng: t.lng
-      });
-    });
-
-    const repositionAll = () => {
-      if (!this.mainMap) return;
-      allHints.forEach(h => {
-        const p = this.mainMap.project([h.lng, h.lat]);
-        h.pulseEl.style.left = p.x + 'px';
-        h.pulseEl.style.top  = p.y + 'px';
-        h.tipEl.style.left = p.x + 'px';
-        h.tipEl.style.top  = p.y + 'px';
-      });
-    };
-    try { this.mainMap.resize(); } catch(e) {}
-    repositionAll();
-    this.mainMap.on('move', repositionAll);
-    this.mainMap.on('resize', repositionAll);
-
-    allHints.forEach((h, i) => {
-      setTimeout(() => { h.tipEl.style.opacity = '1'; }, 300 + i * 350);
-    });
-    console.log('[onboarding] hints insertados en el DOM:', allHints.length, '— deberían verse ahora');
-
-    // Sin auto-cierre: queda fijo hasta que el usuario toque el mapa
-    this.mainMap.on('click', onFirstTouch);
-    this.mainMap.on('touchstart', onFirstTouch);
   },
 
   // ── GPS LIVE TRACKING (MapLibre) ──
@@ -5622,8 +5541,14 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     // Click en la ruta
     this.mainMap.on('click', 'line-' + r.id, () => App.selectRoute(r.id));
-    this.mainMap.on('mouseenter', 'line-' + r.id, () => this.mainMap.getCanvas().style.cursor = 'pointer');
-    this.mainMap.on('mouseleave', 'line-' + r.id, () => this.mainMap.getCanvas().style.cursor = '');
+    this.mainMap.on('mouseenter', 'line-' + r.id, () => {
+      this.mainMap.getCanvas().style.cursor = 'pointer';
+      App._hoverShowLoopCard(r);
+    });
+    this.mainMap.on('mouseleave', 'line-' + r.id, () => {
+      this.mainMap.getCanvas().style.cursor = '';
+      App._hoverHideLoopCard();
+    });
 
     // Punto de inicio
     try {
@@ -5748,6 +5673,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         el.innerHTML = `<span>${emoji}</span><span style="font-size:10px;font-weight:700;color:#FF5F00;overflow:hidden;text-overflow:ellipsis;">${label}</span>`;
         el.title = p.name || 'Foto Loop';
         el.onclick = (e) => { e.stopPropagation(); App._showFotoPopup(p); };
+        el.addEventListener('mouseenter', () => App._hoverShowFotoCard(p, el));
+        el.addEventListener('mouseleave', () => App._hoverHideLoopCard());
         const mkr = new maplibregl.Marker({ element: el, anchor: 'bottom-left' })
           .setLngLat([p.lng, p.lat]).addTo(this.mainMap);
         this._fotoMarkers.push(mkr);
@@ -5815,6 +5742,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           el.innerHTML = `<span>${emoji}</span><span style="font-size:10px;font-weight:700;color:#FF5F00;overflow:hidden;text-overflow:ellipsis;">${label}</span>`;
           el.title = post.name || 'Foto Loop';
           el.onclick = (ev) => { ev.stopPropagation(); App._showFotoPopup(post); };
+          el.addEventListener('mouseenter', () => App._hoverShowFotoCard(post, el));
+          el.addEventListener('mouseleave', () => App._hoverHideLoopCard());
           const mkr = new maplibregl.Marker({ element: el, anchor: 'bottom-left' })
             .setLngLat([lng, lat]).addTo(this.mainMap);
           this._fotoMarkers.push(mkr);
@@ -5993,10 +5922,40 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     this._negocioPopup.on('close', () => { this._negocioPopup = null; });
   },
 
+  // ── Popup liviano al pasar el mouse por un fotoloop (solo desktop/hover) ──
+  _hoverShowFotoCard(p, markerEl) {
+    if (this._fotoPopup) return; // ya hay uno abierto por click, no interferir
+    if (this._hoverPopup) { try { this._hoverPopup.remove(); } catch(e){} this._hoverPopup = null; }
+    if (!this.mainMap) return;
+
+    const FL_CATS = {lugar:'📍',gastro:'🍽️',bar:'🍸',cafe:'☕',nocturno:'🌙',cultura:'🎭',arte:'🎨',patrimonio:'🏛️',musica:'🎵',naturaleza:'🌿',playa:'🏖️',parque:'🌳',pesca:'🎣',aventura:'🧗',deporte:'⚽',bienestar:'🧘',eventos:'📅',perro:'🐕'};
+    const emoji = FL_CATS[p.cat] || p.emoji || '📍';
+    const imgSrc = p.img && (p.img.startsWith('data:') || p.img.startsWith('http')) ? p.img : null;
+
+    const thumbHtml = imgSrc
+      ? `<img src="${imgSrc}" style="width:100%;height:100px;object-fit:cover;border-radius:10px 10px 0 0;display:block;" loading="lazy">`
+      : `<div style="width:100%;height:70px;background:linear-gradient(135deg,#FF5F0030,#FF5F0060);display:flex;align-items:center;justify-content:center;font-size:32px;border-radius:10px 10px 0 0;">${emoji}</div>`;
+
+    const html = `
+      <div style="font-family:'Bai Jamjuree',sans-serif;width:185px;border-radius:12px;overflow:hidden;background:#1E1E26;box-shadow:0 8px 28px rgba(0,0,0,.65);">
+        ${thumbHtml}
+        <div style="padding:9px 10px;">
+          <div style="font-size:12.5px;font-weight:800;color:#F0F0F8;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${emoji} ${App._esc(p.name || 'Foto Loop')}</div>
+          <div style="font-size:10px;color:#9898B8;margin-top:2px;">${p.ciudad || ''} · ${p.cat || 'lugar'}</div>
+        </div>
+      </div>`;
+
+    this._hoverPopup = new maplibregl.Popup({
+      maxWidth: '195px', closeButton: false, closeOnClick: false,
+      offset: [0, -14], className: 'fl-popup hover-popup'
+    }).setLngLat([p.lng, p.lat]).setHTML(html).addTo(this.mainMap);
+  },
+
   // ── Mini popup inline en el mapa para FotoLoops ──
   async _showFotoPopup(p) {
     // Cerrar popup anterior si existe
     if (this._fotoPopup) { try { this._fotoPopup.remove(); } catch(e){} this._fotoPopup = null; }
+    if (this._hoverPopup) { try { this._hoverPopup.remove(); } catch(e){} this._hoverPopup = null; }
 
     const FL_CATS = {lugar:'📍',gastro:'🍽️',bar:'🍸',cafe:'☕',nocturno:'🌙',cultura:'🎭',arte:'🎨',patrimonio:'🏛️',musica:'🎵',naturaleza:'🌿',playa:'🏖️',parque:'🌳',pesca:'🎣',aventura:'🧗',deporte:'⚽',bienestar:'🧘',eventos:'📅',perro:'🐕'};
     const emoji = FL_CATS[p.cat] || p.emoji || '📍';
@@ -6203,43 +6162,22 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   _pillExpanded: false,
 
   _pillExpand() {
+    // El pill ahora queda siempre expandido (etiquetas visibles permanentemente)
     this._pillExpanded = true;
-    ['layers','foto','loop'].forEach(k => {
-      const lbl = document.getElementById('pill-lbl-' + k);
-      if (lbl) { lbl.style.maxWidth = '140px'; lbl.style.opacity = '1'; lbl.style.paddingRight = '14px'; }
-    });
-    setTimeout(() => {
-      const close = (e) => {
-        const pill = document.getElementById('map-pill');
-        const menu = document.getElementById('layer-menu');
-        if (pill && !pill.contains(e.target) && !(menu && menu.contains(e.target))) {
-          this._pillCollapse();
-        }
-        document.removeEventListener('click', close, true);
-      };
-      document.addEventListener('click', close, true);
-    }, 0);
   },
 
   _pillCollapse() {
-    this._pillExpanded = false;
-    ['layers','foto','loop'].forEach(k => {
-      const lbl = document.getElementById('pill-lbl-' + k);
-      if (lbl) { lbl.style.maxWidth = '0'; lbl.style.opacity = '0'; lbl.style.paddingRight = '0'; }
-    });
+    // No-op: el pill ya no se colapsa, queda siempre con las etiquetas visibles
     const menu = document.getElementById('layer-menu');
     if (menu) menu.style.display = 'none';
   },
 
   _pillAction(action) {
-    if (!this._pillExpanded) { this._pillExpand(); return; }
     if (action === 'layers') {
       this._toggleLayerMenu();
     } else if (action === 'foto') {
-      this._pillCollapse();
       this.openFotoLoop();
     } else if (action === 'loop') {
-      this._pillCollapse();
       this.openLoopModal();
     }
   },
@@ -6723,9 +6661,42 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     window.speechSynthesis && window.speechSynthesis.cancel();
   },
 
+  // ── Popup liviano al pasar el mouse por un loop (solo desktop/hover) ──
+  _hoverShowLoopCard(r) {
+    // Si el usuario ya tiene un loop seleccionado (click), no interferir
+    if (this.selId) return;
+    if (this._hoverPopup) { try { this._hoverPopup.remove(); } catch(e){} this._hoverPopup = null; }
+    if (!r.pts || !r.pts.length || !this.mainMap) return;
+    const pt = r.pts[0];
+    const lngLat = Array.isArray(pt) ? [pt[1], pt[0]] : [pt.lng, pt.lat];
+
+    const thumbHtml = (imgSrc) => imgSrc
+      ? `<img src="${imgSrc}" style="width:100%;height:100px;object-fit:cover;border-radius:10px 10px 0 0;display:block;" loading="lazy">`
+      : `<div style="width:100%;height:70px;background:linear-gradient(135deg,${r.color}30,${r.color}60);display:flex;align-items:center;justify-content:center;font-size:32px;border-radius:10px 10px 0 0;">${r.emoji||'🔁'}</div>`;
+
+    const html = `
+      <div id="hover-popup-inner" style="font-family:'Bai Jamjuree',sans-serif;width:185px;border-radius:12px;overflow:hidden;background:#1E1E26;box-shadow:0 8px 28px rgba(0,0,0,.65);">
+        ${thumbHtml(r.img && (r.img.startsWith('data:')||r.img.startsWith('http')) ? r.img : null)}
+        <div style="padding:9px 10px;">
+          <div style="font-size:12.5px;font-weight:800;color:#F0F0F8;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.emoji||'🔁'} ${App._esc(r.name)}</div>
+          <div style="font-size:10px;color:#9898B8;margin-top:2px;">${r.dist||'—'} · ${r.dur||'—'}</div>
+        </div>
+      </div>`;
+
+    this._hoverPopup = new maplibregl.Popup({
+      maxWidth: '195px', closeButton: false, closeOnClick: false,
+      offset: 10, className: 'fl-popup hover-popup'
+    }).setLngLat(lngLat).setHTML(html).addTo(this.mainMap);
+  },
+
+  _hoverHideLoopCard() {
+    if (this._hoverPopup) { try { this._hoverPopup.remove(); } catch(e){} this._hoverPopup = null; }
+  },
+
   // Popup con foto + CTA en el mapa (MapLibre)
   _showLoopMapCard(r) {
     if (this._loopPopup) { try { this._loopPopup.remove(); } catch(e){} this._loopPopup = null; }
+    if (this._hoverPopup) { try { this._hoverPopup.remove(); } catch(e){} this._hoverPopup = null; }
     if (!r.pts || !r.pts.length) return;
     const pt = r.pts[0];
     const lngLat = Array.isArray(pt) ? [pt[1], pt[0]] : [pt.lng, pt.lat];
