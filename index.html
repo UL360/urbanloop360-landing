@@ -2023,6 +2023,34 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     </div>
   </div>
 
+  <!-- ── MINI-MENÚ DE CAPAS — oculto por defecto ── -->
+  <div id="layer-menu"
+    style="position:absolute;bottom:180px;right:12px;z-index:16;
+           display:none;flex-direction:column;gap:6px;padding:8px;
+           background:rgba(20,20,24,.96);backdrop-filter:blur(10px);
+           border-radius:18px;border:0.5px solid rgba(255,255,255,.1);
+           box-shadow:0 8px 28px rgba(0,0,0,.5);min-width:168px;">
+    <button id="lbtn-all"  class="layer-chip all" aria-pressed="true"
+      onclick="App._setLayer('all')"  title="Ver todos los loops">🔀 Todos los Loop</button>
+    <button id="lbtn-muni" class="layer-chip" aria-pressed="false"
+      onclick="App._setLayer('muni')" title="Solo loops de la ciudad">🏙️ Loop Municipal</button>
+    <button id="lbtn-com"  class="layer-chip" aria-pressed="false"
+      onclick="App._setLayer('com')"  title="Solo loops de loopers">👟 Loop</button>
+    <button id="lbtn-foto" class="layer-chip" aria-pressed="false"
+      onclick="App._setLayer('foto')" title="Solo fotos geolocalizadas">📸 Fotoloop</button>
+  </div>
+
+  <!-- ── SEARCH BAR movida al menú lateral — se mantienen los ids para el JS ── -->
+  <div id="btm-panel" style="display:none;">
+    <div id="cards-scroll" style="display:none;"></div>
+    <span id="panel-ct" style="display:none;"></span>
+    <input type="text" id="srch-hidden" style="display:none;" aria-hidden="true">
+  </div>
+
+</div>
+
+
+<!-- ════════════ AYUDA UL360 — fuera de #explore para sobrevivir a cualquier navegación ════════════ -->
   <!-- ── HOJA: ¿Ayuda con Loop o FotoLoop? ── -->
   <div id="help-sheet-overlay" onclick="if(event.target===this)App._helpCloseMenu()"
     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;">
@@ -2066,32 +2094,6 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       </div>
     </div>
   </div>
-
-  <!-- ── MINI-MENÚ DE CAPAS — oculto por defecto ── -->
-  <div id="layer-menu"
-    style="position:absolute;bottom:180px;right:12px;z-index:16;
-           display:none;flex-direction:column;gap:6px;padding:8px;
-           background:rgba(20,20,24,.96);backdrop-filter:blur(10px);
-           border-radius:18px;border:0.5px solid rgba(255,255,255,.1);
-           box-shadow:0 8px 28px rgba(0,0,0,.5);min-width:168px;">
-    <button id="lbtn-all"  class="layer-chip all" aria-pressed="true"
-      onclick="App._setLayer('all')"  title="Ver todos los loops">🔀 Todos los Loop</button>
-    <button id="lbtn-muni" class="layer-chip" aria-pressed="false"
-      onclick="App._setLayer('muni')" title="Solo loops de la ciudad">🏙️ Loop Municipal</button>
-    <button id="lbtn-com"  class="layer-chip" aria-pressed="false"
-      onclick="App._setLayer('com')"  title="Solo loops de loopers">👟 Loop</button>
-    <button id="lbtn-foto" class="layer-chip" aria-pressed="false"
-      onclick="App._setLayer('foto')" title="Solo fotos geolocalizadas">📸 Fotoloop</button>
-  </div>
-
-  <!-- ── SEARCH BAR movida al menú lateral — se mantienen los ids para el JS ── -->
-  <div id="btm-panel" style="display:none;">
-    <div id="cards-scroll" style="display:none;"></div>
-    <span id="panel-ct" style="display:none;"></span>
-    <input type="text" id="srch-hidden" style="display:none;" aria-hidden="true">
-  </div>
-
-</div>
 
 <!-- ════════════ SIDE OVERLAY (mobile) ════════════ -->
 <div id="side-overlay" onclick="App.closeSidePanel()"></div>
