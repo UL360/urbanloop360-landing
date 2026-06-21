@@ -6287,14 +6287,21 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
   _helpStartTutorial(kind) {
     this._helpCloseMenu();
+    const needsLogin = !this._user || this._uid === 'public';
+    if (needsLogin) {
+      this._showAuthGate(
+        kind === 'loop' ? 'Crear un Loop' : 'Subir un FotoLoop',
+        () => { if (kind === 'loop') this._tutStart(this._TUT_STEPS_LOOP); else this._tutStart(this._TUT_STEPS_FOTO); }
+      );
+      return;
+    }
     if (kind === 'loop') this._tutStart(this._TUT_STEPS_LOOP);
     else this._tutStart(this._TUT_STEPS_FOTO);
   },
 
   // ── Pasos del tutorial de Loop (vía Crear Manual) ──
   _TUT_STEPS_LOOP: [
-    { action: () => App.openLoopModal(), wait: 400, target: '#lm-btn-manual', text: 'Tocá acá: "Crear manual", para dibujar tu loop en el mapa.', waitForClick: '#lm-btn-manual' },
-    { target: '#cm-name', text: 'Ponele un nombre a tu loop, algo que lo identifique.' },
+    { action: () => App.go('crear-manual'), wait: 500, target: '#cm-name', text: 'Ponele un nombre a tu loop, algo que lo identifique.' },
     { target: '#cm-type', text: 'Elegí el tipo de actividad: running, paseo, gastronómico, etc.' },
     { target: '#cm-map', text: 'Tocá el mapa para ir marcando los puntos del recorrido, uno por uno.' },
     { target: '#cm-img-preview-zone', text: 'Sumá una foto de portada (opcional), así se ve más lindo en el mapa.' },
@@ -6304,7 +6311,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
   // ── Pasos del tutorial de FotoLoop ──
   _TUT_STEPS_FOTO: [
-    { action: () => App.openFotoLoop(), wait: 350, target: '#fl-cam-label', text: 'Sacá o subí una foto del lugar que querés compartir.' },
+    { action: () => App.openFotoLoop(), wait: 600, target: '#fl-cam-label', text: 'Sacá o subí una foto del lugar que querés compartir.' },
     { target: '#fl-name', text: 'Escribí el nombre del lugar (ej: una plaza, un bar, un mirador).' },
     { target: '#fl-cat-select', text: 'Elegí la etiqueta que mejor lo describe.' },
     { target: '#fl-map', text: 'Tocá el mapa para marcar exactamente dónde está este lugar.' },
@@ -6381,9 +6388,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const findEl = (tries) => {
       tries = tries || 0;
       const el = document.querySelector(targetSelector);
-      if (!el) {
-        if (tries < 10) { setTimeout(() => findEl(tries + 1), 150); return; }
-        // No se encontró: centrar el tooltip igual, sin flecha
+      const visible = el && (el.offsetWidth > 0 || el.offsetHeight > 0) && el.getClientRects().length > 0;
+      if (!visible) {
+        if (tries < 20) { setTimeout(() => findEl(tries + 1), 150); return; }
+        // No se encontró visible: centrar el tooltip igual, sin flecha
         arrow.style.display = 'none';
         tooltip.style.top = '50%';
         tooltip.style.left = '50%';
