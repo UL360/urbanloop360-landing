@@ -1556,8 +1556,8 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
 .fl-cat-scroll::-webkit-scrollbar { display: none; }
 .maplibregl-popup-content { background: var(--wh) !important; color: var(--dk) !important; border-radius: var(--rs) !important; box-shadow: var(--shL) !important; font-family: var(--fB) !important; font-size: 13px !important; padding: 10px 14px !important; }
 .maplibregl-popup-tip { display: none; }
-/* Popup bajo los controles custom (z-index 10) */
-.maplibregl-popup { z-index: 8 !important; }
+/* Popup por encima del sidebar (z-index 91) para que no quede tapado en desktop */
+.maplibregl-popup { z-index: 92 !important; }
 /* FotoLoop mini popup */
 .fl-popup .maplibregl-popup-content { background: transparent !important; padding: 0 !important; border-radius: 10px !important; box-shadow: none !important; }
 .fl-popup .maplibregl-popup-close-button { color: #F0F0F8 !important; font-size: 18px !important; top: 4px !important; right: 6px !important; background: rgba(0,0,0,.4) !important; border-radius: 50% !important; width: 22px !important; height: 22px !important; display: flex !important; align-items: center !important; justify-content: center !important; line-height: 1 !important; }
@@ -2000,6 +2000,73 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       </div>
       <span id="pill-lbl-loop" style="font-size:13px;font-weight:600;color:rgba(255,255,255,.75);white-space:nowrap;
             display:inline-block;padding-right:14px;">+ Loop</span>
+    </div>
+  </div>
+
+  <!-- ── BOTÓN FLOTANTE DE AYUDA UL360 ── -->
+  <div id="help-fab"
+    onclick="App._helpOpenMenu()"
+    role="button" tabindex="0" aria-label="Ayuda de UL360"
+    style="position:absolute;bottom:28px;left:12px;z-index:15;
+           display:none;align-items:center;gap:8px;cursor:pointer;
+           transition:transform .4s cubic-bezier(.34,1.56,.64,1);">
+    <div style="background:rgba(255,255,255,.96);border-radius:14px;padding:6px 11px;
+                font-size:11.5px;font-weight:600;color:#1a1a1a;white-space:nowrap;
+                box-shadow:0 4px 14px rgba(0,0,0,.35);font-family:var(--fB);">
+      Ayuda de UL360
+    </div>
+    <div style="width:46px;height:46px;border-radius:50%;background:#FF5F00;
+                display:flex;align-items:center;justify-content:center;flex-shrink:0;
+                box-shadow:0 4px 18px rgba(255,95,0,.5);">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2">
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 2-3 5"/>
+        <circle cx="12" cy="17.5" r=".6" fill="white" stroke="none"/>
+        <circle cx="12" cy="12" r="9.5"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ── HOJA: ¿Ayuda con Loop o FotoLoop? ── -->
+  <div id="help-sheet-overlay" onclick="if(event.target===this)App._helpCloseMenu()"
+    style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;">
+    <div id="help-sheet"
+      style="position:absolute;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;
+             background:#1E1E26;border-radius:18px 18px 0 0;padding:18px 18px 28px;
+             box-shadow:0 -8px 30px rgba(0,0,0,.5);">
+      <div style="width:36px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:0 auto 14px;"></div>
+      <p style="font-family:var(--fH);font-size:15px;font-weight:700;color:#F0F0F8;text-align:center;margin:0 0 16px;">¿Te ayudo a crear tu primer...</p>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button onclick="App._helpStartTutorial('loop')"
+          style="display:flex;align-items:center;gap:10px;padding:14px;background:#FF5F00;border:none;border-radius:12px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--fH);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
+          Loop
+        </button>
+        <button onclick="App._helpStartTutorial('foto')"
+          style="display:flex;align-items:center;gap:10px;padding:14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:12px;color:#F0F0F8;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--fH);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/></svg>
+          FotoLoop
+        </button>
+      </div>
+      <button onclick="App._helpCloseMenu()" style="display:block;margin:14px auto 0;background:none;border:none;color:rgba(255,255,255,.45);font-size:12.5px;cursor:pointer;font-family:var(--fB);">Ahora no</button>
+    </div>
+  </div>
+
+  <!-- ── OVERLAY DEL TUTORIAL GUIADO (flecha + tooltip) ── -->
+  <div id="tut-overlay" style="display:none;position:fixed;inset:0;z-index:9500;pointer-events:none;">
+    <div id="tut-arrow" style="position:absolute;width:34px;height:34px;pointer-events:none;transition:top .35s ease,left .35s ease,transform .35s ease;">
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+        <path d="M17 2 L30 17 L22 17 L22 32 L12 32 L12 17 L4 17 Z" fill="#FF5F00" stroke="white" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div id="tut-tooltip"
+      style="position:absolute;max-width:240px;background:#1E1E26;border-radius:14px;padding:13px 15px;
+             box-shadow:0 10px 32px rgba(0,0,0,.55);pointer-events:auto;transition:top .35s ease,left .35s ease;">
+      <div style="font-size:10.5px;font-weight:700;color:#FF5F00;letter-spacing:.4px;margin-bottom:4px;" id="tut-step-label">PASO 1 DE 6</div>
+      <div style="font-size:13.5px;font-weight:600;color:#F0F0F8;line-height:1.4;margin-bottom:10px;" id="tut-step-text"></div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="App._tutSkip()" style="flex:1;padding:8px;border-radius:9px;border:1px solid rgba(255,255,255,.18);background:none;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--fB);">Saltar</button>
+        <button id="tut-next-btn" onclick="App._tutNext()" style="flex:1.4;padding:8px;border-radius:9px;border:none;background:#FF5F00;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--fB);">Siguiente →</button>
+      </div>
     </div>
   </div>
 
@@ -2835,7 +2902,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     </div>
 
     <!-- Foto de portada -->
-    <div>
+    <div id="cm-img-preview-zone">
       <label style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:5px;">FOTO DE PORTADA (opcional)</label>
       <div id="cm-img-preview" style="display:none;position:relative;border-radius:12px;overflow:hidden;aspect-ratio:16/9;background:var(--bg0);margin-bottom:8px;">
         <img id="cm-img-thumb" style="width:100%;height:100%;object-fit:cover;" src="" alt="Preview de imagen del post">
@@ -3598,7 +3665,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 
     <div style="display:flex;gap:10px;">
       <button onclick="App.closeFotoLoop()" style="flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--bd);background:var(--lt);font-size:14px;font-weight:600;color:var(--md);cursor:pointer;">Cancelar</button>
-      <button onclick="App.publishFotoLoop()" style="flex:2;padding:13px;border-radius:12px;border:none;background:var(--or);color:white;font-size:14px;font-weight:700;cursor:pointer;">🌐 Publicar parada</button>
+      <button id="fl-publish-btn" onclick="App.publishFotoLoop()" style="flex:2;padding:13px;border-radius:12px;border:none;background:var(--or);color:white;font-size:14px;font-weight:700;cursor:pointer;">🌐 Publicar parada</button>
     </div>
   </div>
 </div>
@@ -4704,6 +4771,9 @@ const App = {
     const pill = document.getElementById('map-pill');
     if (pill) pill.style.display = showFab ? 'flex' : 'none';
     if (!showFab) { App._pillExpanded = false; App._pillCollapse && App._pillCollapse(); }
+    const helpFab = document.getElementById('help-fab');
+    if (helpFab) helpFab.style.display = showFab ? 'flex' : 'none';
+    if (showFab) this._startHelpFabPulse();
     const bnav = document.getElementById('bnav');
     if (bnav) bnav.style.display = 'none';
 
@@ -6190,6 +6260,179 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     } else if (action === 'loop') {
       this.openLoopModal();
     }
+  },
+
+  // ════════════ AYUDA DE UL360 — botón flotante + tutorial guiado ════════════
+
+  _helpFabPulseTimer: null,
+
+  _startHelpFabPulse() {
+    if (this._helpFabPulseTimer) return;
+    this._helpFabPulseTimer = setInterval(() => {
+      const fab = document.getElementById('help-fab');
+      if (!fab || fab.style.display === 'none') return;
+      if (document.getElementById('help-sheet-overlay')?.style.display === 'flex') return;
+      if (document.getElementById('tut-overlay')?.style.display === 'block') return;
+      fab.style.transform = 'scale(1.12)';
+      setTimeout(() => { fab.style.transform = 'scale(1)'; }, 280);
+    }, 6000);
+  },
+
+  _helpOpenMenu() {
+    const ov = document.getElementById('help-sheet-overlay');
+    if (ov) ov.style.display = 'flex';
+  },
+
+  _helpCloseMenu() {
+    const ov = document.getElementById('help-sheet-overlay');
+    if (ov) ov.style.display = 'none';
+  },
+
+  _helpStartTutorial(kind) {
+    this._helpCloseMenu();
+    if (kind === 'loop') this._tutStart(this._TUT_STEPS_LOOP);
+    else this._tutStart(this._TUT_STEPS_FOTO);
+  },
+
+  // ── Pasos del tutorial de Loop (vía Crear Manual) ──
+  _TUT_STEPS_LOOP: [
+    { action: () => App.openLoopModal(), wait: 400, target: '#lm-btn-manual', text: 'Tocá acá: "Crear manual", para dibujar tu loop en el mapa.', waitForClick: '#lm-btn-manual' },
+    { target: '#cm-name', text: 'Ponele un nombre a tu loop, algo que lo identifique.' },
+    { target: '#cm-type', text: 'Elegí el tipo de actividad: running, paseo, gastronómico, etc.' },
+    { target: '#cm-map', text: 'Tocá el mapa para ir marcando los puntos del recorrido, uno por uno.' },
+    { target: '#cm-img-preview-zone', text: 'Sumá una foto de portada (opcional), así se ve más lindo en el mapa.' },
+    { target: '#vopt-public', text: 'Elegí quién puede ver tu loop: solo vos, la comunidad, o proponerlo al municipio.' },
+    { target: '#cm-save-btn', text: '¡Listo! Tocá acá para guardar y publicar tu loop.', isLast: true },
+  ],
+
+  // ── Pasos del tutorial de FotoLoop ──
+  _TUT_STEPS_FOTO: [
+    { action: () => App.openFotoLoop(), wait: 350, target: '#fl-cam-label', text: 'Sacá o subí una foto del lugar que querés compartir.' },
+    { target: '#fl-name', text: 'Escribí el nombre del lugar (ej: una plaza, un bar, un mirador).' },
+    { target: '#fl-cat-select', text: 'Elegí la etiqueta que mejor lo describe.' },
+    { target: '#fl-map', text: 'Tocá el mapa para marcar exactamente dónde está este lugar.' },
+    { target: '#fl-publish-btn', text: '¡Listo! Tocá acá para publicar tu FotoLoop.', isLast: true },
+  ],
+
+  _tutSteps: [],
+  _tutIndex: 0,
+
+  _tutStart(steps) {
+    this._tutSteps = steps;
+    this._tutIndex = 0;
+    this._tutRunStep();
+  },
+
+  _tutRunStep() {
+    const step = this._tutSteps[this._tutIndex];
+    if (!step) { this._tutEnd(); return; }
+
+    const proceed = () => {
+      const label = document.getElementById('tut-step-label');
+      const text = document.getElementById('tut-step-text');
+      const nextBtn = document.getElementById('tut-next-btn');
+      if (label) label.textContent = `PASO ${this._tutIndex + 1} DE ${this._tutSteps.length}`;
+      if (text) text.textContent = step.text;
+
+      if (step.waitForClick) {
+        if (nextBtn) { nextBtn.style.display = 'none'; }
+      } else if (nextBtn) {
+        nextBtn.style.display = '';
+        nextBtn.textContent = step.isLast ? 'Entendido ✓' : 'Siguiente →';
+      }
+
+      const overlay = document.getElementById('tut-overlay');
+      if (overlay) overlay.style.display = 'block';
+
+      this._tutPositionArrow(step.target);
+
+      if (step.waitForClick) {
+        const el = document.querySelector(step.waitForClick);
+        if (el) {
+          const advance = () => {
+            el.removeEventListener('click', advance, true);
+            this._tutIndex++;
+            setTimeout(() => this._tutRunStep(), 400);
+          };
+          el.addEventListener('click', advance, true);
+        }
+      }
+    };
+
+    if (step.action) {
+      step.action();
+      setTimeout(proceed, step.wait || 300);
+    } else {
+      proceed();
+    }
+  },
+
+  _tutPositionArrow(targetSelector) {
+    const arrow = document.getElementById('tut-arrow');
+    const tooltip = document.getElementById('tut-tooltip');
+    if (!arrow || !tooltip) return;
+
+    if (!targetSelector) {
+      // Sin target específico (ej: elegir una opción del modal): centrar el tooltip
+      arrow.style.display = 'none';
+      tooltip.style.top = '50%';
+      tooltip.style.left = '50%';
+      tooltip.style.transform = 'translate(-50%,-50%)';
+      return;
+    }
+
+    const findEl = (tries) => {
+      tries = tries || 0;
+      const el = document.querySelector(targetSelector);
+      if (!el) {
+        if (tries < 10) { setTimeout(() => findEl(tries + 1), 150); return; }
+        // No se encontró: centrar el tooltip igual, sin flecha
+        arrow.style.display = 'none';
+        tooltip.style.top = '50%';
+        tooltip.style.left = '50%';
+        tooltip.style.transform = 'translate(-50%,-50%)';
+        return;
+      }
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      setTimeout(() => {
+        const r = el.getBoundingClientRect();
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height / 2;
+
+        arrow.style.display = 'block';
+        arrow.style.transform = 'none';
+        arrow.style.top = (r.top - 38) + 'px';
+        arrow.style.left = (cx - 17) + 'px';
+
+        let tw = 240, th = 110;
+        let tLeft = cx - tw / 2;
+        let tTop = r.top - 38 - th - 8;
+        if (tTop < 10) tTop = r.bottom + 14;
+        if (tLeft < 10) tLeft = 10;
+        if (tLeft + tw > window.innerWidth - 10) tLeft = window.innerWidth - tw - 10;
+
+        tooltip.style.transform = 'none';
+        tooltip.style.top = tTop + 'px';
+        tooltip.style.left = tLeft + 'px';
+      }, 320);
+    };
+    findEl();
+  },
+
+  _tutNext() {
+    const step = this._tutSteps[this._tutIndex];
+    if (step && step.isLast) { this._tutEnd(); return; }
+    this._tutIndex++;
+    this._tutRunStep();
+  },
+
+  _tutSkip() { this._tutEnd(); },
+
+  _tutEnd() {
+    const overlay = document.getElementById('tut-overlay');
+    if (overlay) overlay.style.display = 'none';
+    this._tutSteps = [];
+    this._tutIndex = 0;
   },
 
   _toggleLayerMenu() {
@@ -14465,7 +14708,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
             </div>
           </button>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <button onclick="App.closeLoopModal();App.go('crear-manual');"
+            <button id="lm-btn-manual" onclick="App.closeLoopModal();App.go('crear-manual');"
               style="height:54px;background:var(--lt);color:var(--dk);border:0.5px solid var(--bd);border-radius:12px;font-family:var(--fH);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;padding:0 12px;transition:all .2s;">
               <div style="width:28px;height:28px;background:var(--orL);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
