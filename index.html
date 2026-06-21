@@ -4856,6 +4856,7 @@ const App = {
             if (!this.mainMap.hasImage(e.id)) this.mainMap.addImage(e.id, empty, { sdf:false });
           });
           // Re-dibujar rutas, fotos y negocios
+          this._assignDistinctColors();
           this.routes.forEach(r => this._drawRoute(r));
           this._drawFotoStopsOnMap();
           this._drawNegociosOnMap();
@@ -4912,6 +4913,7 @@ const App = {
         const empty = { width: 1, height: 1, data: new Uint8Array(4) };
         if (!this.mainMap.hasImage(e.id)) this.mainMap.addImage(e.id, empty);
       });
+      this._assignDistinctColors();
       this.routes.forEach(r => this._drawRoute(r));
       this._drawFotoStopsOnMap();   // ← marcadores de fotostops + fotoloops
       this._drawNegociosOnMap();        // ← negocios activos
@@ -5484,6 +5486,17 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       this.mainMap.easeTo({ pitch: this._is3D ? 50 : 0, bearing: freeBearing, duration: 600 });
       this.toast('📍 Navegación libre');
     }
+  },
+
+  // ── Paleta de colores básicos, bien diferenciados, sin amarillo ni negro/marrón apagado ──
+  _DISTINCT_PALETTE: ['#FF5F00','#E53935','#1E88E5','#2E7D32','#8E24AA','#00ACC1','#D81B60','#00897B','#3949AB','#FB8C00','#00838F','#5E35B1','#C2185B','#43A047'],
+
+  // Reasigna colores en memoria a los loops para que ninguno se vea
+  // igual o casi igual al anterior (sin tocar lo guardado en Firestore).
+  _assignDistinctColors() {
+    if (!this.routes || !this.routes.length) return;
+    const pal = this._DISTINCT_PALETTE;
+    this.routes.forEach((r, i) => { r.color = pal[i % pal.length]; });
   },
 
   _drawRoute(r) {
@@ -8093,7 +8106,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     }
     if (!name) { this.toast('⚠️ Ingresá un nombre'); return; }
     if (this.aPts.length<2) { this.toast('⚠️ Necesitás al menos 2 puntos en el mapa'); return; }
-    const cfg = {trad:{color:'#FF5F00',emoji:'☕',badge:'bt'},pesca:{color:'#2563EB',emoji:'🎣',badge:'bp'},gastro:{color:'#16A34A',emoji:'🍽️',badge:'bg'},atardecer:{color:'#DB2777',emoji:'🌅',badge:'ba'},otra:{color:'#6B7280',emoji:'🗺️',badge:'bt'},running:{color:'#7C3AED',emoji:'🏃',badge:'bsport'},mtb:{color:'#16A34A',emoji:'🚵',badge:'bmtb'},ciclismo:{color:'#0891B2',emoji:'🚴',badge:'brelax'},caminata:{color:'#D97706',emoji:'🥾',badge:'btrab'},paseo:{color:'#059669',emoji:'🌳',badge:'bg'},relax:{color:'#0891B2',emoji:'🧘',badge:'brelax'},trabajo:{color:'#D97706',emoji:'💼',badge:'btrab'},vacaciones:{color:'#DB2777',emoji:'🏖️',badge:'ba'},salidas:{color:'#7C3AED',emoji:'🎉',badge:'bsport'},perro:{color:'#D97706',emoji:'🐕',badge:'btrab'}}[type]||{color:'#6B7280',emoji:'🗺️',badge:'bt'};
+    const cfg = {trad:{color:'#FF5F00',emoji:'☕',badge:'bt'},pesca:{color:'#3949AB',emoji:'🎣',badge:'bp'},gastro:{color:'#D81B60',emoji:'🍽️',badge:'bg'},atardecer:{color:'#8E24AA',emoji:'🌅',badge:'ba'},otra:{color:'#546E7A',emoji:'🗺️',badge:'bt'},running:{color:'#E53935',emoji:'🏃',badge:'bsport'},mtb:{color:'#FB8C00',emoji:'🚵',badge:'bmtb'},ciclismo:{color:'#1E88E5',emoji:'🚴',badge:'brelax'},caminata:{color:'#2E7D32',emoji:'🥾',badge:'btrab'},paseo:{color:'#00897B',emoji:'🌳',badge:'bg'},relax:{color:'#00ACC1',emoji:'🧘',badge:'brelax'},trabajo:{color:'#5D4037',emoji:'💼',badge:'btrab'},vacaciones:{color:'#0288D1',emoji:'🏖️',badge:'ba'},salidas:{color:'#D81B60',emoji:'🎉',badge:'bsport'},perro:{color:'#6D4C41',emoji:'🐕',badge:'btrab'}}[type]||{color:'#546E7A',emoji:'🗺️',badge:'bt'};
     const dist = this._calcDist(this.aPts);
 
     // Deshabilitar botón mientras guarda
@@ -9178,7 +9191,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const vis  = this._cmVisibility || 'public';
 
     const EMOJI_MAP = {trad:'☕',running:'🏃',mtb:'🚵',ciclismo:'🚴',caminata:'🥾',paseo:'🌳',pesca:'🎣',gastro:'🍽️',atardecer:'🌅',relax:'🧘',salidas:'🎉',perro:'🐕',otra:'🗺️'};
-    const COLOR_MAP = {trad:'#FF5F00',running:'#EF4444',mtb:'#D97706',ciclismo:'#0891B2',caminata:'#059669',paseo:'#16A34A',pesca:'#0369A1',gastro:'#DB2777',atardecer:'#EA580C',relax:'#7C3AED',salidas:'#EC4899',perro:'#CA8A04',otra:'#6B7280'};
+    const COLOR_MAP = {trad:'#FF5F00',running:'#E53935',mtb:'#FB8C00',ciclismo:'#1E88E5',caminata:'#2E7D32',paseo:'#00897B',pesca:'#3949AB',gastro:'#D81B60',atardecer:'#8E24AA',relax:'#00ACC1',salidas:'#D81B60',perro:'#6D4C41',otra:'#546E7A'};
 
     const loopId = 'cm_' + Date.now();
     const loopData = {
@@ -12754,7 +12767,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     loc.ciudad = city; loc.provincia = grabProv; loc.pais = grabPais;
 
     const t = this.grabType||'running';
-    const types={running:{emoji:'🏃',color:'#7C3AED',badge:'bsport'},mtb:{emoji:'🚵',color:'#16A34A',badge:'bmtb'},ciclismo:{emoji:'🚴',color:'#0891B2',badge:'brelax'},caminata:{emoji:'🥾',color:'#D97706',badge:'btrab'},paseo:{emoji:'🌳',color:'#059669',badge:'bg'},perro:{emoji:'🐕',color:'#D97706',badge:'btrab'},pesca:{emoji:'🎣',color:'#0E7490',badge:'btrab'},atardecer:{emoji:'🌅',color:'#7C3AED',badge:'ba'},gastro:{emoji:'🍽️',color:'#B45309',badge:'bg'},trad:{emoji:'☕',color:'#92400E',badge:'bg'},relax:{emoji:'🧘',color:'#0891B2',badge:'brelax'},salidas:{emoji:'🎉',color:'#7C3AED',badge:'bsport'},trabajo:{emoji:'💼',color:'#D97706',badge:'btrab'},vacaciones:{emoji:'🏖️',color:'#DB2777',badge:'ba'},lugar:{emoji:'📍',color:'#FF5F00',badge:'bg'},cafe:{emoji:'☕',color:'#92400E',badge:'bg'},bar:{emoji:'🍸',color:'#0F766E',badge:'bg'},nocturno:{emoji:'🌙',color:'#4F46E5',badge:'ba'},cultura:{emoji:'🎭',color:'#9333EA',badge:'ba'},arte:{emoji:'🎨',color:'#C026D3',badge:'ba'},patrimonio:{emoji:'🏛️',color:'#7C3AED',badge:'ba'},musica:{emoji:'🎵',color:'#BE185D',badge:'ba'},naturaleza:{emoji:'🌿',color:'#059669',badge:'bg'},playa:{emoji:'🏖️',color:'#0284C7',badge:'bg'},parque:{emoji:'🌳',color:'#16A34A',badge:'bg'},aventura:{emoji:'🧗',color:'#EA580C',badge:'bsport'},deporte:{emoji:'⚽',color:'#DC2626',badge:'bsport'},bienestar:{emoji:'🧘',color:'#0891B2',badge:'brelax'},eventos:{emoji:'📅',color:'#D97706',badge:'btrab'},otra:{emoji:'🗺️',color:'#6B7280',badge:'bt'}};
+    const types={running:{emoji:'🏃',color:'#E53935',badge:'bsport'},mtb:{emoji:'🚵',color:'#FB8C00',badge:'bmtb'},ciclismo:{emoji:'🚴',color:'#1E88E5',badge:'brelax'},caminata:{emoji:'🥾',color:'#2E7D32',badge:'btrab'},paseo:{emoji:'🌳',color:'#00897B',badge:'bg'},perro:{emoji:'🐕',color:'#6D4C41',badge:'btrab'},pesca:{emoji:'🎣',color:'#3949AB',badge:'btrab'},atardecer:{emoji:'🌅',color:'#8E24AA',badge:'ba'},gastro:{emoji:'🍽️',color:'#D81B60',badge:'bg'},trad:{emoji:'☕',color:'#FF5F00',badge:'bg'},relax:{emoji:'🧘',color:'#00ACC1',badge:'brelax'},salidas:{emoji:'🎉',color:'#D81B60',badge:'bsport'},trabajo:{emoji:'💼',color:'#5D4037',badge:'btrab'},vacaciones:{emoji:'🏖️',color:'#0288D1',badge:'ba'},lugar:{emoji:'📍',color:'#FF5F00',badge:'bg'},cafe:{emoji:'☕',color:'#6D4C41',badge:'bg'},bar:{emoji:'🍸',color:'#00838F',badge:'bg'},nocturno:{emoji:'🌙',color:'#3949AB',badge:'ba'},cultura:{emoji:'🎭',color:'#8E24AA',badge:'ba'},arte:{emoji:'🎨',color:'#AD1457',badge:'ba'},patrimonio:{emoji:'🏛️',color:'#5E35B1',badge:'ba'},musica:{emoji:'🎵',color:'#C2185B',badge:'ba'},naturaleza:{emoji:'🌿',color:'#388E3C',badge:'bg'},playa:{emoji:'🏖️',color:'#0288D1',badge:'bg'},parque:{emoji:'🌳',color:'#2E7D32',badge:'bg'},aventura:{emoji:'🧗',color:'#FB8C00',badge:'bsport'},deporte:{emoji:'⚽',color:'#E53935',badge:'bsport'},bienestar:{emoji:'🧘',color:'#00ACC1',badge:'brelax'},eventos:{emoji:'📅',color:'#6D4C41',badge:'btrab'},otra:{emoji:'🗺️',color:'#546E7A',badge:'bt'}};
     const c = types[t]||{emoji:'🏃',color:'#7C3AED',badge:'bsport'};
     const dist = this._calcDist(this.grabPts);
     const m = Math.floor(this.grabSecs/60), s = this.grabSecs%60;
@@ -14637,6 +14650,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
         }
         this._poiMarkers = {};
         if (this._locMarker) { try { this._locMarker.remove(); } catch(e){} this._locMarker = null; }
+        this._assignDistinctColors();
         this.routes.forEach(r => this._drawRoute(r));
         if (this._is3D) this._add3DBuildings();
         // Re-iniciar GPS marker si estaba activo
