@@ -1952,17 +1952,6 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <span style="font-family:var(--fH);font-size:13px;font-weight:700;color:#F5F5F5;">La Paz, Entre Ríos</span>
   </div>
 
-  <!-- ── BOTÓN REPORTAR PROBLEMA URBANO ── -->
-  <button id="btn-report-urban" onclick="App._openUrbanReport()"
-    aria-label="Reportar problema urbano"
-    style="position:absolute;top:14px;right:14px;z-index:10;
-           display:none;align-items:center;gap:6px;
-           padding:8px 14px;background:#1C1C1E;border:0.5px solid #2C2C2E;
-           border-radius:30px;box-shadow:0 4px 20px rgba(0,0,0,.5);
-           color:#F5F5F5;font-family:var(--fH);font-size:12px;font-weight:700;cursor:pointer;">
-    🚨 Reportar
-  </button>
-
   <!-- ── TOP RIGHT: Zoom + Locate ── -->
   <div style="position:absolute;top:14px;right:14px;z-index:10;display:flex;flex-direction:column;gap:6px;">
     <button onclick="App.mapZoom(1)" aria-label="Acercar mapa" style="width:40px;height:40px;background:#1C1C1E;border:0.5px solid #2C2C2E;border-radius:12px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#C0C0C8;">+</button>
@@ -1995,6 +1984,15 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       <span class="sat-icon" style="font-size:16px;line-height:1;">🛰️</span>
       <span class="sat-lbl" style="font-size:8px;font-weight:700;font-family:var(--fB);line-height:1;">Satélite</span>
     </button>
+    <!-- Botón sugerencias / reportar problema urbano — solo ícono -->
+    <button id="btn-report-urban" onclick="App._openUrbanReport()" title="Sugerencias y reportes" aria-label="Enviar sugerencia o reportar un problema"
+      style="width:40px;height:40px;background:#1C1C1E;border:0.5px solid #2C2C2E;border-radius:12px;cursor:pointer;display:none;align-items:center;justify-content:center;color:#FFC83D;transition:all .2s;margin-top:2px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18h6"/>
+        <path d="M10 22h4"/>
+        <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2V17h6v-2.3c0-.8.4-1.5 1-2A7 7 0 0 0 12 2z"/>
+      </svg>
+    </button>
     <!-- GPS accuracy badge -->
     <div id="gps-badge" style="text-align:center;font-size:9px;font-weight:600;color:#5A5A68;font-family:var(--fB);line-height:1.2;padding:2px 0;">GPS</div>
   </div>
@@ -2024,7 +2022,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
       </div>
       <span id="pill-lbl-layers" style="font-size:13px;font-weight:600;color:#fff;white-space:nowrap;
-            display:inline-block;padding-right:14px;">Opciones</span>
+            display:inline-block;padding-right:14px;">Vistas</span>
     </div>
 
     <!-- Botón 2: FotoLoop -->
