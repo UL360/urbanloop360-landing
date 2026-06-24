@@ -1620,8 +1620,20 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
   100% { box-shadow: 0 0 0 0    rgba(37,99,235,0);    }
 }
 
+/* ═══ PINES DE LOGO (Inicio de Loop / FotoLoop / Comercio) ═══ */
+.ul-pin-wrap { cursor: pointer; pointer-events: all; display: flex; align-items: flex-end; justify-content: center; }
+.ul-pin-wrap img { width: 100%; height: 100%; object-fit: contain; display: block; transition: transform .15s; }
+.ul-pin-start    { width: 34px; height: 44px; }
+.ul-pin-foto     { width: 30px; height: 39px; }
+.ul-pin-comercio { width: 34px; height: 44px; }
+
 /* ═══ MOBILE FIRST — EXPLORE ═══ */
 @media (max-width: 768px) {
+  /* Pines de logo — área de toque más grande (el ancla queda abajo-centro, no se mueve) */
+  .ul-pin-start    { width: 44px; height: 56px; }
+  .ul-pin-foto     { width: 40px; height: 51px; }
+  .ul-pin-comercio { width: 44px; height: 56px; }
+
   /* Map controls — bigger tap targets */
   #locate-btn { width: 46px !important; height: 46px !important; border-radius: 14px !important; }
 
@@ -3903,6 +3915,15 @@ const App = {
       .replace(/'/g, '&#x27;');
   },
 
+  // ── Feedback táctil: el pin se agranda y vuelve a su tamaño al tocarlo ──
+  _bouncePin(imgEl) {
+    if (!imgEl) return;
+    clearTimeout(imgEl._bounceT);
+    imgEl.style.transition = 'transform .16s cubic-bezier(.34,1.56,.64,1)';
+    imgEl.style.transform = 'scale(1.3) translateY(-6px)';
+    imgEl._bounceT = setTimeout(() => { imgEl.style.transform = 'scale(1) translateY(0)'; }, 160);
+  },
+
   async init() {
     document.addEventListener('input', e => {
       if (e.target.id === 'srch') this._onSrch(e.target.value);
@@ -5713,20 +5734,24 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if (this._startMarkers[r.id]) { try { this._startMarkers[r.id].remove(); } catch(e) {} }
     {
       const elStart = document.createElement('div');
-      elStart.style.cssText = 'width:34px;height:44px;cursor:pointer;pointer-events:all;';
-      elStart.innerHTML = `<img src="${this._PIN_INICIO_LOOP}" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));transition:transform .15s;" alt="Inicio del Loop" draggable="false">`;
+      elStart.className = 'ul-pin-wrap ul-pin-start';
+      elStart.innerHTML = `<img src="${this._PIN_INICIO_LOOP}" style="filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));" alt="Inicio del Loop" draggable="false">`;
       elStart.title = r.name || 'Inicio del Loop';
       const elStartImg = elStart.querySelector('img');
       elStart.addEventListener('mouseenter', () => { elStartImg.style.transform = 'scale(1.12) translateY(-2px)'; });
       elStart.addEventListener('mouseleave', () => { elStartImg.style.transform = 'scale(1) translateY(0)'; });
-      const startPopup = new maplibregl.Popup({ offset: 22, closeButton: false })
-        .setHTML(`<b>${r.name || 'Loop'}</b><br><small style="color:#6B7280">Punto de partida</small>`);
+      // Un toque/click: el pin "rebota" y se abre la card del Loop con imagen y acciones
+      elStart.addEventListener('click', (e) => {
+        e.stopPropagation();
+        App._bouncePin(elStartImg);
+        App.selectRoute(r.id);
+      });
       const startMkr = new maplibregl.Marker({ element: elStart, anchor: 'bottom' })
         .setLngLat(coords[0])
-        .setPopup(startPopup)
         .addTo(this.mainMap);
       this._startMarkers[r.id] = startMkr;
     }
+
 
     // POIs como marcadores HTML
     if (r.pois) {
@@ -5816,11 +5841,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if (!window.Supercluster || visible.length < 10) {
       visible.forEach(p => {
         const el = document.createElement('div');
-        el.style.cssText = 'width:30px;height:39px;cursor:pointer;pointer-events:all;';
-        el.innerHTML = `<img src="${this._PIN_FOTOLOOP}" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));transition:transform .15s;" alt="FotoLoop" draggable="false">`;
+        el.className = 'ul-pin-wrap ul-pin-foto';
+        el.innerHTML = `<img src="${this._PIN_FOTOLOOP}" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));" alt="FotoLoop" draggable="false">`;
         el.title = p.name || 'Foto Loop';
         const elImg = el.querySelector('img');
-        el.onclick = (e) => { e.stopPropagation(); App._showFotoPopup(p); };
+        el.onclick = (e) => { e.stopPropagation(); App._bouncePin(elImg); App._showFotoPopup(p); };
         el.addEventListener('mouseenter', () => { elImg.style.transform = 'scale(1.15) translateY(-2px)'; App._hoverShowFotoCard(p, el); });
         el.addEventListener('mouseleave', () => { elImg.style.transform = 'scale(1) translateY(0)'; App._hoverHideLoopCard(); });
         const mkr = new maplibregl.Marker({ element: el, anchor: 'bottom' })
@@ -5879,11 +5904,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         } else {
           // — Marker individual —
           const el = document.createElement('div');
-          el.style.cssText = 'width:30px;height:39px;cursor:pointer;pointer-events:all;';
-          el.innerHTML = `<img src="${this._PIN_FOTOLOOP}" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));transition:transform .15s;" alt="FotoLoop" draggable="false">`;
+          el.className = 'ul-pin-wrap ul-pin-foto';
+          el.innerHTML = `<img src="${this._PIN_FOTOLOOP}" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));" alt="FotoLoop" draggable="false">`;
           el.title = post.name || 'Foto Loop';
           const elImg = el.querySelector('img');
-          el.onclick = (ev) => { ev.stopPropagation(); App._showFotoPopup(post); };
+          el.onclick = (ev) => { ev.stopPropagation(); App._bouncePin(elImg); App._showFotoPopup(post); };
           el.addEventListener('mouseenter', () => { elImg.style.transform = 'scale(1.15) translateY(-2px)'; App._hoverShowFotoCard(post, el); });
           el.addEventListener('mouseleave', () => { elImg.style.transform = 'scale(1) translateY(0)'; App._hoverHideLoopCard(); });
           const mkr = new maplibregl.Marker({ element: el, anchor: 'bottom' })
@@ -5922,14 +5947,14 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     negocios.forEach(n => {
       // Wrapper — MapLibre lo ancla por bottom-center (punta del pin)
       const el = document.createElement('div');
-      el.style.cssText = 'width:34px;height:44px;cursor:pointer;pointer-events:all;';
-      el.innerHTML = `<img src="${this._PIN_COMERCIO}" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 3px 6px rgba(0,0,0,.45));transition:transform .15s;" alt="${n.nombre || 'Comercio'}" draggable="false">`;
+      el.className = 'ul-pin-wrap ul-pin-comercio';
+      el.innerHTML = `<img src="${this._PIN_COMERCIO}" style="filter:drop-shadow(0 3px 6px rgba(0,0,0,.45));" alt="${n.nombre || 'Comercio'}" draggable="false">`;
 
       el.title = n.nombre || 'Negocio';
       const elImg = el.querySelector('img');
       el.addEventListener('mouseenter', () => { elImg.style.transform = 'scale(1.15) translateY(-3px)'; });
       el.addEventListener('mouseleave', () => { elImg.style.transform = 'scale(1) translateY(0)'; });
-      el.addEventListener('click', (e) => { e.stopPropagation(); App._showNegocioPopup(n); });
+      el.addEventListener('click', (e) => { e.stopPropagation(); App._bouncePin(elImg); App._showNegocioPopup(n); });
 
       const mkr = new maplibregl.Marker({ element: el, anchor: 'bottom' })
         .setLngLat([parseFloat(n.lng), parseFloat(n.lat)])
