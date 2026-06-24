@@ -6337,17 +6337,16 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   _urepLoadImg(input) {
     const file = input.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      this._urepImgData = e.target.result;
+    this.toast('⏳ Comprimiendo imagen...');
+    this._compressImg(file, (b64, kb) => {
+      this._urepImgData = b64;
       const thumb = document.getElementById('urep-img-thumb');
       const preview = document.getElementById('urep-img-preview');
       const label = document.getElementById('urep-img-label');
-      if (thumb) thumb.src = e.target.result;
+      if (thumb) thumb.src = b64;
       if (preview) preview.style.display = 'block';
       if (label) label.style.display = 'none';
-    };
-    reader.readAsDataURL(file);
+    }, 70 * 1024);
   },
 
   _urepClearImg() {
@@ -7598,12 +7597,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     }));
   },
 
-  _compressImg(file, cb) {
+  _compressImg(file, cb, maxBytes = 75 * 1024) {
     const reader = new FileReader();
     reader.onload = e => {
       const img = new Image();
       img.onload = () => {
-        const maxBytes = 75 * 1024;
         let w = img.width, h = img.height;
         const maxW = 900, maxH = 600;
         if (w > maxW || h > maxH) {
