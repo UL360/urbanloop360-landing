@@ -1764,6 +1764,32 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 }
 .rg-disc-btn.on { background:var(--orL); border-color:var(--or); color:var(--or); font-weight:700; }
 #register-sheet::-webkit-scrollbar { display:none; }
+/* ── REPORTE URBANO ── */
+.urep-cat-btn {
+  padding:11px 8px;border:1.5px solid var(--bd);border-radius:12px;
+  background:var(--bg2);color:var(--md);font-size:12.5px;font-weight:600;
+  cursor:pointer;text-align:left;font-family:var(--fB);
+  transition:all .15s;
+}
+.urep-cat-btn.sel {
+  border-color:#FF5F00;background:rgba(255,95,0,.12);color:#FF5F00;
+}
+
+/* ── CARDS DE REPORTE EN ADMIN ── */
+.adm-rep-card {
+  background:var(--bg2);border:0.5px solid var(--bd);border-radius:14px;
+  padding:14px;display:flex;flex-direction:column;gap:10px;
+}
+.adm-rep-card .rep-header {
+  display:flex;align-items:flex-start;gap:10px;
+}
+.adm-rep-card .rep-cat-badge {
+  padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;
+  white-space:nowrap;flex-shrink:0;
+}
+.rep-status-pendiente { background:rgba(239,68,68,.15);color:#EF4444; }
+.rep-status-proceso   { background:rgba(251,146,60,.15);color:#FB923C; }
+.rep-status-resuelto  { background:rgba(34,197,94,.15);color:#22C55E; }
 </style>
 
   <!-- PWA Manifest inline -->
@@ -1913,6 +1939,17 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
     <span style="font-family:var(--fH);font-size:13px;font-weight:700;color:#F5F5F5;">La Paz, Entre Ríos</span>
   </div>
+
+  <!-- ── BOTÓN REPORTAR PROBLEMA URBANO ── -->
+  <button id="btn-report-urban" onclick="App._openUrbanReport()"
+    aria-label="Reportar problema urbano"
+    style="position:absolute;top:14px;right:14px;z-index:10;
+           display:none;align-items:center;gap:6px;
+           padding:8px 14px;background:#1C1C1E;border:0.5px solid #2C2C2E;
+           border-radius:30px;box-shadow:0 4px 20px rgba(0,0,0,.5);
+           color:#F5F5F5;font-family:var(--fH);font-size:12px;font-weight:700;cursor:pointer;">
+    🚨 Reportar
+  </button>
 
   <!-- ── TOP RIGHT: Zoom + Locate ── -->
   <div style="position:absolute;top:14px;right:14px;z-index:10;display:flex;flex-direction:column;gap:6px;">
@@ -2657,10 +2694,45 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 
     <!-- ── REPORTES ── -->
     <div id="adm-tab-reportes" class="adm-panel" style="display:none;">
-      <div id="adm-rep-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+      <!-- Filtros -->
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <select id="adm-rep-filter-status" class="fi" style="flex:1;min-width:120px;" onchange="App._admRenderReportes()">
+          <option value="">Todos los estados</option>
+          <option value="pending">🔴 Pendientes</option>
+          <option value="proceso">🟡 En proceso</option>
+          <option value="resuelto">🟢 Resueltos</option>
+        </select>
+        <select id="adm-rep-filter-cat" class="fi" style="flex:1;min-width:120px;" onchange="App._admRenderReportes()">
+          <option value="">Todas las categorías</option>
+          <option value="bache">🕳️ Bache</option>
+          <option value="luminaria">💡 Luminaria</option>
+          <option value="basura">🗑️ Basura</option>
+          <option value="arbolado">🌳 Arbolado</option>
+          <option value="agua">💧 Agua</option>
+          <option value="graffiti">🖊️ Vandalismo</option>
+          <option value="transito">🚦 Tránsito</option>
+          <option value="otro">📋 Otro</option>
+        </select>
+      </div>
+      <!-- Contadores rápidos -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
+        <div style="background:rgba(239,68,68,.1);border:0.5px solid rgba(239,68,68,.3);border-radius:12px;padding:10px;text-align:center;">
+          <div style="font-size:20px;font-weight:800;color:#EF4444;" id="adm-rep-ct-pending">—</div>
+          <div style="font-size:10px;color:var(--gr);">Pendientes</div>
+        </div>
+        <div style="background:rgba(251,146,60,.1);border:0.5px solid rgba(251,146,60,.3);border-radius:12px;padding:10px;text-align:center;">
+          <div style="font-size:20px;font-weight:800;color:#FB923C;" id="adm-rep-ct-proceso">—</div>
+          <div style="font-size:10px;color:var(--gr);">En proceso</div>
+        </div>
+        <div style="background:rgba(34,197,94,.1);border:0.5px solid rgba(34,197,94,.3);border-radius:12px;padding:10px;text-align:center;">
+          <div style="font-size:20px;font-weight:800;color:#22C55E;" id="adm-rep-ct-resuelto">—</div>
+          <div style="font-size:10px;color:var(--gr);">Resueltos</div>
+        </div>
+      </div>
+      <div id="adm-rep-list" style="display:flex;flex-direction:column;gap:10px;"></div>
       <div id="adm-rep-empty" style="display:none;text-align:center;padding:40px 20px;color:var(--gr);">
         <div style="font-size:32px;margin-bottom:8px;">✅</div>
-        <div>Sin reportes pendientes</div>
+        <div>Sin reportes en esta categoría</div>
       </div>
     </div>
 
@@ -4773,6 +4845,8 @@ const App = {
     const helpFab = document.getElementById('help-fab');
     if (helpFab) helpFab.style.display = showFab ? 'flex' : 'none';
     if (showFab) this._startHelpFabPulse();
+    const reportBtn = document.getElementById('btn-report-urban');
+    if (reportBtn) reportBtn.style.display = showFab ? 'flex' : 'none';
     const bnav = document.getElementById('bnav');
     if (bnav) bnav.style.display = 'none';
 
@@ -4910,6 +4984,11 @@ const App = {
   _ML_STYLE_DARK:      'https://api.maptiler.com/maps/streets-v2-dark/style.json?key=kS5YiQh2kB23jvnE6cpy',
   _ML_STYLE_LIGHT:     'https://api.maptiler.com/maps/streets-v2/style.json?key=kS5YiQh2kB23jvnE6cpy',
   _ML_STYLE_SATELLITE: 'https://api.maptiler.com/maps/satellite/style.json?key=kS5YiQh2kB23jvnE6cpy',
+
+  // ── Pines de logo (mascota Urban Loop) por sección ──
+  _PIN_INICIO_LOOP: 'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pin-inicio-loop.png',
+  _PIN_FOTOLOOP:    'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pin-fotoloop.png',
+  _PIN_COMERCIO:    'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pin-comercio.png',
   _isSatellite: false,
 
   toggleSatellite() {
@@ -5629,29 +5708,25 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       App._hoverHideLoopCard();
     });
 
-    // Punto de inicio
-    try {
-      this.mainMap.addSource('dot-' + r.id, {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: coords[0] },
-          properties: { name: r.name, emoji: r.emoji }
-        }
-      });
-    } catch(e) {
-      try { this.mainMap.getSource('dot-' + r.id).setData({ type: 'Feature', geometry: { type: 'Point', coordinates: coords[0] }, properties: { name: r.name, emoji: r.emoji } }); } catch(_) {}
+    // Punto de inicio — pin con el logo de Urban Loop (mascota)
+    if (!this._startMarkers) this._startMarkers = {};
+    if (this._startMarkers[r.id]) { try { this._startMarkers[r.id].remove(); } catch(e) {} }
+    {
+      const elStart = document.createElement('div');
+      elStart.style.cssText = 'width:34px;height:44px;cursor:pointer;pointer-events:all;';
+      elStart.innerHTML = `<img src="${this._PIN_INICIO_LOOP}" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));transition:transform .15s;" alt="Inicio del Loop" draggable="false">`;
+      elStart.title = r.name || 'Inicio del Loop';
+      const elStartImg = elStart.querySelector('img');
+      elStart.addEventListener('mouseenter', () => { elStartImg.style.transform = 'scale(1.12) translateY(-2px)'; });
+      elStart.addEventListener('mouseleave', () => { elStartImg.style.transform = 'scale(1) translateY(0)'; });
+      const startPopup = new maplibregl.Popup({ offset: 22, closeButton: false })
+        .setHTML(`<b>${r.name || 'Loop'}</b><br><small style="color:#6B7280">Punto de partida</small>`);
+      const startMkr = new maplibregl.Marker({ element: elStart, anchor: 'bottom' })
+        .setLngLat(coords[0])
+        .setPopup(startPopup)
+        .addTo(this.mainMap);
+      this._startMarkers[r.id] = startMkr;
     }
-    this.mainMap.addLayer({
-      id: 'dot-' + r.id, type: 'circle', source: 'dot-' + r.id,
-      paint: {
-        'circle-radius': 7,
-        'circle-color': r.color,
-        'circle-stroke-width': 2.5,
-        'circle-stroke-color': '#fff'
-      }
-    });
-    layerIds.push('dot-' + r.id);
 
     // POIs como marcadores HTML
     if (r.pois) {
@@ -5740,21 +5815,15 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     // Si no hay supercluster disponible o pocos puntos, dibujar directo
     if (!window.Supercluster || visible.length < 10) {
       visible.forEach(p => {
-        const emoji = FL_CATS[p.cat] || p.emoji || '📍';
-        const label = p.cat || 'lugar';
         const el = document.createElement('div');
-        el.style.cssText = [
-          'background:#1E1E26','border:1.5px solid #FF5F00','border-radius:10px',
-          'padding:3px 8px','display:flex','align-items:center','gap:4px',
-          'font-size:13px','box-shadow:0 2px 10px rgba(0,0,0,.4)','cursor:pointer',
-          'white-space:nowrap','max-width:110px','pointer-events:all','transition:transform .15s'
-        ].join(';');
-        el.innerHTML = `<span>${emoji}</span><span style="font-size:10px;font-weight:700;color:#FF5F00;overflow:hidden;text-overflow:ellipsis;">${label}</span>`;
+        el.style.cssText = 'width:30px;height:39px;cursor:pointer;pointer-events:all;';
+        el.innerHTML = `<img src="${this._PIN_FOTOLOOP}" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));transition:transform .15s;" alt="FotoLoop" draggable="false">`;
         el.title = p.name || 'Foto Loop';
+        const elImg = el.querySelector('img');
         el.onclick = (e) => { e.stopPropagation(); App._showFotoPopup(p); };
-        el.addEventListener('mouseenter', () => App._hoverShowFotoCard(p, el));
-        el.addEventListener('mouseleave', () => App._hoverHideLoopCard());
-        const mkr = new maplibregl.Marker({ element: el, anchor: 'bottom-left' })
+        el.addEventListener('mouseenter', () => { elImg.style.transform = 'scale(1.15) translateY(-2px)'; App._hoverShowFotoCard(p, el); });
+        el.addEventListener('mouseleave', () => { elImg.style.transform = 'scale(1) translateY(0)'; App._hoverHideLoopCard(); });
+        const mkr = new maplibregl.Marker({ element: el, anchor: 'bottom' })
           .setLngLat([p.lng, p.lat]).addTo(this.mainMap);
         this._fotoMarkers.push(mkr);
       });
@@ -5809,21 +5878,15 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           this._fotoMarkers.push(mkr);
         } else {
           // — Marker individual —
-          const emoji = FL_CATS[post.cat] || post.emoji || '📍';
-          const label = post.cat || 'lugar';
           const el = document.createElement('div');
-          el.style.cssText = [
-            'background:#1E1E26','border:1.5px solid #FF5F00','border-radius:10px',
-            'padding:3px 8px','display:flex','align-items:center','gap:4px',
-            'font-size:13px','box-shadow:0 2px 10px rgba(0,0,0,.4)','cursor:pointer',
-            'white-space:nowrap','max-width:110px','pointer-events:all','transition:transform .15s'
-          ].join(';');
-          el.innerHTML = `<span>${emoji}</span><span style="font-size:10px;font-weight:700;color:#FF5F00;overflow:hidden;text-overflow:ellipsis;">${label}</span>`;
+          el.style.cssText = 'width:30px;height:39px;cursor:pointer;pointer-events:all;';
+          el.innerHTML = `<img src="${this._PIN_FOTOLOOP}" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));transition:transform .15s;" alt="FotoLoop" draggable="false">`;
           el.title = post.name || 'Foto Loop';
+          const elImg = el.querySelector('img');
           el.onclick = (ev) => { ev.stopPropagation(); App._showFotoPopup(post); };
-          el.addEventListener('mouseenter', () => App._hoverShowFotoCard(post, el));
-          el.addEventListener('mouseleave', () => App._hoverHideLoopCard());
-          const mkr = new maplibregl.Marker({ element: el, anchor: 'bottom-left' })
+          el.addEventListener('mouseenter', () => { elImg.style.transform = 'scale(1.15) translateY(-2px)'; App._hoverShowFotoCard(post, el); });
+          el.addEventListener('mouseleave', () => { elImg.style.transform = 'scale(1) translateY(0)'; App._hoverHideLoopCard(); });
+          const mkr = new maplibregl.Marker({ element: el, anchor: 'bottom' })
             .setLngLat([lng, lat]).addTo(this.mainMap);
           this._fotoMarkers.push(mkr);
         }
@@ -5856,67 +5919,16 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         .filter(n => n.lat && n.lng);
     } catch(e) { console.warn('_drawNegociosOnMap:', e); return; }
 
-    // Mapa rubro → emoji
-    const RUBRO_EMOJI = {
-      'Restaurante / Parrilla': '🥩',
-      'Vinoteca / Vinería':     '🍷',
-      'Almacén / Proveeduría':  '🛒',
-      'Panadería / Confitería': '🥐',
-      'Heladería':              '🍦',
-      'Farmacia':               '💊',
-      'Bar / Cervecería':       '🍺',
-      'Café':                   '☕',
-      'Hospedaje / Camping':    '🏕️',
-      'Guía de pesca':          '🎣',
-      'Alquiler de botes / Kayaks': '🚣',
-      'Servicio náutico':       '⚓',
-      'Turismo aventura':       '🧗',
-      'Dietética / Naturista':  '🌿',
-      'Kiosco':                 '🏪',
-      'Carnicería':             '🥩',
-      'Verdulería':             '🥦',
-      'Ferretería':             '🔧',
-      'Indumentaria':           '👕',
-      'Peluquería / Estética':  '✂️',
-      'Veterinaria':            '🐾',
-      'Otro':                   '📍',
-    };
-
     negocios.forEach(n => {
-      const emoji = RUBRO_EMOJI[n.rubro] || '🏪';
-
-      // Pin gota con emoji adentro, color por rubro
-      const RUBRO_COLOR = {
-        'Restaurante / Parrilla':'#E85D04','Vinoteca / Vinería':'#7B2D8B',
-        'Almacén / Proveeduría':'#2563EB','Panadería / Confitería':'#D97706',
-        'Heladería':'#06B6D4','Farmacia':'#16A34A','Bar / Cervecería':'#B45309',
-        'Café':'#92400E','Hospedaje / Camping':'#0E7490','Guía de pesca':'#0284C7',
-        'Alquiler de botes / Kayaks':'#0369A1','Servicio náutico':'#1D4ED8',
-        'Turismo aventura':'#15803D','Dietética / Naturista':'#4D7C0F',
-        'Kiosco':'#FF5F00','Carnicería':'#DC2626','Verdulería':'#16A34A',
-        'Ferretería':'#6B7280','Indumentaria':'#DB2777','Peluquería / Estética':'#9333EA',
-        'Veterinaria':'#059669','Otro':'#FF5F00',
-      };
-      const pinColor = RUBRO_COLOR[n.rubro] || '#FF5F00';
-
-      // Wrapper — MapLibre lo ancla por bottom-center (punta de la gota)
+      // Wrapper — MapLibre lo ancla por bottom-center (punta del pin)
       const el = document.createElement('div');
-      el.style.cssText = 'width:38px;height:46px;position:relative;cursor:pointer;pointer-events:all;';
+      el.style.cssText = 'width:34px;height:44px;cursor:pointer;pointer-events:all;';
+      el.innerHTML = `<img src="${this._PIN_COMERCIO}" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 3px 6px rgba(0,0,0,.45));transition:transform .15s;" alt="${n.nombre || 'Comercio'}" draggable="false">`;
 
-      // SVG gota
-      el.innerHTML = `
-        <svg width="38" height="46" viewBox="0 0 38 46" xmlns="http://www.w3.org/2000/svg"
-             style="position:absolute;inset:0;transition:transform .15s;filter:drop-shadow(0 3px 6px rgba(0,0,0,.45));">
-          <path d="M19 1 C9.6 1 2 8.6 2 18 C2 30 19 45 19 45 C19 45 36 30 36 18 C36 8.6 28.4 1 19 1Z"
-                fill="${pinColor}" stroke="white" stroke-width="1.5"/>
-          <text x="19" y="23" text-anchor="middle" dominant-baseline="middle"
-                font-size="16" style="user-select:none;">${emoji}</text>
-        </svg>`;
-
-      const svg = el.querySelector('svg');
       el.title = n.nombre || 'Negocio';
-      el.addEventListener('mouseenter', () => { svg.style.transform = 'scale(1.2) translateY(-3px)'; });
-      el.addEventListener('mouseleave', () => { svg.style.transform = 'scale(1) translateY(0)'; });
+      const elImg = el.querySelector('img');
+      el.addEventListener('mouseenter', () => { elImg.style.transform = 'scale(1.15) translateY(-3px)'; });
+      el.addEventListener('mouseleave', () => { elImg.style.transform = 'scale(1) translateY(0)'; });
       el.addEventListener('click', (e) => { e.stopPropagation(); App._showNegocioPopup(n); });
 
       const mkr = new maplibregl.Marker({ element: el, anchor: 'bottom' })
@@ -6145,6 +6157,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         try { m.getElement().style.display = visible ? '' : 'none'; } catch(e) {}
       });
     }
+    // Pin de inicio del Loop
+    if (this._startMarkers && this._startMarkers[id]) {
+      try { this._startMarkers[id].getElement().style.display = visible ? '' : 'none'; } catch(e) {}
+    }
   },
 
   // ── SELECT ROUTE ──
@@ -6259,6 +6275,251 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     } else if (action === 'loop') {
       this.openLoopModal();
     }
+  },
+
+  // ════════════ REPORTES URBANOS (vecino → municipio) ════════════
+
+  _urepCat: null,
+  _urepLat: null,
+  _urepLng: null,
+  _urepImgData: null,
+
+  _openUrbanReport() {
+    if (!this._user || this._uid === 'public') {
+      this._showAuthGate('Reportar un problema', () => this._openUrbanReport());
+      return;
+    }
+    const ov = document.getElementById('urban-report-overlay');
+    if (!ov) return;
+    // Reset
+    this._urepCat = null; this._urepImgData = null;
+    document.querySelectorAll('.urep-cat-btn').forEach(b => b.classList.remove('sel'));
+    const desc = document.getElementById('urep-desc'); if (desc) desc.value = '';
+    this._urepClearImg();
+    ov.style.display = 'flex';
+    this._urepRefreshLoc();
+  },
+
+  _closeUrbanReport() {
+    const ov = document.getElementById('urban-report-overlay');
+    if (ov) ov.style.display = 'none';
+  },
+
+  _urepSelectCat(cat, btn) {
+    this._urepCat = cat;
+    document.querySelectorAll('.urep-cat-btn').forEach(b => b.classList.remove('sel'));
+    if (btn) btn.classList.add('sel');
+  },
+
+  _urepLoadImg(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      this._urepImgData = e.target.result;
+      const thumb = document.getElementById('urep-img-thumb');
+      const preview = document.getElementById('urep-img-preview');
+      const label = document.getElementById('urep-img-label');
+      if (thumb) thumb.src = e.target.result;
+      if (preview) preview.style.display = 'block';
+      if (label) label.style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  },
+
+  _urepClearImg() {
+    this._urepImgData = null;
+    const preview = document.getElementById('urep-img-preview');
+    const label = document.getElementById('urep-img-label');
+    const thumb = document.getElementById('urep-img-thumb');
+    if (preview) preview.style.display = 'none';
+    if (label) label.style.display = 'flex';
+    if (thumb) thumb.src = '';
+  },
+
+  _urepRefreshLoc() {
+    const lbl = document.getElementById('urep-loc-label');
+    if (lbl) lbl.textContent = 'Detectando ubicación...';
+    // Usar la ubicación GPS actual si está disponible
+    if (this._locMarker) {
+      const pos = this._locMarker.getLngLat();
+      this._urepLat = pos.lat;
+      this._urepLng = pos.lng;
+      if (lbl) lbl.textContent = `📍 ${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`;
+      return;
+    }
+    if (!navigator.geolocation) {
+      if (lbl) lbl.textContent = 'GPS no disponible';
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        this._urepLat = pos.coords.latitude;
+        this._urepLng = pos.coords.longitude;
+        if (lbl) lbl.textContent = `📍 ${this._urepLat.toFixed(5)}, ${this._urepLng.toFixed(5)}`;
+      },
+      () => { if (lbl) lbl.textContent = 'No se pudo obtener la ubicación'; }
+    );
+  },
+
+  async _sendUrbanReport() {
+    if (!this._urepCat) { this.toast('⚠️ Elegí una categoría'); return; }
+    const desc = document.getElementById('urep-desc')?.value?.trim();
+    if (!desc) { this.toast('⚠️ Escribí una descripción'); return; }
+    if (!this._db) { this.toast('❌ Sin conexión'); return; }
+
+    const CAT_LABELS = {bache:'Bache / Vía rota',luminaria:'Luminaria apagada',basura:'Basura / Volcamiento',arbolado:'Árbol / Rama caída',agua:'Pérdida de agua',graffiti:'Vandalismo',transito:'Señal / Tránsito',otro:'Otro'};
+    const CAT_EMOJI  = {bache:'🕳️',luminaria:'💡',basura:'🗑️',arbolado:'🌳',agua:'💧',graffiti:'🖊️',transito:'🚦',otro:'📋'};
+
+    this.toast('Enviando reporte...');
+    this._closeUrbanReport();
+
+    try {
+      // Subir imagen si hay
+      let imgUrl = null;
+      if (this._urepImgData && this._storage) {
+        try {
+          const ref = this._storage.ref(`urban_reports/${Date.now()}_${this._uid}.jpg`);
+          await ref.putString(this._urepImgData, 'data_url');
+          imgUrl = await ref.getDownloadURL();
+        } catch(e) { /* continuar sin imagen si falla */ }
+      }
+
+      await this._db.collection('urban_reports').add({
+        cat:       this._urepCat,
+        catLabel:  CAT_LABELS[this._urepCat] || this._urepCat,
+        catEmoji:  CAT_EMOJI[this._urepCat] || '📋',
+        desc,
+        lat:       this._urepLat,
+        lng:       this._urepLng,
+        imgUrl,
+        status:    'pending',
+        ts:        Date.now(),
+        uid:       this._uid,
+        userName:  this._user?.displayName || 'Vecino anónimo',
+        ciudad:    this._cityId || 'La Paz',
+        notified:  false,
+      });
+
+      this.toast('✅ Reporte enviado. ¡Gracias por contribuir!');
+      this._addPts(10, 'Reporte urbano enviado');
+    } catch(e) {
+      this.toast('❌ Error al enviar: ' + e.message);
+    }
+  },
+
+  // ─── ADMIN: renderizar reportes urbanos mejorado ───
+  async _admRenderReportes() {
+    const el    = document.getElementById('adm-rep-list');
+    const empty = document.getElementById('adm-rep-empty');
+    if (!el) return;
+    if (!this._db) { el.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">Firebase no disponible</div>`; return; }
+    el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">Cargando reportes...</div>`;
+
+    const filterStatus = document.getElementById('adm-rep-filter-status')?.value || '';
+    const filterCat    = document.getElementById('adm-rep-filter-cat')?.value    || '';
+
+    try {
+      // Cargar todos los reportes urbanos
+      let q = this._db.collection('urban_reports').orderBy('ts','desc');
+      const snap = await q.get().catch(() => this._db.collection('urban_reports').get());
+
+      const all = snap.docs.map(d => ({id:d.id,...d.data()}));
+
+      // Contadores
+      const ct = {pending:0, proceso:0, resuelto:0};
+      all.forEach(r => { if (ct[r.status]!==undefined) ct[r.status]++; else ct.pending++; });
+      const setEl = (id,v) => { const e = document.getElementById(id); if(e) e.textContent = v; };
+      setEl('adm-rep-ct-pending',  ct.pending);
+      setEl('adm-rep-ct-proceso',  ct.proceso);
+      setEl('adm-rep-ct-resuelto', ct.resuelto);
+      setEl('aStat-reportes', ct.pending);
+
+      // Filtrar
+      const filtered = all.filter(r => {
+        const statusMatch = !filterStatus || (r.status||'pending') === filterStatus;
+        const catMatch    = !filterCat    || r.cat === filterCat;
+        return statusMatch && catMatch;
+      });
+
+      if (filtered.length === 0) {
+        el.innerHTML = '';
+        if (empty) empty.style.display = 'block';
+        return;
+      }
+      if (empty) empty.style.display = 'none';
+
+      const STATUS_LABEL = {pending:'🔴 Pendiente', proceso:'🟡 En proceso', resuelto:'🟢 Resuelto'};
+      const STATUS_CLASS = {pending:'rep-status-pendiente', proceso:'rep-status-proceso', resuelto:'rep-status-resuelto'};
+
+      el.innerHTML = filtered.map(r => {
+        const st = r.status || 'pending';
+        const fecha = r.ts ? new Date(r.ts).toLocaleDateString('es-AR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+        return `<div class="adm-rep-card">
+          <div class="rep-header">
+            <div style="font-size:28px;">${r.catEmoji||'📋'}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:14px;font-weight:700;color:var(--dk);">${r.catLabel||r.cat||'Sin categoría'}</div>
+              <div style="font-size:11px;color:var(--gr);margin-top:2px;">${r.userName||'Anónimo'} · ${fecha}</div>
+              <div style="font-size:12px;color:var(--md);margin-top:4px;line-height:1.4;">${App._esc(r.desc||'')}</div>
+            </div>
+            <span class="rep-cat-badge ${STATUS_CLASS[st]||'rep-status-pendiente'}">${STATUS_LABEL[st]||'Pendiente'}</span>
+          </div>
+          ${r.lat && r.lng ? `<div style="font-size:11px;color:var(--gr);">📍 ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)} <a href="https://maps.google.com/?q=${r.lat},${r.lng}" target="_blank" style="color:var(--or);text-decoration:none;">Ver en mapa →</a></div>` : ''}
+          ${r.imgUrl ? `<img src="${r.imgUrl}" style="width:100%;border-radius:10px;max-height:180px;object-fit:cover;cursor:pointer;" onclick="App._admRepShowDetail('${r.id}')">` : ''}
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${st !== 'proceso'   ? `<button class="adm-btn" onclick="App._admRepSetStatus('${r.id}','proceso')"  style="background:rgba(251,146,60,.15);color:#FB923C;border-color:#FB923C;">🟡 En proceso</button>` : ''}
+            ${st !== 'resuelto'  ? `<button class="adm-btn adm-btn-green" onclick="App._admRepSetStatus('${r.id}','resuelto')">✅ Resuelto</button>` : ''}
+            ${st !== 'pending'   ? `<button class="adm-btn" onclick="App._admRepSetStatus('${r.id}','pending')">🔴 Pendiente</button>` : ''}
+            <button class="adm-btn" onclick="App._admRepShowDetail('${r.id}')" style="margin-left:auto;">👁️ Detalle</button>
+          </div>
+        </div>`;
+      }).join('');
+    } catch(e) {
+      el.innerHTML = `<div style="text-align:center;padding:32px;color:#EF4444;font-size:13px;">Error: ${e.message}</div>`;
+    }
+  },
+
+  async _admRepSetStatus(repId, newStatus) {
+    if (!this._db) return;
+    try {
+      await this._db.collection('urban_reports').doc(repId).update({ status: newStatus, updatedAt: Date.now() });
+      this.toast(newStatus === 'resuelto' ? '✅ Marcado como resuelto' : newStatus === 'proceso' ? '🟡 En proceso' : '🔴 Vuelto a pendiente');
+      this._admRenderReportes();
+    } catch(e) { this.toast('Error: ' + e.message); }
+  },
+
+  async _admRepShowDetail(repId) {
+    if (!this._db) return;
+    const ov   = document.getElementById('urep-detail-overlay');
+    const card = document.getElementById('urep-detail-card');
+    if (!ov || !card) return;
+    card.innerHTML = '<div style="text-align:center;padding:30px;color:var(--gr);">Cargando...</div>';
+    ov.style.display = 'flex';
+    try {
+      const doc = await this._db.collection('urban_reports').doc(repId).get();
+      if (!doc.exists) { card.innerHTML = '<div style="text-align:center;padding:30px;color:var(--gr);">No encontrado</div>'; return; }
+      const r = {id:doc.id,...doc.data()};
+      const STATUS_LABEL = {pending:'🔴 Pendiente', proceso:'🟡 En proceso', resuelto:'🟢 Resuelto'};
+      const fecha = r.ts ? new Date(r.ts).toLocaleString('es-AR') : '—';
+      card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div style="font-family:var(--fH);font-size:16px;font-weight:800;color:var(--dk);">${r.catEmoji||'📋'} ${r.catLabel||r.cat||'Reporte'}</div>
+          <button onclick="document.getElementById('urep-detail-overlay').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gr);">✕</button>
+        </div>
+        ${r.imgUrl ? `<img src="${r.imgUrl}" style="width:100%;border-radius:12px;max-height:220px;object-fit:cover;margin-bottom:14px;">` : ''}
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--md);">
+          <div><b>Estado:</b> ${STATUS_LABEL[r.status||'pending']}</div>
+          <div><b>Vecino:</b> ${r.userName||'Anónimo'}</div>
+          <div><b>Fecha:</b> ${fecha}</div>
+          <div><b>Descripción:</b> ${App._esc(r.desc||'—')}</div>
+          ${r.lat&&r.lng ? `<div><b>Ubicación:</b> <a href="https://maps.google.com/?q=${r.lat},${r.lng}" target="_blank" style="color:var(--or);">Ver en Google Maps →</a></div>` : ''}
+        </div>
+        <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
+          <button class="adm-btn" onclick="App._admRepSetStatus('${r.id}','proceso');document.getElementById('urep-detail-overlay').style.display='none';" style="background:rgba(251,146,60,.15);color:#FB923C;border-color:#FB923C;">🟡 En proceso</button>
+          <button class="adm-btn adm-btn-green" onclick="App._admRepSetStatus('${r.id}','resuelto');document.getElementById('urep-detail-overlay').style.display='none';">✅ Resuelto</button>
+        </div>`;
+    } catch(e) { card.innerHTML = `<div style="text-align:center;padding:30px;color:#EF4444;">Error: ${e.message}</div>`; }
   },
 
   // ════════════ AYUDA DE UL360 — botón flotante + tutorial guiado ════════════
@@ -14899,6 +15160,11 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
           Object.values(this._poiMarkers).forEach(m => { try { m.remove(); } catch(e){} });
         }
         this._poiMarkers = {};
+        // Limpiar pines de inicio de Loop existentes antes de re-agregar
+        if (this._startMarkers) {
+          Object.values(this._startMarkers).forEach(m => { try { m.remove(); } catch(e){} });
+        }
+        this._startMarkers = {};
         if (this._locMarker) { try { this._locMarker.remove(); } catch(e){} this._locMarker = null; }
         this._assignDistinctColors();
         this.routes.forEach(r => this._drawRoute(r));
@@ -15945,5 +16211,72 @@ document.addEventListener('DOMContentLoaded',()=>{
       });
     }
   </script>
+<!-- ════════════ MODAL: REPORTAR PROBLEMA URBANO (vecino) ════════════ -->
+<div id="urban-report-overlay" onclick="if(event.target===this)App._closeUrbanReport()"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:500;align-items:flex-end;justify-content:center;">
+  <div style="background:var(--bg1);border-radius:20px 20px 0 0;width:100%;max-width:480px;
+              padding:20px 18px 40px;max-height:90vh;overflow-y:auto;">
+    <div style="width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 18px;"></div>
+    <div style="font-family:var(--fH);font-size:17px;font-weight:800;color:var(--dk);margin-bottom:4px;">🚨 Reportar problema</div>
+    <div style="font-size:12px;color:var(--gr);margin-bottom:18px;">Tu reporte llega directo al municipio</div>
+
+    <!-- Categoría -->
+    <div style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;margin-bottom:8px;">CATEGORÍA *</div>
+    <div id="urep-cats" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;">
+      <button class="urep-cat-btn" data-cat="bache" onclick="App._urepSelectCat('bache',this)">🕳️ Bache / Vía rota</button>
+      <button class="urep-cat-btn" data-cat="luminaria" onclick="App._urepSelectCat('luminaria',this)">💡 Luminaria apagada</button>
+      <button class="urep-cat-btn" data-cat="basura" onclick="App._urepSelectCat('basura',this)">🗑️ Basura / Volcamiento</button>
+      <button class="urep-cat-btn" data-cat="arbolado" onclick="App._urepSelectCat('arbolado',this)">🌳 Árbol / Rama caída</button>
+      <button class="urep-cat-btn" data-cat="agua" onclick="App._urepSelectCat('agua',this)">💧 Pérdida de agua</button>
+      <button class="urep-cat-btn" data-cat="graffiti" onclick="App._urepSelectCat('graffiti',this)">🖊️ Vandalismo</button>
+      <button class="urep-cat-btn" data-cat="transito" onclick="App._urepSelectCat('transito',this)">🚦 Señal / Tránsito</button>
+      <button class="urep-cat-btn" data-cat="otro" onclick="App._urepSelectCat('otro',this)">📋 Otro</button>
+    </div>
+
+    <!-- Foto -->
+    <div style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;margin-bottom:8px;">FOTO (opcional)</div>
+    <div id="urep-img-preview" style="display:none;position:relative;border-radius:12px;overflow:hidden;aspect-ratio:4/3;background:var(--bg0);margin-bottom:8px;">
+      <img id="urep-img-thumb" style="width:100%;height:100%;object-fit:cover;" src="" alt="">
+      <button onclick="App._urepClearImg()" style="position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.5);border:none;color:#fff;font-size:12px;cursor:pointer;">✕</button>
+    </div>
+    <label style="display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border:1.5px dashed var(--bd);border-radius:12px;cursor:pointer;color:var(--gr);font-size:13px;margin-bottom:18px;" id="urep-img-label">
+      📷 Sacar o subir foto
+      <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="App._urepLoadImg(this)">
+    </label>
+
+    <!-- Descripción -->
+    <div style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;margin-bottom:8px;">DESCRIPCIÓN *</div>
+    <textarea id="urep-desc" class="fi" rows="3" placeholder="Describí el problema brevemente..." style="margin-bottom:18px;resize:none;"></textarea>
+
+    <!-- Ubicación -->
+    <div style="display:flex;align-items:center;gap:8px;padding:12px;background:var(--bg2);border-radius:12px;margin-bottom:20px;">
+      <div style="font-size:20px;">📍</div>
+      <div style="flex:1;">
+        <div style="font-size:12px;font-weight:600;color:var(--dk);" id="urep-loc-label">Detectando tu ubicación...</div>
+        <div style="font-size:10.5px;color:var(--gr);">Se enviará junto al reporte</div>
+      </div>
+      <button onclick="App._urepRefreshLoc()" style="padding:6px 10px;background:var(--bg1);border:0.5px solid var(--bd);border-radius:8px;font-size:11px;color:var(--gr);cursor:pointer;">🔄</button>
+    </div>
+
+    <button onclick="App._sendUrbanReport()"
+      style="width:100%;padding:15px;background:#FF5F00;color:white;border:none;border-radius:14px;
+             font-family:var(--fH);font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;">
+      Enviar reporte al municipio
+    </button>
+    <button onclick="App._closeUrbanReport()"
+      style="width:100%;padding:10px;background:transparent;border:none;color:var(--gr);font-size:13px;cursor:pointer;">
+      Cancelar
+    </button>
+  </div>
+</div>
+
+<!-- ════════════ MODAL: DETALLE REPORTE (admin) ════════════ -->
+<div id="urep-detail-overlay" onclick="if(event.target===this)this.style.display='none'"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:600;align-items:center;justify-content:center;padding:16px;">
+  <div id="urep-detail-card" style="background:var(--bg1);border-radius:20px;width:100%;max-width:420px;
+              padding:20px 18px 24px;max-height:88vh;overflow-y:auto;">
+  </div>
+</div>
+
 </body>
 </html>
