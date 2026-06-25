@@ -6427,6 +6427,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         } catch(e) { /* continuar sin imagen si falla */ }
       }
 
+      const geo = this._enrichGeo({ lat: this._urepLat, lng: this._urepLng, ciudad: this._cityId });
       await this._db.collection('urban_reports').add({
         cat:       this._urepCat,
         catLabel:  CAT_LABELS[this._urepCat] || this._urepCat,
@@ -6439,7 +6440,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         ts:        Date.now(),
         uid:       this._uid,
         userName:  this._user?.displayName || 'Vecino anónimo',
-        ciudad:    this._cityId || 'La Paz',
+        ciudad:       geo.ciudad,
+        departamento: geo.departamento,
+        provincia:    geo.provincia,
+        pais:         geo.pais,
         notified:  false,
       });
 
@@ -8000,10 +8004,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     if (!lat || !lng) return this.toast('⚠️ Marcá la ubicación en el mapa');
 
-    // ── Detectar Pais/Provincia/Ciudad por las coords del punto marcado en el mapa ──
+    // ── Detectar Pais/Provincia/Ciudad/Departamento por las coords del punto marcado ──
     this.toast('📍 Detectando ubicación...');
     const _flLoc = await this._detectLocation(lat, lng);
-    const cityId = _flLoc.ciudad || this._luCity || 'La Paz';
+    const geo    = this._enrichGeo({ lat, lng, ..._flLoc });
+    const cityId = geo.ciudad;
 
     const catEmojis = {
       lugar:'📍', gastro:'🍽️', bar:'🍸', cafe:'☕', nocturno:'🌙',
@@ -8027,13 +8032,14 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const stopData = {
       id: stopId, type: 'fotostop', cat,
       name, desc: desc || '',
-      img: '',   // se llena abajo con la URL de Storage
+      img: '',
       emoji, color, badge: 'ba',
       lat, lng,
-      cityId,
-      ciudad:    cityId,
-      provincia: _flLoc.provincia || this._luProv || 'Entre Ríos',
-      pais:      _flLoc.pais      || this._luPais || 'Argentina',
+      cityId:       geo.ciudad,
+      ciudad:       geo.ciudad,
+      departamento: geo.departamento,
+      provincia:    geo.provincia,
+      pais:         geo.pais,
       authorId: this._uid,
       authorName: this._user?.displayName || this._user?.email?.split('@')[0] || 'Anónimo',
       ts: Date.now(),
@@ -9811,6 +9817,13 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const dist = this._calcDist(this._cmPts);
     const loc  = this._cmLoc || {};
     const vis  = this._cmVisibility || 'public';
+    // Completar geo con _GEO_KNOWN usando el primer punto del loop
+    const firstPt = this._cmPts[0];
+    const geo = this._enrichGeo({
+      lat: Array.isArray(firstPt) ? firstPt[0] : firstPt?.lat,
+      lng: Array.isArray(firstPt) ? firstPt[1] : firstPt?.lng,
+      ...loc
+    });
 
     const EMOJI_MAP = {trad:'☕',running:'🏃',mtb:'🚵',ciclismo:'🚴',caminata:'🥾',paseo:'🌳',pesca:'🎣',gastro:'🍽️',atardecer:'🌅',relax:'🧘',salidas:'🎉',perro:'🐕',otra:'🗺️'};
     const COLOR_MAP = {trad:'#FF5F00',running:'#FF3B5C',mtb:'#FFA630',ciclismo:'#00D4FF',caminata:'#39FF6A',paseo:'#2DE6C8',pesca:'#5B7CFA',gastro:'#FF2DA0',atardecer:'#C77DFF',relax:'#00F5D4',salidas:'#FF4D9E',perro:'#A06CFF',otra:'#7CA0B0'};
@@ -9826,10 +9839,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       dist: dist.toFixed(1) + ' km',
       dur: Math.round(dist / 5 * 60) + ' min',
       pts: this._cmPts.map(p => ({ lat: p[0], lng: p[1] })),
-      cityId:    loc.ciudad   || this._luCity || 'La Paz',
-      ciudad:    loc.ciudad   || this._luCity || 'La Paz',
-      provincia: loc.provincia || this._luProv || 'Entre Ríos',
-      pais:      loc.pais     || this._luPais || 'Argentina',
+      cityId:       geo.ciudad,
+      ciudad:       geo.ciudad,
+      departamento: geo.departamento,
+      provincia:    geo.provincia,
+      pais:         geo.pais,
       authorId:   this._uid,
       authorName: this._user?.displayName || this._user?.email?.split('@')[0] || 'Anónimo',
       createdAt:  Date.now(),
@@ -9980,6 +9994,42 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   ],
 
   // Fallback tabla local sincrónico — devuelve {pais, provincia, ciudad}
+  // ══ _enrichGeo ══
+  // Recibe un objeto con lat/lng y cualquier combo de ciudad/provincia/departamento/pais
+  // y completa los campos que faltan usando _GEO_KNOWN por distancia (sin API).
+  // Uso: const geo = this._enrichGeo({ lat, lng, ciudad, provincia });
+  _enrichGeo(data) {
+    const ciudad  = data.ciudad || data.cityId || data.city || '';
+    const pais    = data.pais || '';
+    const prov    = data.provincia || '';
+    const depto   = data.departamento || data.depto || '';
+    // Si ya tiene todo, devolver limpio
+    if (ciudad && prov && depto && pais) {
+      return { ciudad, provincia: prov, departamento: depto, pais };
+    }
+    // Buscar por coordenadas en _GEO_KNOWN (más preciso)
+    if (data.lat && data.lng) {
+      let best = null, bestD = Infinity;
+      for (const row of (this._GEO_KNOWN || [])) {
+        const d = this._haversineKm(data.lat, data.lng, row.lat, row.lng);
+        if (d < row.radio && d < bestD) { bestD = d; best = row; }
+      }
+      if (best) return { ciudad: best.ciudad, provincia: best.provincia, departamento: best.departamento, pais: best.pais };
+    }
+    // Buscar por nombre de ciudad (case-insensitive)
+    if (ciudad) {
+      const row = (this._GEO_KNOWN || []).find(r => r.ciudad.toLowerCase() === ciudad.toLowerCase());
+      if (row) return { ciudad: row.ciudad, provincia: row.provincia, departamento: row.departamento, pais: row.pais };
+    }
+    // Fallback con lo que tengamos
+    return {
+      ciudad:       ciudad || this._luCity || 'La Paz',
+      provincia:    prov   || this._luProv || 'Entre Ríos',
+      departamento: depto  || '',
+      pais:         pais   || this._luPais || 'Argentina',
+    };
+  },
+
   _geoFromCoordsSync(lat, lng) {
     if (!lat || !lng) return { pais:'Argentina', provincia:'Entre Ríos', departamento:'La Paz', ciudad: this._luCity || 'La Paz' };
     const hav = (a,b,c,e) => {
@@ -10929,6 +10979,14 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const btn = document.getElementById('ev-save-btn');
     if (btn) { btn.textContent = '☁️ Guardando en nube...'; btn.disabled = true; }
 
+    const evGeo = this._enrichGeo({
+      lat: this._evLat || null,
+      lng: this._evLng || null,
+      ciudad: this._luCity,
+      provincia: this._luProv,
+      pais: this._luPais,
+    });
+
     const ev = {
       id: 'ev_' + Date.now(),
       type: this._evType || 'salida',
@@ -10937,7 +10995,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       color: EV_COLOR[this._evType||'salida'],
       authorId: this._uid,
       authorName: this._user?.displayName || this._user?.email?.split('@')[0] || 'Looper',
-      city: this._luCity || 'La Paz',
+      city:         evGeo.ciudad,
+      ciudad:       evGeo.ciudad,
+      departamento: evGeo.departamento,
+      provincia:    evGeo.provincia,
+      pais:         evGeo.pais,
       ts: Date.now(), attendees: [this._uid], likes: 0
     };
 
