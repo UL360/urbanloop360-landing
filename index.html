@@ -8520,6 +8520,32 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   // Aplica Pais/Provincia/Ciudad a los campos del formulario admin
   _admSetLocation(loc) {
     if (!loc) return;
+
+    // Limpiar prefijos que BigDataCloud agrega al nombre de ciudad
+    if (loc.ciudad) {
+      loc.ciudad = loc.ciudad
+        .replace(/^Departamento\s+/i, '')
+        .replace(/^Partido\s+de\s+/i, '')
+        .replace(/^Municipio\s+de\s+/i, '')
+        .replace(/^Ciudad\s+de\s+/i, '')
+        .trim();
+    }
+
+    // Si después de limpiar la ciudad coincide con una entrada de _GEO_KNOWN, usar esa
+    if (loc.ciudad && loc.lat && loc.lng) {
+      let bestKnown = null, bestDist = Infinity;
+      for (const row of (this._GEO_KNOWN || [])) {
+        const d = this._haversineKm(loc.lat, loc.lng, row.lat, row.lng);
+        if (d < row.radio && d < bestDist) { bestDist = d; bestKnown = row; }
+      }
+      if (bestKnown) {
+        loc.ciudad       = bestKnown.ciudad;
+        loc.provincia    = bestKnown.provincia;
+        loc.departamento = bestKnown.departamento;
+        loc.pais         = bestKnown.pais;
+      }
+    }
+
     this._admLoc = loc;
 
     // Poblar select adm-city con TODAS las ciudades de _GEO_KNOWN si aún no está poblado
