@@ -2589,24 +2589,10 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
           <label style="font-size:10px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:3px;">CIUDAD</label>
           <select class="fi" id="adm-city" aria-label="Ciudad" style="font-size:13px;">
             <option value="">🔍 Auto-detectando...</option>
-            <option value="La Paz">📍 La Paz</option>
-            <option value="Santa Elena">📍 Santa Elena</option>
-            <option value="Paraná">Paraná</option>
-            <option value="Concordia">Concordia</option>
-            <option value="Gualeguaychú">Gualeguaychú</option>
-            <option value="Colón">Colón</option>
-            <option value="Victoria">Victoria</option>
-            <option value="Diamante">Diamante</option>
-            <option value="Nogoyá">Nogoyá</option>
-            <option value="Villaguay">Villaguay</option>
-            <option value="Federación">Federación</option>
-            <option value="Rosario">Rosario</option>
-            <option value="Buenos Aires">Buenos Aires</option>
-            <option value="Córdoba">Córdoba</option>
           </select>
           <div style="font-size:10px;color:var(--gr);margin-top:4px;display:flex;align-items:center;gap:4px;">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            Se auto-detecta al hacer click en el mapa o al abrir el panel
+            Se auto-detecta al hacer click en el mapa · o elegí manualmente
           </div>
         </div>
         <div class="fg"><label class="fl">Tipo de loop</label>
@@ -8535,27 +8521,45 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   _admSetLocation(loc) {
     if (!loc) return;
     this._admLoc = loc;
-    // Select ciudad
+
+    // Poblar select adm-city con TODAS las ciudades de _GEO_KNOWN si aún no está poblado
     const selCity = document.getElementById('adm-city');
+    if (selCity && selCity.options.length <= 1) {
+      const ciudades = [...new Set(
+        (this._GEO_KNOWN || []).map(r => r.ciudad).filter(Boolean)
+      )].sort((a,b) => a.localeCompare(b,'es'));
+      ciudades.forEach(c => {
+        const o = document.createElement('option');
+        o.value = c; o.textContent = '📍 ' + c;
+        selCity.appendChild(o);
+      });
+    }
+
+    // Seleccionar la ciudad detectada
     if (selCity && loc.ciudad) {
       const norm = s => (s||'').toLowerCase().trim();
       const match = Array.from(selCity.options).find(o =>
         norm(o.value) === norm(loc.ciudad) ||
         norm(loc.ciudad).includes(norm(o.value)) ||
         norm(o.value).includes(norm(loc.ciudad)));
-      if (match) { selCity.value = match.value; }
-      else {
+      if (match) {
+        selCity.value = match.value;
+      } else {
+        // Ciudad no conocida — agregarla como opción nueva
         const opt = document.createElement('option');
-        opt.value = loc.ciudad; opt.textContent = '\u{1F4CD} ' + loc.ciudad;
+        opt.value = loc.ciudad; opt.textContent = '📍 ' + loc.ciudad;
         selCity.appendChild(opt); selCity.value = loc.ciudad;
       }
     }
+
+    // Provincia y País
     const inProv = document.getElementById('adm-provincia');
     if (inProv && loc.provincia) inProv.value = loc.provincia;
     const inPais = document.getElementById('adm-pais');
     if (inPais && loc.pais) inPais.value = loc.pais;
+
     const parts = [loc.ciudad, loc.provincia, loc.pais].filter(Boolean);
-    if (parts.length) this.toast('\u{1F4CD} ' + parts.join(', '));
+    if (parts.length) this.toast('📍 ' + parts.join(', '));
   },
 
   /* _addPt legacy removed */
@@ -8606,9 +8610,24 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     this._redrawAdmLine();
     this._renderPts(); this._updatePtBadge();
     this.toast(`Punto ${n} agregado`);
-    // Al colocar el primer punto: detectar Pais/Provincia/Ciudad via BigDataCloud
+    // Al colocar el primer punto: detectar ciudad desde las coordenadas del click
+    // IMPORTANTE: ignorar caché para que Santa Elena / San Gustavo se detecten aunque
+    // el admin tenga el GPS en La Paz u otra ciudad.
     if (n === 1) {
-      this._detectLocation(lat, lng).then(loc => this._admSetLocation(loc)).catch(()=>{});
+      const savedCache = this._geoCache;
+      this._geoCache = null; // limpiar caché temporalmente
+      this._detectLocation(lat, lng)
+        .then(loc => {
+          this._admSetLocation(loc);
+          // Restaurar caché del usuario (no pisar su posición GPS real)
+          if (savedCache) this._geoCache = savedCache;
+        })
+        .catch(() => {
+          if (savedCache) this._geoCache = savedCache;
+          // Fallback: tabla local
+          const sync = this._geoFromCoordsSync(lat, lng);
+          if (sync) this._admSetLocation(sync);
+        });
     }
   },
   _updatePtBadge() {
@@ -8745,7 +8764,6 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
             return;
           }
         }
-        // Ciudad: usar el select como fuente autoritaria (ya auto-detectado en _addAdmPt al primer click)
         const selCity = document.getElementById('adm-city');
         let cityId = (selCity?.value || '').trim();
         // Si por alguna razón el select está vacío, intentar detectar desde el primer punto
@@ -8765,18 +8783,24 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
             }
           }
         }
+        // Resolver geo completo desde _GEO_KNOWN por si el campo provincia/depto están vacíos
+        const geoRow = (this._GEO_KNOWN||[]).find(r => r.ciudad === cityId);
+        const provincia    = (document.getElementById('adm-provincia')?.value || this._admLoc?.provincia || geoRow?.provincia || 'Entre Ríos').trim();
+        const pais         = (document.getElementById('adm-pais')?.value      || this._admLoc?.pais      || geoRow?.pais      || 'Argentina').trim();
+        const departamento = (this._admLoc?.departamento || geoRow?.departamento || '').trim();
         console.log(`[saveRoute] Ciudad detectada: "${cityId}" (desde select: "${selCity?.value}")`);
         const r = {
           id:`custom-${Date.now()}`, name, type, desc:desc||`Loop ${name}, ${cityId}.`,
           emoji:cfg.emoji, badge:cfg.badge, color:cfg.color,
           dist:`${dist.toFixed(1)} km`, dur:`${Math.round(dist*13)} min`,
-          img: this._imgBase64 || '',  // base64 en memoria para preview inmediato
+          img: this._imgBase64 || '',
           pts:[...this.aPts],
           pois:this.aPois.filter(p=>p.name).map(p=>({...p})),
-          cityId,                   // ← ciudad detectada
-          ciudad:    cityId,
-          provincia: (document.getElementById('adm-provincia')?.value || this._admLoc?.provincia || 'Entre Ríos').trim(),
-          pais:      (document.getElementById('adm-pais')?.value      || this._admLoc?.pais      || 'Argentina').trim(),
+          cityId,
+          ciudad:       cityId,
+          departamento: departamento,
+          provincia:    provincia,
+          pais:         pais,
           authorId: this._uid,
           authorName: this._user ? (this._user.displayName || this._user.email?.split('@')[0] || 'Anónimo') : 'Anónimo',
           createdAt: Date.now(),
