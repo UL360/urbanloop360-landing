@@ -8647,18 +8647,19 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     // el admin tenga el GPS en La Paz u otra ciudad.
     if (n === 1) {
       const savedCache = this._geoCache;
-      this._geoCache = null; // limpiar caché temporalmente
+      this._geoCache = null;
+      // Primero mostrar resultado inmediato desde _GEO_KNOWN (sin API)
+      const syncGeo = this._enrichGeo({ lat, lng });
+      this._admSetLocation({ lat, lng, ...syncGeo });
+      // Luego confirmar con _detectLocation (puede refinar si BigDataCloud es más preciso)
       this._detectLocation(lat, lng)
         .then(loc => {
-          this._admSetLocation(loc);
-          // Restaurar caché del usuario (no pisar su posición GPS real)
+          const geo = this._enrichGeo({ lat, lng, ...loc });
+          this._admSetLocation({ lat, lng, ...geo });
           if (savedCache) this._geoCache = savedCache;
         })
         .catch(() => {
           if (savedCache) this._geoCache = savedCache;
-          // Fallback: tabla local
-          const sync = this._geoFromCoordsSync(lat, lng);
-          if (sync) this._admSetLocation(sync);
         });
     }
   },
@@ -9690,14 +9691,22 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     this._cmPts.push([lat, lng]);
     this._cmRedraw();
     this._cmUpdateBadge();
-    // Detectar ciudad al primer punto
+    // Detectar ciudad al primer punto — usando _enrichGeo para normalizar
     if (this._cmPts.length === 1) {
       const hint = document.getElementById('cm-city-detected');
       if (hint) hint.textContent = '📍 Detectando ciudad...';
+      // Primero intentar con _GEO_KNOWN directo (sin API, instantáneo)
+      const sync = this._enrichGeo({ lat, lng });
+      if (sync.ciudad && sync.ciudad !== (this._luCity || 'La Paz') || !this._luCity) {
+        this._cmLoc = sync;
+        if (hint) hint.textContent = `📍 ${sync.ciudad}, ${sync.departamento ? 'Dpto. ' + sync.departamento + ' · ' : ''}${sync.provincia}`;
+      }
+      // Luego confirmar con _detectLocation (asíncrono, puede refinar)
       this._detectLocation(lat, lng).then(loc => {
-        this._cmLoc = loc;
-        if (hint) hint.textContent = `📍 ${loc.ciudad}, ${loc.provincia}`;
-      });
+        const geo = this._enrichGeo({ lat, lng, ...loc });
+        this._cmLoc = geo;
+        if (hint) hint.textContent = `📍 ${geo.ciudad}, ${geo.departamento ? 'Dpto. ' + geo.departamento + ' · ' : ''}${geo.provincia}`;
+      }).catch(() => {});
     }
   },
 
@@ -9758,9 +9767,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       if (hint) hint.textContent = this._cmPts.length > 0 ? '📍 Detectando ciudad...' : 'Tocá el mapa para detectar la ciudad';
       if (this._cmPts.length > 0) {
         this._detectLocation(this._cmPts[0][0], this._cmPts[0][1]).then(loc => {
-          this._cmLoc = loc;
+          const geo = this._enrichGeo({ lat: this._cmPts[0][0], lng: this._cmPts[0][1], ...loc });
+          this._cmLoc = geo;
           const h = document.getElementById('cm-city-detected');
-          if (h) h.textContent = `📍 ${loc.ciudad}, ${loc.provincia}`;
+          if (h) h.textContent = `📍 ${geo.ciudad}, ${geo.departamento ? 'Dpto. ' + geo.departamento + ' · ' : ''}${geo.provincia}`;
         });
       }
     }
