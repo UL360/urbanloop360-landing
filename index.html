@@ -2125,9 +2125,10 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 
   <!-- ── OVERLAY DEL TUTORIAL GUIADO (flecha + tooltip) ── -->
   <div id="tut-overlay" style="display:none;position:fixed;inset:0;z-index:9500;pointer-events:none;">
-    <div id="tut-arrow" style="position:absolute;width:34px;height:34px;pointer-events:none;transition:top .35s ease,left .35s ease,transform .35s ease;">
-      <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
-        <path d="M17 2 L30 17 L22 17 L22 32 L12 32 L12 17 L4 17 Z" fill="#FF5F00" stroke="white" stroke-width="1.5"/>
+    <div id="tut-arrow" style="position:absolute;width:34px;height:34px;pointer-events:none;transition:top .3s cubic-bezier(.4,0,.2,1),left .3s cubic-bezier(.4,0,.2,1),transform .3s cubic-bezier(.4,0,.2,1);transform-origin:center center;">
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none" style="display:block;">
+        <!-- Flecha apuntando hacia ARRIBA por defecto (se rota según el lado) -->
+        <path d="M17 3 L30 18 L22 18 L22 31 L12 31 L12 18 L4 18 Z" fill="#FF5F00" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
       </svg>
     </div>
     <div id="tut-tooltip"
@@ -6683,55 +6684,126 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   },
 
   _tutPositionArrow(targetSelector) {
-    const arrow = document.getElementById('tut-arrow');
+    const arrow   = document.getElementById('tut-arrow');
     const tooltip = document.getElementById('tut-tooltip');
     if (!arrow || !tooltip) return;
 
-    if (!targetSelector) {
-      // Sin target específico (ej: elegir una opción del modal): centrar el tooltip
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    const TW = 240, TH = 120; // tamaño estimado del tooltip
+    const AW = 34,  AH = 34;  // tamaño de la flecha
+    const GAP = 8;             // espacio entre flecha y elemento
+
+    const center = () => {
       arrow.style.display = 'none';
-      tooltip.style.top = '50%';
-      tooltip.style.left = '50%';
-      tooltip.style.transform = 'translate(-50%,-50%)';
-      return;
-    }
+      tooltip.style.transform = 'none';
+      tooltip.style.top  = Math.round(H/2 - TH/2) + 'px';
+      tooltip.style.left = Math.round(W/2 - TW/2) + 'px';
+    };
+
+    if (!targetSelector) { center(); return; }
 
     const findEl = (tries) => {
       tries = tries || 0;
       const el = document.querySelector(targetSelector);
-      const visible = el && (el.offsetWidth > 0 || el.offsetHeight > 0) && el.getClientRects().length > 0;
+      const visible = el && el.offsetWidth > 0 && el.getClientRects().length > 0;
       if (!visible) {
         if (tries < 20) { setTimeout(() => findEl(tries + 1), 150); return; }
-        // No se encontró visible: centrar el tooltip igual, sin flecha
-        arrow.style.display = 'none';
-        tooltip.style.top = '50%';
-        tooltip.style.left = '50%';
-        tooltip.style.transform = 'translate(-50%,-50%)';
-        return;
+        center(); return;
       }
-      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+
+      // Scroll suave al elemento
+      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
       setTimeout(() => {
-        const r = el.getBoundingClientRect();
-        const cx = r.left + r.width / 2;
-        const cy = r.top + r.height / 2;
+        const r   = el.getBoundingClientRect();
+        const cx  = Math.round(r.left + r.width  / 2);  // centro X del target
+        const cy  = Math.round(r.top  + r.height / 2);  // centro Y del target
 
-        arrow.style.display = 'block';
-        arrow.style.transform = 'none';
-        arrow.style.top = (r.top - 38) + 'px';
-        arrow.style.left = (cx - 17) + 'px';
+        // ── Decidir en qué lado poner la flecha ──
+        // Preferencia: arriba del elemento → si no hay espacio, abajo → izquierda → derecha
+        const spaceAbove  = r.top;
+        const spaceBelow  = H - r.bottom;
+        const spaceLeft   = r.left;
+        const spaceRight  = W - r.right;
 
-        let tw = 240, th = 110;
-        let tLeft = cx - tw / 2;
-        let tTop = r.top - 38 - th - 8;
-        if (tTop < 10) tTop = r.bottom + 14;
-        if (tLeft < 10) tLeft = 10;
-        if (tLeft + tw > window.innerWidth - 10) tLeft = window.innerWidth - tw - 10;
+        let side;
+        if      (spaceAbove  >= AH + GAP + TH + GAP) side = 'top';
+        else if (spaceBelow  >= AH + GAP + TH + GAP) side = 'bottom';
+        else if (spaceLeft   >= AW + GAP + TW + GAP) side = 'left';
+        else if (spaceRight  >= AW + GAP + TW + GAP) side = 'right';
+        else side = spaceAbove >= spaceBelow ? 'top' : 'bottom';
+
+        // ── Posición y rotación de la flecha ──
+        let aTop, aLeft, aRotate;
+        switch (side) {
+          case 'top':
+            // flecha apunta hacia ABAJO (hacia el elemento que está debajo)
+            aTop    = Math.round(r.top - AH - GAP);
+            aLeft   = Math.round(cx - AW/2);
+            aRotate = 180; // SVG apunta arriba por defecto, giramos 180°
+            break;
+          case 'bottom':
+            // flecha apunta hacia ARRIBA (hacia el elemento que está arriba)
+            aTop    = Math.round(r.bottom + GAP);
+            aLeft   = Math.round(cx - AW/2);
+            aRotate = 0;
+            break;
+          case 'left':
+            // flecha apunta hacia la DERECHA
+            aTop    = Math.round(cy - AH/2);
+            aLeft   = Math.round(r.left - AW - GAP);
+            aRotate = 90;
+            break;
+          case 'right':
+            // flecha apunta hacia la IZQUIERDA
+            aTop    = Math.round(cy - AH/2);
+            aLeft   = Math.round(r.right + GAP);
+            aRotate = 270;
+            break;
+        }
+
+        // Mantener flecha dentro de pantalla
+        aTop  = Math.max(4, Math.min(aTop,  H - AH - 4));
+        aLeft = Math.max(4, Math.min(aLeft, W - AW - 4));
+
+        arrow.style.display   = 'block';
+        arrow.style.top       = aTop  + 'px';
+        arrow.style.left      = aLeft + 'px';
+        arrow.style.transform = `rotate(${aRotate}deg)`;
+
+        // ── Posición del tooltip — al lado opuesto de la flecha, nunca encima ──
+        let tTop, tLeft;
+        switch (side) {
+          case 'top':
+            tTop  = aTop - TH - GAP;
+            tLeft = Math.round(cx - TW/2);
+            break;
+          case 'bottom':
+            tTop  = aTop + AH + GAP;
+            tLeft = Math.round(cx - TW/2);
+            break;
+          case 'left':
+            tTop  = Math.round(cy - TH/2);
+            tLeft = aLeft - TW - GAP;
+            break;
+          case 'right':
+            tTop  = Math.round(cy - TH/2);
+            tLeft = aLeft + AW + GAP;
+            break;
+        }
+
+        // Mantener tooltip dentro de pantalla
+        tTop  = Math.max(8, Math.min(tTop,  H - TH - 8));
+        tLeft = Math.max(8, Math.min(tLeft, W - TW - 8));
 
         tooltip.style.transform = 'none';
-        tooltip.style.top = tTop + 'px';
-        tooltip.style.left = tLeft + 'px';
-      }, 320);
+        tooltip.style.top       = tTop  + 'px';
+        tooltip.style.left      = tLeft + 'px';
+
+      }, 350);
     };
+
     findEl();
   },
 
