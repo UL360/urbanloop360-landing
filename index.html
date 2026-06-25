@@ -2500,8 +2500,11 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
           </select>
         </div>
       </div>
-      <div id="adm-municipio-badge" style="background:var(--or);color:white;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;text-align:center;font-family:var(--fH);">
-        🏙️ La Paz · Entre Ríos · Argentina
+      <div style="display:flex;gap:8px;align-items:center;">
+        <div id="adm-municipio-badge" style="flex:1;background:var(--or);color:white;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;text-align:center;font-family:var(--fH);">
+          🏙️ Cargando...
+        </div>
+        <button onclick="App._admRefreshGeo()" style="background:white;border:1.5px solid var(--or);color:var(--or);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;" title="Actualizar lista de ciudades">🔄</button>
       </div>
     </div>
 
@@ -13704,55 +13707,101 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   // en Firestore (loops, fotoloops, urban_reports, eventos, negocios)
   // y los combina con _GEO_KNOWN para cubrir ciudades sin contenido aún.
 
+  // Forzar recarga del árbol geo (botón 🔄)
+  async _admRefreshGeo() {
+    this._admGeoTs = null; // invalidar caché
+    const badge = document.getElementById('adm-municipio-badge');
+    if (badge) badge.textContent = '⏳ Actualizando ciudades...';
+    await this._admInitMunicipioSelector();
+  },
+
   async _admLoadGeoData() {
-    // Evitar recargar si ya tenemos datos frescos (menos de 5 min)
+    // Cachear 5 minutos
     if (this._admGeoTs && Date.now() - this._admGeoTs < 300000) return;
-    // Estructura: { pais: { provincia: { depto: Set(ciudades) } } }
+
+    // Árbol: { pais: { provincia: { depto: Set(ciudades) } } }
     const tree = {};
     const add = (pais, prov, depto, ciudad) => {
-      if (!pais || !prov) return;
+      if (!pais || !prov || !ciudad) return;
       if (!tree[pais]) tree[pais] = {};
       if (!tree[pais][prov]) tree[pais][prov] = {};
       const d = depto || '(sin depto)';
       if (!tree[pais][prov][d]) tree[pais][prov][d] = new Set();
-      if (ciudad) tree[pais][prov][d].add(ciudad);
+      tree[pais][prov][d].add(ciudad);
     };
-    // 1. Desde _GEO_KNOWN (tabla estática siempre presente)
-    (this._GEO_KNOWN || []).forEach(r => add(r.pais, r.provincia, r.departamento, r.ciudad));
-    // 2. Desde datos en memoria (loops, fotoloops, eventos)
-    (this.routes || []).forEach(r => add(r.pais||'Argentina', r.provincia||'', r.departamento||r.depto||'', r.ciudad||r.cityId||''));
-    (this._fotoPosts || []).forEach(p => add(p.pais||'Argentina', p.provincia||'', p.departamento||p.depto||'', p.ciudad||p.cityId||''));
-    (this._eventos   || []).forEach(e => add(e.pais||'Argentina', e.provincia||'', e.departamento||e.depto||'', e.city||e.ciudad||''));
-    // 3. Desde Firestore — consultas paralelas ligeras (solo campos geo)
+
+    // Helper: resolver geo completo desde cualquier combo de campos del documento
+    const resolveGeo = (data) => {
+      // Valores que puede traer el documento
+      const ciudad  = data.ciudad || data.cityId || data.city || '';
+      const pais    = data.pais       || '';
+      const prov    = data.provincia  || '';
+      const depto   = data.departamento || data.depto || '';
+
+      // Si ya tiene todo, usar directo
+      if (pais && prov && ciudad) return { pais, prov, depto, ciudad };
+
+      // Buscar en _GEO_KNOWN por ciudad exacta (case-insensitive)
+      if (ciudad) {
+        const geo = (this._GEO_KNOWN || []).find(r =>
+          r.ciudad.toLowerCase() === ciudad.toLowerCase()
+        );
+        if (geo) return { pais: geo.pais, prov: geo.provincia, depto: geo.departamento, ciudad: geo.ciudad };
+      }
+
+      // Buscar en _GEO_KNOWN por coordenadas si el doc las tiene
+      if (data.lat && data.lng) {
+        const hav = (a,b,c,e) => {
+          const R=6371, dL=(c-a)*Math.PI/180, dG=(e-b)*Math.PI/180;
+          const x = Math.sin(dL/2)**2 + Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dG/2)**2;
+          return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+        };
+        let best=null, min=Infinity;
+        for (const row of (this._GEO_KNOWN||[])) {
+          const d = hav(data.lat, data.lng, row.lat, row.lng);
+          if (d < row.radio && d < min) { min=d; best=row; }
+        }
+        if (best) return { pais: best.pais, prov: best.provincia, depto: best.departamento, ciudad: best.ciudad };
+      }
+
+      // Sin datos suficientes para ubicar
+      return null;
+    };
+
+    // 1. Primero cargar TODA la tabla _GEO_KNOWN (base garantizada)
+    (this._GEO_KNOWN || []).forEach(r =>
+      add(r.pais, r.provincia, r.departamento, r.ciudad)
+    );
+
+    // 2. Datos en memoria (loops, fotoloops, eventos ya cargados)
+    const memSources = [
+      ...(this.routes     || []),
+      ...(this._fotoPosts || []),
+      ...(this._eventos   || []),
+    ];
+    memSources.forEach(d => {
+      const g = resolveGeo(d);
+      if (g) add(g.pais, g.prov, g.depto, g.ciudad);
+    });
+
+    // 3. Firestore — leer colecciones con contenido real
     if (this._db) {
       const cols = [
-        { col: 'loops',                    flds: ['pais','provincia','departamento','ciudad','cityId'] },
-        { col: 'fotoloops',                flds: ['pais','provincia','departamento','ciudad','cityId'] },
-        { col: 'urban_reports',            flds: ['pais','provincia','departamento','ciudad','cityId'] },
-        { col: 'eventos',                  flds: ['pais','provincia','departamento','city','ciudad']   },
-        { col: 'negocios',                 flds: ['pais','provincia','departamento','ciudad']           },
-        { col: 'loops_municipio',          flds: ['pais','provincia','departamento','ciudad','cityId'] },
-        { col: 'loops_municipio_pending',  flds: ['pais','provincia','departamento','ciudad','cityId'] },
+        'loops', 'fotoloops', 'urban_reports',
+        'eventos', 'negocios',
+        'loops_municipio', 'loops_municipio_pending',
       ];
-      await Promise.all(cols.map(async ({col, flds}) => {
+      await Promise.all(cols.map(async col => {
         try {
           const snap = await this._db.collection(col).limit(500).get();
-          snap.forEach(d => {
-            const data = d.data();
-            // Intentar resolver geo desde _GEO_KNOWN si faltan campos
-            const cityVal = data.ciudad || data.cityId || data.city || '';
-            let pais = data.pais || 'Argentina';
-            let prov = data.provincia || '';
-            let dept = data.departamento || data.depto || '';
-            if (cityVal && (!prov || !dept)) {
-              const geo = (this._GEO_KNOWN||[]).find(r => r.ciudad === cityVal);
-              if (geo) { pais = geo.pais; prov = geo.provincia; dept = geo.departamento; }
-            }
-            add(pais, prov, dept, cityVal);
+          snap.forEach(doc => {
+            const g = resolveGeo(doc.data());
+            if (g) add(g.pais, g.prov, g.depto, g.ciudad);
           });
-        } catch(e) {}
+        } catch(e) { /* colección vacía o sin permisos */ }
       }));
     }
+
     this._admGeoTree = tree;
     this._admGeoTs   = Date.now();
   },
