@@ -13737,12 +13737,73 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   // en Firestore (loops, fotoloops, urban_reports, eventos, negocios)
   // y los combina con _GEO_KNOWN para cubrir ciudades sin contenido aún.
 
-  // Forzar recarga del árbol geo (botón 🔄)
+  // Forzar recarga del árbol geo (botón 🔄) — mantiene la selección actual
   async _admRefreshGeo() {
     this._admGeoTs = null; // invalidar caché
     const badge = document.getElementById('adm-municipio-badge');
     if (badge) badge.textContent = '⏳ Actualizando ciudades...';
-    await this._admInitMunicipioSelector();
+
+    // Guardar selección actual antes de recargar
+    const curPais  = document.getElementById('adm-sel-pais')?.value          || '';
+    const curProv  = document.getElementById('adm-sel-provincia')?.value      || '';
+    const curDepto = document.getElementById('adm-sel-departamento')?.value   || '';
+    const curCiud  = document.getElementById('adm-sel-ciudad')?.value         || '';
+
+    await this._admLoadGeoData();
+    const tree = this._admGeoTree || {};
+
+    // Repoblar País manteniendo selección
+    const selPais = document.getElementById('adm-sel-pais');
+    if (selPais) {
+      const paises = Object.keys(tree).sort();
+      selPais.innerHTML = paises.map(p => `<option value="${p}">${p}</option>`).join('');
+      if (curPais && paises.includes(curPais)) selPais.value = curPais;
+    }
+
+    // Repoblar Provincia manteniendo selección
+    const pais = document.getElementById('adm-sel-pais')?.value || '';
+    const selProv = document.getElementById('adm-sel-provincia');
+    if (selProv) {
+      const provs = pais && tree[pais] ? Object.keys(tree[pais]).sort() : [];
+      selProv.innerHTML = provs.map(p => `<option value="${p}">${p}</option>`).join('');
+      if (curProv && provs.includes(curProv)) selProv.value = curProv;
+    }
+
+    // Repoblar Departamento manteniendo selección
+    const prov = document.getElementById('adm-sel-provincia')?.value || '';
+    const selDepto = document.getElementById('adm-sel-departamento');
+    if (selDepto) {
+      const deptos = (pais && prov && tree[pais]?.[prov])
+        ? Object.keys(tree[pais][prov]).filter(d => d !== '(sin depto)').sort()
+        : [];
+      selDepto.innerHTML = [`<option value="">— Todos —</option>`,
+        ...deptos.map(d => `<option value="${d}">${d}</option>`)
+      ].join('');
+      if (curDepto && [...selDepto.options].some(o => o.value === curDepto)) selDepto.value = curDepto;
+    }
+
+    // Repoblar Ciudad manteniendo selección
+    const depto = document.getElementById('adm-sel-departamento')?.value || '';
+    const selCiud = document.getElementById('adm-sel-ciudad');
+    if (selCiud) {
+      let ciudades = new Set();
+      if (pais && prov && tree[pais]?.[prov]) {
+        const provObj = tree[pais][prov];
+        if (depto) {
+          (provObj[depto] || new Set()).forEach(c => ciudades.add(c));
+        } else {
+          Object.values(provObj).forEach(s => s.forEach(c => ciudades.add(c)));
+        }
+      }
+      const lista = [...ciudades].filter(Boolean).sort();
+      selCiud.innerHTML = [`<option value="">— Todas —</option>`,
+        ...lista.map(c => `<option value="${c}">${c}</option>`)
+      ].join('');
+      if (curCiud && lista.includes(curCiud)) selCiud.value = curCiud;
+    }
+
+    // Actualizar estado y badge sin tocar la selección
+    this._admMunicipioChanged();
   },
 
   async _admLoadGeoData() {
