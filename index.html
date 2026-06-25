@@ -2467,6 +2467,83 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       </button>
     </div>
 
+    <!-- ══ SELECTOR GLOBAL DE MUNICIPIO ══ -->
+    <div id="adm-municipio-selector" style="padding:10px 12px;background:var(--orL);border-bottom:1.5px solid var(--or);display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+        <span style="font-size:14px;">🏛️</span>
+        <span style="font-size:11px;font-weight:800;color:var(--or);letter-spacing:.6px;text-transform:uppercase;">Municipio activo</span>
+        <span style="font-size:10px;color:var(--gr);margin-left:auto;">Filtra todas las secciones</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <div>
+          <label style="font-size:9px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:3px;">PAÍS</label>
+          <select id="adm-sel-pais" class="fi" style="font-size:12px;padding:7px 10px;" onchange="App._admMunicipioChanged()">
+            <option value="Argentina">🌎 Argentina</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:9px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:3px;">PROVINCIA</label>
+          <select id="adm-sel-provincia" class="fi" style="font-size:12px;padding:7px 10px;" onchange="App._admMunicipioChanged()">
+            <option value="Entre Ríos">Entre Ríos</option>
+            <option value="Corrientes">Corrientes</option>
+            <option value="Santa Fe">Santa Fe</option>
+            <option value="Buenos Aires">Buenos Aires</option>
+            <option value="Córdoba">Córdoba</option>
+            <option value="Mendoza">Mendoza</option>
+            <option value="Misiones">Misiones</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:9px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:3px;">DEPARTAMENTO</label>
+          <select id="adm-sel-departamento" class="fi" style="font-size:12px;padding:7px 10px;" onchange="App._admMunicipioChanged()">
+            <option value="La Paz">La Paz</option>
+            <option value="Paraná">Paraná</option>
+            <option value="Concordia">Concordia</option>
+            <option value="Gualeguaychú">Gualeguaychú</option>
+            <option value="Colón">Colón</option>
+            <option value="Victoria">Victoria</option>
+            <option value="Diamante">Diamante</option>
+            <option value="Nogoyá">Nogoyá</option>
+            <option value="Villaguay">Villaguay</option>
+            <option value="Federación">Federación</option>
+            <option value="Tala">Tala</option>
+            <option value="San Salvador">San Salvador</option>
+            <option value="Islas del Ibicuy">Islas del Ibicuy</option>
+            <option value="Gualeguay">Gualeguay</option>
+            <option value="Capital">Capital</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:9px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:3px;">CIUDAD / MUNICIPIO</label>
+          <select id="adm-sel-ciudad" class="fi" style="font-size:12px;padding:7px 10px;" onchange="App._admMunicipioChanged()">
+            <option value="">— Todas —</option>
+            <option value="La Paz" selected>📍 La Paz</option>
+            <option value="Santa Elena">📍 Santa Elena</option>
+            <option value="Paraná">Paraná</option>
+            <option value="Concordia">Concordia</option>
+            <option value="Gualeguaychú">Gualeguaychú</option>
+            <option value="Colón">Colón</option>
+            <option value="Victoria">Victoria</option>
+            <option value="Diamante">Diamante</option>
+            <option value="Nogoyá">Nogoyá</option>
+            <option value="Villaguay">Villaguay</option>
+            <option value="Federación">Federación</option>
+            <option value="Rosario del Tala">Rosario del Tala</option>
+            <option value="San Salvador">San Salvador</option>
+            <option value="Gualeguay">Gualeguay</option>
+            <option value="Ibicuy">Ibicuy</option>
+            <option value="Corrientes">Corrientes</option>
+            <option value="Rosario">Rosario</option>
+            <option value="Buenos Aires">Buenos Aires</option>
+            <option value="Córdoba">Córdoba</option>
+          </select>
+        </div>
+      </div>
+      <div id="adm-municipio-badge" style="background:var(--or);color:white;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;text-align:center;font-family:var(--fH);">
+        🏙️ La Paz · Entre Ríos · Argentina
+      </div>
+    </div>
+
     <!-- ── PROPUESTAS COMUNIDAD ── -->
     <div id="adm-tab-propuestas" class="adm-panel" style="display:none;"></div>
 
@@ -2621,11 +2698,6 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <div id="adm-tab-loops" class="adm-panel" style="display:none;">
       <div style="display:flex;gap:8px;margin-bottom:12px;">
         <input id="adm-loops-q" type="text" class="fi" placeholder="Buscar loop..." aria-label="Buscar loop" style="flex:1;" oninput="App._admRenderLoops()">
-        <select class="fi" id="adm-loops-city" aria-label="Filtrar por ciudad" style="width:120px;" onchange="App._admRenderLoops()">
-          <option value="">Todas</option>
-          <option value="La Paz">La Paz</option><option value="Paraná">Paraná</option>
-          <option value="Concordia">Concordia</option><option value="Gualeguaychú">Gualeguaychú</option>
-        </select>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:12px;">
         <button class="adm-btn" style="flex:1;background:#1a1a1a;color:#fff;" onclick="App._testOnboardingNow()">
@@ -13501,6 +13573,8 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     }
     if (denied)  denied.style.display  = 'none';
     if (content) content.style.display = 'flex';
+    // Inicializar selector de municipio (primera vez o si cambia la ciudad detectada)
+    this._admInitMunicipioSelector();
     // Inicializar mapa del admin (crear-loop tab)
     if (!this.admMap) setTimeout(()=>this._initAdminMap(), 120);
     else setTimeout(()=>this.admMap && this.admMap.resize(), 120);
@@ -13547,12 +13621,20 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     // Cargar contadores desde Firebase
     if (this._db) {
       try {
+        const ciudad = this._admCity || '';
+        let repQuery = this._db.collection('urban_reports').where('status','==','pending');
+        if (ciudad) repQuery = this._db.collection('urban_reports').where('ciudad','==',ciudad).where('status','==','pending');
         const [users, reports] = await Promise.all([
           this._db.collection('users').get(),
-          this._db.collection('urban_reports').where('status','==','pending').get()
+          repQuery.get().catch(() => this._db.collection('urban_reports').where('status','==','pending').get()),
         ]);
         set('aStat-users',    users.size);
         set('aStat-reportes', reports.size);
+        // Filtrar loops del dashboard por ciudad activa
+        const loopsFiltrados = ciudad
+          ? this.routes.filter(r => r.type!=='fotostop' && (r.cityId===ciudad || r.ciudad===ciudad))
+          : this.routes.filter(r => r.type!=='fotostop');
+        set('aStat-loops', loopsFiltrados.length);
       } catch(e) {
         set('aStat-users', '—'); set('aStat-reportes', '—');
       }
@@ -13655,22 +13737,61 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   },
 
   // ── Loops ──
+  // ══ SELECTOR GLOBAL DE MUNICIPIO ══
+  _admMunicipioChanged() {
+    const pais       = document.getElementById('adm-sel-pais')?.value       || 'Argentina';
+    const provincia  = document.getElementById('adm-sel-provincia')?.value  || 'Entre Ríos';
+    const depto      = document.getElementById('adm-sel-departamento')?.value || 'La Paz';
+    const ciudad     = document.getElementById('adm-sel-ciudad')?.value     || '';
+    // Guardar estado global
+    this._admPais      = pais;
+    this._admProvincia = provincia;
+    this._admDepto     = depto;
+    this._admCity      = ciudad;
+    // Actualizar badge visible
+    const badge = document.getElementById('adm-municipio-badge');
+    if (badge) badge.textContent = ciudad
+      ? `🏙️ ${ciudad} · ${depto} · ${provincia} · ${pais}`
+      : `🗺️ ${depto} · ${provincia} · ${pais} (todas las ciudades)`;
+    // Refrescar la tab activa
+    const activeTab = document.querySelector('.adm-tab.on')?.dataset?.tab;
+    if (activeTab === 'loops')       this._admRenderLoops();
+    if (activeTab === 'fotoloops')   this._admRenderFotoloops();
+    if (activeTab === 'reportes')    this._admRenderReportes();
+    if (activeTab === 'eventos')     this._admRenderEventos();
+    if (activeTab === 'propuestas')  this._admRenderPropuestas();
+    if (activeTab === 'negocios')    this._admRenderNegocios();
+    if (activeTab === 'dashboard')   this._admLoadDashboard();
+  },
+
+  // ── Inicializar el selector con la ciudad detectada del admin ──
+  _admInitMunicipioSelector() {
+    const city = this._luCity || 'La Paz';
+    const prov = this._luProv || 'Entre Ríos';
+    // Poner ciudad detectada en el select si existe como option
+    const selCiudad = document.getElementById('adm-sel-ciudad');
+    const selProv   = document.getElementById('adm-sel-provincia');
+    const selDepto  = document.getElementById('adm-sel-departamento');
+    if (selCiudad) {
+      const opt = [...selCiudad.options].find(o => o.value === city);
+      if (opt) selCiudad.value = city;
+    }
+    if (selProv) {
+      const opt = [...selProv.options].find(o => o.value === prov);
+      if (opt) selProv.value = prov;
+    }
+    // Derivar departamento desde _GEO_KNOWN
+    const geoRow = (this._GEO_KNOWN||[]).find(r => r.ciudad === city);
+    if (geoRow && selDepto) {
+      const opt = [...selDepto.options].find(o => o.value === geoRow.departamento);
+      if (opt) selDepto.value = geoRow.departamento;
+    }
+    this._admMunicipioChanged();
+  },
+
   _admRenderLoops() {
     const q    = (document.getElementById('adm-loops-q')?.value||'').toLowerCase();
-    const cityEl = document.getElementById('adm-loops-city');
-    const city = cityEl?.value || '';
-
-    // Poblar dinámicamente las ciudades del select
-    if (cityEl) {
-      const cities = [...new Set(
-        this.routes
-          .filter(r => r.type !== 'fotostop' && (r.cityId || r.ciudad))
-          .map(r => r.cityId || r.ciudad)
-      )].sort();
-      const current = cityEl.value;
-      cityEl.innerHTML = `<option value="">Todas</option>` +
-        cities.map(c => `<option value="${App._esc(c)}"${c===current?' selected':''}>${App._esc(c)}</option>`).join('');
-    }
+    const city = this._admCity || '';
 
     const list = this.routes.filter(r =>
       r.type !== 'fotostop' &&
@@ -13854,6 +13975,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const el = document.getElementById('adm-tab-propuestas');
     if (!el) return;
     el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">Cargando propuestas...</div>`;
+    const ciudad = this._admCity || '';
     let list = [];
     if (this._db) {
       try {
@@ -13861,6 +13983,8 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
         list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       } catch(e) { console.warn('propuestas:', e); }
     }
+    // Filtrar por ciudad global
+    if (ciudad) list = list.filter(r => (r.ciudad||r.cityId||'') === ciudad);
     if (list.length === 0) {
       el.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--gr);">
         <div style="font-size:36px;margin-bottom:10px;">🏛</div>
@@ -13927,6 +14051,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   // ── FotoLoops ──
   async _admRenderFotoloops() {
     const filter = document.getElementById('adm-fl-filter')?.value||'all';
+    const city   = this._admCity || '';
     const el = document.getElementById('adm-fl-list');
     const cntEl = document.getElementById('adm-fl-count');
     if (!el) return;
@@ -13937,9 +14062,9 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
         el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">Cargando foto loops...</div>`;
         let snap;
         try {
-          snap = await this._db.collection('fotoloops').orderBy('ts','desc').limit(50).get();
+          snap = await this._db.collection('fotoloops').orderBy('ts','desc').limit(200).get();
         } catch(e) {
-          snap = await this._db.collection('fotoloops').limit(50).get();
+          snap = await this._db.collection('fotoloops').limit(200).get();
         }
         this._fotoPosts = snap.docs.map(d=>({id:d.id,...d.data()}));
       } catch(e) {
@@ -13948,6 +14073,8 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     }
 
     let list = this._fotoPosts || [];
+    // Filtrar por ciudad global
+    if (city) list = list.filter(p => (p.ciudad||p.cityId||'') === city);
     const filtered = filter === 'all' ? list : list.filter(p=>(p.status||'pending')===filter);
     if(cntEl) cntEl.textContent = `${filtered.length} foto${filtered.length!==1?'s':''}`;
 
@@ -14021,6 +14148,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const el = document.getElementById('adm-ev-list');
     if (!el) return;
     el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">Cargando eventos...</div>`;
+    const ciudad = this._admCity || '';
     let list = [];
     if (this._db) {
       try {
@@ -14028,19 +14156,19 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
         try {
           snap = await this._db.collection('eventos').orderBy('ts','desc').limit(100).get();
         } catch(e) {
-          // Fallback sin orderBy si hay docs sin campo ts o falta índice
           snap = await this._db.collection('eventos').limit(100).get();
         }
         list = snap.docs.map(d=>({id:d.id,...d.data()}));
-        // Ordenar localmente como fallback
         list.sort((a,b)=>(b.ts||0)-(a.ts||0));
-        this._eventos = list; // sincronizar cache
+        this._eventos = list;
       } catch(e) {
         list = this._eventos || [];
       }
     } else {
       list = this._eventos || [];
     }
+    // Filtrar por ciudad global
+    if (ciudad) list = list.filter(ev => (ev.city||ev.ciudad||ev.cityId||'') === ciudad);
     if (list.length === 0) { el.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">Sin eventos</div>`; return; }
     const now = new Date().toISOString().split('T')[0];
     el.innerHTML = list.map(ev => {
@@ -14293,48 +14421,74 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (!el) return;
     if (!this._db) { el.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">Firebase no disponible</div>`; return; }
     el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">Cargando reportes...</div>`;
+
+    const filterStatus = document.getElementById('adm-rep-filter-status')?.value || '';
+    const filterCat    = document.getElementById('adm-rep-filter-cat')?.value    || '';
+    const ciudad       = this._admCity || '';
+
     try {
-      let snap;
-      try {
-        // Intento con orderBy (requiere índice compuesto en Firestore)
-        snap = await this._db.collection('reports').where('status','==','pending').orderBy('ts','desc').get();
-      } catch(e) {
-        // Fallback sin orderBy (no requiere índice)
-        snap = await this._db.collection('reports').where('status','==','pending').get();
-      }
-      if (snap.empty) {
+      // Cargar todos los reportes urbanos de la ciudad activa
+      let q = this._db.collection('urban_reports').orderBy('ts','desc');
+      const snap = await q.get().catch(() => this._db.collection('urban_reports').get());
+
+      let all = snap.docs.map(d => ({id:d.id,...d.data()}));
+
+      // Filtrar por ciudad global
+      if (ciudad) all = all.filter(r => (r.ciudad||r.cityId||'') === ciudad);
+
+      // Contadores
+      const ct = {pending:0, proceso:0, resuelto:0};
+      all.forEach(r => { if (ct[r.status]!==undefined) ct[r.status]++; else ct.pending++; });
+      const setEl = (id,v) => { const e = document.getElementById(id); if(e) e.textContent = v; };
+      setEl('adm-rep-ct-pending',  ct.pending);
+      setEl('adm-rep-ct-proceso',  ct.proceso);
+      setEl('adm-rep-ct-resuelto', ct.resuelto);
+      setEl('aStat-reportes', ct.pending);
+
+      // Filtrar por estado y categoría
+      const filtered = all.filter(r => {
+        const statusMatch = !filterStatus || (r.status||'pending') === filterStatus;
+        const catMatch    = !filterCat    || r.cat === filterCat;
+        return statusMatch && catMatch;
+      });
+
+      if (filtered.length === 0) {
         el.innerHTML = '';
-        if(empty) empty.style.display = 'block';
-        document.getElementById('aStat-reportes') && (document.getElementById('aStat-reportes').textContent = '0');
+        if (empty) empty.style.display = 'block';
         return;
       }
-      if(empty) empty.style.display = 'none';
-      el.innerHTML = snap.docs.map(doc => {
-        const r = {id:doc.id,...doc.data()};
-        return `<div class="adm-item">
-          <div class="adm-item-row">
-            <div style="font-size:24px;margin-right:4px;">🚩</div>
-            <div class="adm-item-info">
-              <div class="adm-item-name">${r.reason||'Sin motivo'}</div>
-              <div class="adm-item-meta">Reportado por: ${r.reporterName||'Anónimo'} · ${new Date(r.ts||0).toLocaleDateString('es-AR')}</div>
-              <div class="adm-item-meta">Contenido ID: <code>${r.targetId||'—'}</code> · Tipo: ${r.targetType||'—'}</div>
+      if (empty) empty.style.display = 'none';
+
+      const STATUS_LABEL = {pending:'🔴 Pendiente', proceso:'🟡 En proceso', resuelto:'🟢 Resuelto'};
+      const STATUS_CLASS = {pending:'rep-status-pendiente', proceso:'rep-status-proceso', resuelto:'rep-status-resuelto'};
+
+      el.innerHTML = filtered.map(r => {
+        const st = r.status || 'pending';
+        const fecha = r.ts ? new Date(r.ts).toLocaleDateString('es-AR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+        return `<div class="adm-rep-card">
+          <div class="rep-header">
+            <div style="font-size:28px;">${r.catEmoji||'📋'}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:14px;font-weight:700;color:var(--dk);">${r.catLabel||r.cat||'Sin categoría'}</div>
+              <div style="font-size:11px;color:var(--gr);margin-top:2px;">${r.userName||'Anónimo'} · ${fecha}</div>
+              <div style="font-size:11px;color:var(--or);margin-top:1px;">📍 ${r.ciudad||r.cityId||'—'}</div>
+              <div style="font-size:12px;color:var(--md);margin-top:4px;line-height:1.4;">${App._esc(r.desc||'')}</div>
             </div>
+            <span class="rep-cat-badge ${STATUS_CLASS[st]||'rep-status-pendiente'}">${STATUS_LABEL[st]||'Pendiente'}</span>
           </div>
-          <div class="adm-item-actions">
-            <button class="adm-btn adm-btn-red"   onclick="App._admResolveReport('${doc.id}','delete','${r.targetId}','${r.targetType}')">🗑️ Eliminar contenido</button>
-            <button class="adm-btn adm-btn-green"  onclick="App._admResolveReport('${doc.id}','ignore')">✅ Ignorar</button>
+          ${r.lat && r.lng ? `<div style="font-size:11px;color:var(--gr);">📍 ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)} <a href="https://maps.google.com/?q=${r.lat},${r.lng}" target="_blank" style="color:var(--or);text-decoration:none;">Ver en mapa →</a></div>` : ''}
+          ${r.img ? `<img${this._imgSrc(r.img)?` src="${this._imgSrc(r.img)}"`:''}${r.img.startsWith('firestore:')?` data-fsimg="${r.img}"`:''}  class="fs-lazy" style="width:100%;border-radius:10px;max-height:180px;object-fit:cover;cursor:pointer;" loading="lazy" onclick="App._admRepShowDetail('${r.id}')" onerror="this.style.display='none'">` : ''}
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${st !== 'proceso'   ? `<button class="adm-btn" onclick="App._admRepSetStatus('${r.id}','proceso')"  style="background:rgba(251,146,60,.15);color:#FB923C;border-color:#FB923C;">🟡 En proceso</button>` : ''}
+            ${st !== 'resuelto'  ? `<button class="adm-btn adm-btn-green" onclick="App._admRepSetStatus('${r.id}','resuelto')">✅ Resuelto</button>` : ''}
+            ${st !== 'pending'   ? `<button class="adm-btn" onclick="App._admRepSetStatus('${r.id}','pending')">🔴 Pendiente</button>` : ''}
+            <button class="adm-btn" onclick="App._admRepShowDetail('${r.id}')" style="margin-left:auto;">👁️ Detalle</button>
           </div>
         </div>`;
       }).join('');
+      setTimeout(() => this._lazyLoadFsImgs(el), 50);
     } catch(e) {
-      el.innerHTML = `<div style="text-align:center;padding:32px;color:#EF4444;font-size:13px;">
-        Error al leer reportes: ${e.message}<br><br>
-        <div style="background:var(--bg2);border-radius:10px;padding:12px;text-align:left;font-size:11px;color:var(--md);line-height:1.7;">
-          <b>Si el error dice "requires an index":</b><br>
-          Creá el índice compuesto en Firebase Console →<br>
-          Firestore → Indexes → Agregar: colección <code style="color:var(--or);">reports</code>, campos <code style="color:var(--or);">status ASC</code> + <code style="color:var(--or);">ts DESC</code>
-        </div>
-      </div>`;
+      el.innerHTML = `<div style="text-align:center;padding:32px;color:#EF4444;font-size:13px;">Error: ${e.message}</div>`;
     }
   },
 
@@ -15411,6 +15565,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const el = document.getElementById('adm-tab-negocios');
     if (!el) return;
     el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">Cargando negocios...</div>`;
+    const ciudad = this._admCity || '';
     let lista = [];
     if (this._db) {
       try {
@@ -15418,6 +15573,8 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
         lista = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       } catch(e) { console.warn('negocios:', e); lista = []; }
     }
+    // Filtrar por ciudad global
+    if (ciudad) lista = lista.filter(n => (n.ciudad||'') === ciudad);
     const RUBROS = ['Restaurante / Parrilla','Vinoteca / Vinería','Almacén / Proveeduría','Panadería / Confitería','Heladería','Farmacia','Bar / Cervecería','Café','Hospedaje / Camping','Guía de pesca','Alquiler de botes / Kayaks','Servicio náutico','Turismo aventura','Dietética / Naturista','Kiosco','Carnicería','Verdulería','Ferretería','Indumentaria','Peluquería / Estética','Veterinaria','Otro'];
     const PLANES = ['Básico (gratis)','Destacado','Premium'];
     el.innerHTML = `
