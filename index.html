@@ -6397,13 +6397,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     this._closeUrbanReport();
 
     try {
-      // Subir imagen si hay
-      let imgUrl = null;
-      if (this._urepImgData && this._storage) {
+      // Guardar imagen en Firestore (sin Storage) si hay — mismo sistema que loop_imgs/fotoloop_imgs
+      let img = null;
+      if (this._urepImgData) {
         try {
-          const ref = this._storage.ref(`urban_reports/${Date.now()}_${this._uid}.jpg`);
-          await ref.putString(this._urepImgData, 'data_url');
-          imgUrl = await ref.getDownloadURL();
+          img = await this._uploadImg(this._urepImgData, `urban_reports/${Date.now()}_${this._uid}.jpg`);
         } catch(e) { /* continuar sin imagen si falla */ }
       }
 
@@ -6414,7 +6412,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         desc,
         lat:       this._urepLat,
         lng:       this._urepLng,
-        imgUrl,
+        img,
         status:    'pending',
         ts:        Date.now(),
         uid:       this._uid,
@@ -6488,7 +6486,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
             <span class="rep-cat-badge ${STATUS_CLASS[st]||'rep-status-pendiente'}">${STATUS_LABEL[st]||'Pendiente'}</span>
           </div>
           ${r.lat && r.lng ? `<div style="font-size:11px;color:var(--gr);">📍 ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)} <a href="https://maps.google.com/?q=${r.lat},${r.lng}" target="_blank" style="color:var(--or);text-decoration:none;">Ver en mapa →</a></div>` : ''}
-          ${r.imgUrl ? `<img src="${r.imgUrl}" style="width:100%;border-radius:10px;max-height:180px;object-fit:cover;cursor:pointer;" onclick="App._admRepShowDetail('${r.id}')">` : ''}
+          ${r.img ? `<img${this._imgSrc(r.img)?` src="${this._imgSrc(r.img)}"`:''}${r.img.startsWith('firestore:')?` data-fsimg="${r.img}"`:''} class="fs-lazy" style="width:100%;border-radius:10px;max-height:180px;object-fit:cover;cursor:pointer;" loading="lazy" onclick="App._admRepShowDetail('${r.id}')" onerror="this.style.display='none'">` : ''}
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
             ${st !== 'proceso'   ? `<button class="adm-btn" onclick="App._admRepSetStatus('${r.id}','proceso')"  style="background:rgba(251,146,60,.15);color:#FB923C;border-color:#FB923C;">🟡 En proceso</button>` : ''}
             ${st !== 'resuelto'  ? `<button class="adm-btn adm-btn-green" onclick="App._admRepSetStatus('${r.id}','resuelto')">✅ Resuelto</button>` : ''}
@@ -6497,6 +6495,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           </div>
         </div>`;
       }).join('');
+      setTimeout(() => this._lazyLoadFsImgs(el), 50);
     } catch(e) {
       el.innerHTML = `<div style="text-align:center;padding:32px;color:#EF4444;font-size:13px;">Error: ${e.message}</div>`;
     }
@@ -6524,12 +6523,13 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       const r = {id:doc.id,...doc.data()};
       const STATUS_LABEL = {pending:'🔴 Pendiente', proceso:'🟡 En proceso', resuelto:'🟢 Resuelto'};
       const fecha = r.ts ? new Date(r.ts).toLocaleString('es-AR') : '—';
+      const imgResolved = r.img ? await this._resolveImg(r.img).catch(() => '') : '';
       card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
           <div style="font-family:var(--fH);font-size:16px;font-weight:800;color:var(--dk);">${r.catEmoji||'📋'} ${r.catLabel||r.cat||'Reporte'}</div>
           <button onclick="document.getElementById('urep-detail-overlay').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gr);">✕</button>
         </div>
-        ${r.imgUrl ? `<img src="${r.imgUrl}" style="width:100%;border-radius:12px;max-height:220px;object-fit:cover;margin-bottom:14px;">` : ''}
+        ${imgResolved ? `<img src="${imgResolved}" style="width:100%;border-radius:12px;max-height:220px;object-fit:cover;margin-bottom:14px;">` : ''}
         <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--md);">
           <div><b>Estado:</b> ${STATUS_LABEL[r.status||'pending']}</div>
           <div><b>Vecino:</b> ${r.userName||'Anónimo'}</div>
@@ -7523,9 +7523,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     // Extraer docId del path: 'loops/cm_123.jpg' → 'cm_123'
     const filename = path.split('/').pop().replace(/\.[^.]+$/, '');
-    // Colección según tipo: loops/ → loop_imgs, fotoloops/ → fotoloop_imgs
-    const col = path.startsWith('fotoloops/') ? 'fotoloop_imgs' : 'loop_imgs';
-    const docId = path.startsWith('fotoloops/') ? filename : filename;
+    // Colección según tipo: loops/ → loop_imgs, fotoloops/ → fotoloop_imgs, urban_reports/ → urban_report_imgs
+    const col = path.startsWith('fotoloops/')     ? 'fotoloop_imgs'
+              : path.startsWith('urban_reports/') ? 'urban_report_imgs'
+              : 'loop_imgs';
+    const docId = filename;
 
     await this._db.collection(col).doc(docId).set({ img: dataUrl, ts: Date.now() });
     // Devolver marcador especial que la app reconoce
@@ -7537,7 +7539,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if (!this._db) return;
     try {
       const filename = path.split('/').pop().replace(/\.[^.]+$/, '');
-      const col = path.startsWith('fotoloops/') ? 'fotoloop_imgs' : 'loop_imgs';
+      const col = path.startsWith('fotoloops/')     ? 'fotoloop_imgs'
+                : path.startsWith('urban_reports/') ? 'urban_report_imgs'
+                : 'loop_imgs';
       await this._db.collection(col).doc(filename).delete();
     } catch(e) { /* no existe, OK */ }
   },
@@ -13545,7 +13549,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       try {
         const [users, reports] = await Promise.all([
           this._db.collection('users').get(),
-          this._db.collection('reports').where('status','==','pending').get()
+          this._db.collection('urban_reports').where('status','==','pending').get()
         ]);
         set('aStat-users',    users.size);
         set('aStat-reportes', reports.size);
