@@ -2477,65 +2477,26 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
         <div>
           <label style="font-size:9px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:3px;">PAÍS</label>
-          <select id="adm-sel-pais" class="fi" style="font-size:12px;padding:7px 10px;" onchange="App._admMunicipioChanged()">
-            <option value="Argentina">🌎 Argentina</option>
+          <select id="adm-sel-pais" class="fi" style="font-size:12px;padding:7px 10px;" onchange="App._admSelPaisChanged()">
+            <option value="">⏳ Cargando...</option>
           </select>
         </div>
         <div>
           <label style="font-size:9px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:3px;">PROVINCIA</label>
-          <select id="adm-sel-provincia" class="fi" style="font-size:12px;padding:7px 10px;" onchange="App._admMunicipioChanged()">
-            <option value="Entre Ríos">Entre Ríos</option>
-            <option value="Corrientes">Corrientes</option>
-            <option value="Santa Fe">Santa Fe</option>
-            <option value="Buenos Aires">Buenos Aires</option>
-            <option value="Córdoba">Córdoba</option>
-            <option value="Mendoza">Mendoza</option>
-            <option value="Misiones">Misiones</option>
+          <select id="adm-sel-provincia" class="fi" style="font-size:12px;padding:7px 10px;" onchange="App._admSelProvinciaChanged()">
+            <option value="">— Elegí país —</option>
           </select>
         </div>
         <div>
           <label style="font-size:9px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:3px;">DEPARTAMENTO</label>
-          <select id="adm-sel-departamento" class="fi" style="font-size:12px;padding:7px 10px;" onchange="App._admMunicipioChanged()">
-            <option value="La Paz">La Paz</option>
-            <option value="Paraná">Paraná</option>
-            <option value="Concordia">Concordia</option>
-            <option value="Gualeguaychú">Gualeguaychú</option>
-            <option value="Colón">Colón</option>
-            <option value="Victoria">Victoria</option>
-            <option value="Diamante">Diamante</option>
-            <option value="Nogoyá">Nogoyá</option>
-            <option value="Villaguay">Villaguay</option>
-            <option value="Federación">Federación</option>
-            <option value="Tala">Tala</option>
-            <option value="San Salvador">San Salvador</option>
-            <option value="Islas del Ibicuy">Islas del Ibicuy</option>
-            <option value="Gualeguay">Gualeguay</option>
-            <option value="Capital">Capital</option>
+          <select id="adm-sel-departamento" class="fi" style="font-size:12px;padding:7px 10px;" onchange="App._admSelDeptoChanged()">
+            <option value="">— Elegí provincia —</option>
           </select>
         </div>
         <div>
           <label style="font-size:9px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:3px;">CIUDAD / MUNICIPIO</label>
           <select id="adm-sel-ciudad" class="fi" style="font-size:12px;padding:7px 10px;" onchange="App._admMunicipioChanged()">
-            <option value="">— Todas —</option>
-            <option value="La Paz" selected>📍 La Paz</option>
-            <option value="Santa Elena">📍 Santa Elena</option>
-            <option value="Paraná">Paraná</option>
-            <option value="Concordia">Concordia</option>
-            <option value="Gualeguaychú">Gualeguaychú</option>
-            <option value="Colón">Colón</option>
-            <option value="Victoria">Victoria</option>
-            <option value="Diamante">Diamante</option>
-            <option value="Nogoyá">Nogoyá</option>
-            <option value="Villaguay">Villaguay</option>
-            <option value="Federación">Federación</option>
-            <option value="Rosario del Tala">Rosario del Tala</option>
-            <option value="San Salvador">San Salvador</option>
-            <option value="Gualeguay">Gualeguay</option>
-            <option value="Ibicuy">Ibicuy</option>
-            <option value="Corrientes">Corrientes</option>
-            <option value="Rosario">Rosario</option>
-            <option value="Buenos Aires">Buenos Aires</option>
-            <option value="Córdoba">Córdoba</option>
+            <option value="">— Elegí departamento —</option>
           </select>
         </div>
       </div>
@@ -13738,21 +13699,176 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
 
   // ── Loops ──
   // ══ SELECTOR GLOBAL DE MUNICIPIO ══
+  // ══ SELECTOR GLOBAL DE MUNICIPIO — CASCADE DINÁMICO ══
+  // Recolecta todos los pais/provincia/departamento/ciudad que existen
+  // en Firestore (loops, fotoloops, urban_reports, eventos, negocios)
+  // y los combina con _GEO_KNOWN para cubrir ciudades sin contenido aún.
+
+  async _admLoadGeoData() {
+    // Evitar recargar si ya tenemos datos frescos (menos de 5 min)
+    if (this._admGeoTs && Date.now() - this._admGeoTs < 300000) return;
+    // Estructura: { pais: { provincia: { depto: Set(ciudades) } } }
+    const tree = {};
+    const add = (pais, prov, depto, ciudad) => {
+      if (!pais || !prov) return;
+      if (!tree[pais]) tree[pais] = {};
+      if (!tree[pais][prov]) tree[pais][prov] = {};
+      const d = depto || '(sin depto)';
+      if (!tree[pais][prov][d]) tree[pais][prov][d] = new Set();
+      if (ciudad) tree[pais][prov][d].add(ciudad);
+    };
+    // 1. Desde _GEO_KNOWN (tabla estática siempre presente)
+    (this._GEO_KNOWN || []).forEach(r => add(r.pais, r.provincia, r.departamento, r.ciudad));
+    // 2. Desde datos en memoria (loops, fotoloops, eventos)
+    (this.routes || []).forEach(r => add(r.pais||'Argentina', r.provincia||'', r.departamento||r.depto||'', r.ciudad||r.cityId||''));
+    (this._fotoPosts || []).forEach(p => add(p.pais||'Argentina', p.provincia||'', p.departamento||p.depto||'', p.ciudad||p.cityId||''));
+    (this._eventos   || []).forEach(e => add(e.pais||'Argentina', e.provincia||'', e.departamento||e.depto||'', e.city||e.ciudad||''));
+    // 3. Desde Firestore — consultas paralelas ligeras (solo campos geo)
+    if (this._db) {
+      const cols = [
+        { col: 'loops',                    flds: ['pais','provincia','departamento','ciudad','cityId'] },
+        { col: 'fotoloops',                flds: ['pais','provincia','departamento','ciudad','cityId'] },
+        { col: 'urban_reports',            flds: ['pais','provincia','departamento','ciudad','cityId'] },
+        { col: 'eventos',                  flds: ['pais','provincia','departamento','city','ciudad']   },
+        { col: 'negocios',                 flds: ['pais','provincia','departamento','ciudad']           },
+        { col: 'loops_municipio',          flds: ['pais','provincia','departamento','ciudad','cityId'] },
+        { col: 'loops_municipio_pending',  flds: ['pais','provincia','departamento','ciudad','cityId'] },
+      ];
+      await Promise.all(cols.map(async ({col, flds}) => {
+        try {
+          const snap = await this._db.collection(col).limit(500).get();
+          snap.forEach(d => {
+            const data = d.data();
+            // Intentar resolver geo desde _GEO_KNOWN si faltan campos
+            const cityVal = data.ciudad || data.cityId || data.city || '';
+            let pais = data.pais || 'Argentina';
+            let prov = data.provincia || '';
+            let dept = data.departamento || data.depto || '';
+            if (cityVal && (!prov || !dept)) {
+              const geo = (this._GEO_KNOWN||[]).find(r => r.ciudad === cityVal);
+              if (geo) { pais = geo.pais; prov = geo.provincia; dept = geo.departamento; }
+            }
+            add(pais, prov, dept, cityVal);
+          });
+        } catch(e) {}
+      }));
+    }
+    this._admGeoTree = tree;
+    this._admGeoTs   = Date.now();
+  },
+
+  async _admInitMunicipioSelector() {
+    // Cargar datos geo reales
+    await this._admLoadGeoData();
+    const tree = this._admGeoTree || {};
+
+    // Poblar PAÍS
+    const selPais = document.getElementById('adm-sel-pais');
+    if (selPais) {
+      const paises = Object.keys(tree).sort();
+      selPais.innerHTML = paises.map(p => `<option value="${p}">${p}</option>`).join('');
+      // Auto-seleccionar el país del admin (detectado por GPS)
+      const myPais = this._luPais || 'Argentina';
+      if (paises.includes(myPais)) selPais.value = myPais;
+    }
+    await this._admSelPaisChanged(true);
+  },
+
+  async _admSelPaisChanged(init = false) {
+    await this._admLoadGeoData();
+    const tree     = this._admGeoTree || {};
+    const pais     = document.getElementById('adm-sel-pais')?.value || '';
+    const selProv  = document.getElementById('adm-sel-provincia');
+    if (!selProv) return;
+    const provs = pais && tree[pais] ? Object.keys(tree[pais]).sort() : [];
+    selProv.innerHTML = provs.length
+      ? provs.map(p => `<option value="${p}">${p}</option>`).join('')
+      : `<option value="">Sin datos</option>`;
+    // Auto-seleccionar provincia detectada en init
+    if (init) {
+      const myProv = this._luProv || 'Entre Ríos';
+      if (provs.includes(myProv)) selProv.value = myProv;
+    }
+    await this._admSelProvinciaChanged(init);
+  },
+
+  async _admSelProvinciaChanged(init = false) {
+    await this._admLoadGeoData();
+    const tree    = this._admGeoTree || {};
+    const pais    = document.getElementById('adm-sel-pais')?.value     || '';
+    const prov    = document.getElementById('adm-sel-provincia')?.value || '';
+    const selDepto = document.getElementById('adm-sel-departamento');
+    if (!selDepto) return;
+    const deptos = (pais && prov && tree[pais]?.[prov])
+      ? Object.keys(tree[pais][prov]).filter(d => d !== '(sin depto)').sort()
+      : [];
+    // Incluir "(sin depto)" al final si hay ciudades sin departamento
+    const sinDepto = (pais && prov && tree[pais]?.[prov]?.['(sin depto)']?.size > 0);
+    selDepto.innerHTML = deptos.length
+      ? [`<option value="">— Todos —</option>`,
+         ...deptos.map(d => `<option value="${d}">${d}</option>`),
+         sinDepto ? `<option value="(sin depto)">Sin departamento</option>` : ''
+        ].join('')
+      : `<option value="">Sin datos</option>`;
+    // Auto-seleccionar departamento detectado en init
+    if (init) {
+      const myCity = this._luCity || 'La Paz';
+      const geo = (this._GEO_KNOWN||[]).find(r => r.ciudad === myCity);
+      if (geo && [...selDepto.options].some(o => o.value === geo.departamento)) {
+        selDepto.value = geo.departamento;
+      }
+    }
+    this._admSelDeptoChanged(init);
+  },
+
+  _admSelDeptoChanged(init = false) {
+    const tree    = this._admGeoTree || {};
+    const pais    = document.getElementById('adm-sel-pais')?.value          || '';
+    const prov    = document.getElementById('adm-sel-provincia')?.value      || '';
+    const depto   = document.getElementById('adm-sel-departamento')?.value   || '';
+    const selCiud = document.getElementById('adm-sel-ciudad');
+    if (!selCiud) return;
+    // Ciudades: si hay depto seleccionado, las de ese depto; si no, todas de la provincia
+    let ciudades = new Set();
+    if (pais && prov && tree[pais]?.[prov]) {
+      const provObj = tree[pais][prov];
+      if (depto) {
+        (provObj[depto] || new Set()).forEach(c => ciudades.add(c));
+      } else {
+        Object.values(provObj).forEach(s => s.forEach(c => ciudades.add(c)));
+      }
+    }
+    // Quitar vacíos y ordenar
+    const lista = [...ciudades].filter(Boolean).sort();
+    selCiud.innerHTML = lista.length
+      ? [`<option value="">— Todas —</option>`,
+         ...lista.map(c => `<option value="${c}">${c}</option>`)
+        ].join('')
+      : `<option value="">Sin ciudades</option>`;
+    // Auto-seleccionar ciudad detectada en init
+    if (init) {
+      const myCity = this._luCity || 'La Paz';
+      if (lista.includes(myCity)) selCiud.value = myCity;
+    }
+    this._admMunicipioChanged();
+  },
+
   _admMunicipioChanged() {
-    const pais       = document.getElementById('adm-sel-pais')?.value       || 'Argentina';
-    const provincia  = document.getElementById('adm-sel-provincia')?.value  || 'Entre Ríos';
-    const depto      = document.getElementById('adm-sel-departamento')?.value || 'La Paz';
-    const ciudad     = document.getElementById('adm-sel-ciudad')?.value     || '';
+    const pais      = document.getElementById('adm-sel-pais')?.value          || 'Argentina';
+    const provincia = document.getElementById('adm-sel-provincia')?.value      || '';
+    const depto     = document.getElementById('adm-sel-departamento')?.value   || '';
+    const ciudad    = document.getElementById('adm-sel-ciudad')?.value         || '';
     // Guardar estado global
     this._admPais      = pais;
     this._admProvincia = provincia;
     this._admDepto     = depto;
     this._admCity      = ciudad;
-    // Actualizar badge visible
+    // Actualizar badge
     const badge = document.getElementById('adm-municipio-badge');
-    if (badge) badge.textContent = ciudad
-      ? `🏙️ ${ciudad} · ${depto} · ${provincia} · ${pais}`
-      : `🗺️ ${depto} · ${provincia} · ${pais} (todas las ciudades)`;
+    if (badge) {
+      const partes = [ciudad || (depto ? `Dpto. ${depto}` : null) || provincia, provincia !== (ciudad||depto) ? provincia : null, pais].filter(Boolean);
+      badge.textContent = `🏙️ ${partes.join(' · ')}`;
+    }
     // Refrescar la tab activa
     const activeTab = document.querySelector('.adm-tab.on')?.dataset?.tab;
     if (activeTab === 'loops')       this._admRenderLoops();
@@ -13762,31 +13878,6 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (activeTab === 'propuestas')  this._admRenderPropuestas();
     if (activeTab === 'negocios')    this._admRenderNegocios();
     if (activeTab === 'dashboard')   this._admLoadDashboard();
-  },
-
-  // ── Inicializar el selector con la ciudad detectada del admin ──
-  _admInitMunicipioSelector() {
-    const city = this._luCity || 'La Paz';
-    const prov = this._luProv || 'Entre Ríos';
-    // Poner ciudad detectada en el select si existe como option
-    const selCiudad = document.getElementById('adm-sel-ciudad');
-    const selProv   = document.getElementById('adm-sel-provincia');
-    const selDepto  = document.getElementById('adm-sel-departamento');
-    if (selCiudad) {
-      const opt = [...selCiudad.options].find(o => o.value === city);
-      if (opt) selCiudad.value = city;
-    }
-    if (selProv) {
-      const opt = [...selProv.options].find(o => o.value === prov);
-      if (opt) selProv.value = prov;
-    }
-    // Derivar departamento desde _GEO_KNOWN
-    const geoRow = (this._GEO_KNOWN||[]).find(r => r.ciudad === city);
-    if (geoRow && selDepto) {
-      const opt = [...selDepto.options].find(o => o.value === geoRow.departamento);
-      if (opt) selDepto.value = geoRow.departamento;
-    }
-    this._admMunicipioChanged();
   },
 
   _admRenderLoops() {
