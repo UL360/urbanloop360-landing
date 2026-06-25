@@ -14116,14 +14116,29 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const q    = (document.getElementById('adm-loops-q')?.value||'').toLowerCase();
     const city = this._admCity || '';
 
+    // Normalizar para comparar sin acentos ni mayúsculas
+    const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+
     const list = this.routes.filter(r =>
       r.type !== 'fotostop' &&
-      (!q    || r.name?.toLowerCase().includes(q)) &&
-      (!city || r.cityId === city || r.ciudad === city)
+      (!q    || norm(r.name).includes(norm(q))) &&
+      (!city || norm(r.cityId) === norm(city) || norm(r.ciudad) === norm(city))
     );
     const el = document.getElementById('adm-loops-list');
     if (!el) return;
-    if (list.length === 0) { el.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">Sin loops</div>`; return; }
+    if (list.length === 0) {
+      // Si no hay loops, mostrar cuántos hay en total como ayuda diagnóstica
+      const total = this.routes.filter(r => r.type !== 'fotostop').length;
+      el.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">
+        Sin loops para "${city || 'todas las ciudades'}"<br>
+        <span style="font-size:11px;margin-top:6px;display:block;">
+          Hay ${total} loop${total!==1?'s':''} en total en memoria.
+          ${total > 0 ? 'Puede que tengan ciudad incorrecta — usá 🏷️ Reetiquitar para corregirlos.' : ''}
+        </span>
+        ${total > 0 ? `<button class="adm-btn" style="margin-top:10px;" onclick="App._admRetagAllLoops('${city}')">🏷️ Re-etiquetar todos por coords</button>` : ''}
+      </div>`;
+      return;
+    }
     el.innerHTML = list.map(r => {
       const MUNI_THR = 20;
       const hasImg = r.img && (r.img.startsWith('data:') || r.img.startsWith('http') || r.img.startsWith('firestore:'));
@@ -14157,12 +14172,81 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
               : ''
           }
           <button class="adm-btn" style="${r.isDemoLoop ? 'background:#FF5F00;color:#fff;border:1px solid #FF5F00;' : 'background:var(--bg2);'}" onclick="App._admSetDemoLoop('${r.id}')">${r.isDemoLoop ? '⭐ Es la Demo' : '☆ Usar como Demo'}</button>
+          <button class="adm-btn" style="background:#EEF2FF;color:#4F46E5;border-color:#4F46E5;" onclick="App._admRetagLoop('${r.id}')">🏷️ Re-etiquetar ciudad</button>
           <button class="adm-btn adm-btn-red" onclick="App._admDeleteLoop('${r.id}','${r.name.replace(/'/g,'')}')">🗑️ Eliminar</button>
         </div>
       </div>`;
     }).join('');
     // Cargar imágenes firestore: en thumbnails
     setTimeout(() => this._lazyLoadFsImgs(document.getElementById('adm-tab-loops')), 50);
+  },
+
+  // Re-etiquetar ciudad de un loop usando sus coordenadas reales
+  async _admRetagLoop(id) {
+    const r = this.routes.find(x => x.id === id);
+    if (!r) return;
+    // Obtener primer punto del loop
+    const pt = Array.isArray(r.pts) && r.pts[0];
+    if (!pt) { this.toast('⚠️ Loop sin coordenadas'); return; }
+    const lat = Array.isArray(pt) ? pt[0] : pt.lat;
+    const lng = Array.isArray(pt) ? pt[1] : pt.lng;
+    if (!lat || !lng) { this.toast('⚠️ Coordenadas inválidas'); return; }
+    const geo = this._enrichGeo({ lat, lng });
+    // Actualizar en memoria
+    r.ciudad       = geo.ciudad;
+    r.cityId       = geo.ciudad;
+    r.departamento = geo.departamento;
+    r.provincia    = geo.provincia;
+    r.pais         = geo.pais;
+    // Actualizar en Firestore
+    if (this._db) {
+      const col = r.source === 'municipio' ? 'loops_municipio' : 'loops';
+      try {
+        await this._db.collection(col).doc(id).update({
+          ciudad: geo.ciudad, cityId: geo.ciudad,
+          departamento: geo.departamento,
+          provincia: geo.provincia, pais: geo.pais,
+        });
+        this.toast(`✅ "${r.name}" → ${geo.ciudad}`);
+      } catch(e) { this.toast(`❌ Error: ${e.message}`); }
+    }
+    this._admRenderLoops();
+  },
+
+  // Re-etiquetar TODOS los loops de una ciudad por coordenadas
+  async _admRetagAllLoops(targetCity) {
+    if (!confirm(`Re-etiquetar todos los loops por coordenadas GPS reales?\nEsto corrige los que quedaron con ciudad incorrecta.`)) return;
+    this.toast('⏳ Re-etiquetando...');
+    let count = 0;
+    const batch = [];
+    for (const r of this.routes) {
+      if (r.type === 'fotostop') continue;
+      const pt = Array.isArray(r.pts) && r.pts[0];
+      if (!pt) continue;
+      const lat = Array.isArray(pt) ? pt[0] : pt.lat;
+      const lng = Array.isArray(pt) ? pt[1] : pt.lng;
+      if (!lat || !lng) continue;
+      const geo = this._enrichGeo({ lat, lng });
+      // Solo actualizar si la ciudad cambió o si targetCity y coincide
+      if (geo.ciudad === r.ciudad && geo.departamento === r.departamento) continue;
+      r.ciudad = geo.ciudad; r.cityId = geo.ciudad;
+      r.departamento = geo.departamento;
+      r.provincia = geo.provincia; r.pais = geo.pais;
+      if (this._db) {
+        const col = r.source === 'municipio' ? 'loops_municipio' : 'loops';
+        batch.push(
+          this._db.collection(col).doc(r.id).update({
+            ciudad: geo.ciudad, cityId: geo.ciudad,
+            departamento: geo.departamento,
+            provincia: geo.provincia, pais: geo.pais,
+          }).catch(e => console.warn('reTag error', r.id, e))
+        );
+      }
+      count++;
+    }
+    await Promise.all(batch);
+    this.toast(`✅ ${count} loop${count!==1?'s':''} re-etiquetados`);
+    this._admRenderLoops();
   },
 
   async _admSetDemoLoop(id) {
@@ -14396,12 +14480,24 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     }
 
     let list = this._fotoPosts || [];
-    // Filtrar por ciudad global
-    if (city) list = list.filter(p => (p.ciudad||p.cityId||'') === city);
+    // Filtrar por ciudad global — normalizado sin acentos
+    const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+    if (city) list = list.filter(p => norm(p.ciudad||p.cityId||'') === norm(city));
     const filtered = filter === 'all' ? list : list.filter(p=>(p.status||'pending')===filter);
     if(cntEl) cntEl.textContent = `${filtered.length} foto${filtered.length!==1?'s':''}`;
 
-    if (filtered.length === 0) { el.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">Sin foto loops ${filter==='all'?'':'con estado '+filter}</div>`; return; }
+    if (filtered.length === 0) {
+      const total = (this._fotoPosts||[]).length;
+      el.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">
+        Sin foto loops para "${city || 'todas las ciudades'}"<br>
+        <span style="font-size:11px;margin-top:6px;display:block;">
+          Hay ${total} foto loop${total!==1?'s':''} en total.
+          ${total > 0 ? 'Puede que tengan ciudad incorrecta — usá 🏷️ Re-etiquetar para corregirlos.' : ''}
+        </span>
+        ${total > 0 ? `<button class="adm-btn" style="margin-top:10px;" onclick="App._admRetagAllFotoloops('${city}')">🏷️ Re-etiquetar todos por coords</button>` : ''}
+      </div>`;
+      return;
+    }
     el.innerHTML = filtered.map(p => {
       const st = p.status||'pending';
       const stColor = {approved:'#D1FAE5',rejected:'#FEE2E2',pending:'#FEF3C7'}[st]||'#FEF3C7';
@@ -14419,12 +14515,61 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
         <div class="adm-item-actions">
           ${st!=='approved'  ? `<button class="adm-btn adm-btn-green" onclick="App._admFLStatus('${p.id}','approved')">✅ Aprobar</button>` : ''}
           ${st!=='rejected'  ? `<button class="adm-btn adm-btn-red"   onclick="App._admFLStatus('${p.id}','rejected')">❌ Rechazar</button>` : ''}
+          <button class="adm-btn" style="background:#EEF2FF;color:#4F46E5;border-color:#4F46E5;" onclick="App._admRetagFotoloop('${p.id}')">🏷️ Re-etiquetar ciudad</button>
           <button class="adm-btn adm-btn-red" onclick="App._admDeleteFL('${p.id}')">🗑️ Eliminar</button>
         </div>
       </div>`;
     }).join('');
     // Cargar imágenes firestore: en thumbnails
     setTimeout(() => this._lazyLoadFsImgs(document.getElementById('adm-tab-fotoloops')), 50);
+  },
+
+  async _admRetagFotoloop(id) {
+    const p = (this._fotoPosts||[]).find(x => x.id === id);
+    if (!p) return;
+    const geo = this._enrichGeo({ lat: p.lat, lng: p.lng, ciudad: p.ciudad });
+    p.ciudad = geo.ciudad; p.cityId = geo.ciudad;
+    p.departamento = geo.departamento;
+    p.provincia = geo.provincia; p.pais = geo.pais;
+    if (this._db) {
+      try {
+        await this._db.collection('fotoloops').doc(id).update({
+          ciudad: geo.ciudad, cityId: geo.ciudad,
+          departamento: geo.departamento,
+          provincia: geo.provincia, pais: geo.pais,
+        });
+        this.toast(`✅ Foto → ${geo.ciudad}`);
+      } catch(e) { this.toast(`❌ ${e.message}`); }
+    }
+    this._admRenderFotoloops();
+  },
+
+  async _admRetagAllFotoloops(targetCity) {
+    if (!confirm('Re-etiquetar TODOS los fotoloops por coordenadas GPS reales?')) return;
+    this.toast('⏳ Re-etiquetando fotoloops...');
+    let count = 0;
+    const batch = [];
+    for (const p of (this._fotoPosts||[])) {
+      if (!p.lat || !p.lng) continue;
+      const geo = this._enrichGeo({ lat: p.lat, lng: p.lng });
+      if (geo.ciudad === p.ciudad && geo.departamento === p.departamento) continue;
+      p.ciudad = geo.ciudad; p.cityId = geo.ciudad;
+      p.departamento = geo.departamento;
+      p.provincia = geo.provincia; p.pais = geo.pais;
+      if (this._db) {
+        batch.push(
+          this._db.collection('fotoloops').doc(p.id).update({
+            ciudad: geo.ciudad, cityId: geo.ciudad,
+            departamento: geo.departamento,
+            provincia: geo.provincia, pais: geo.pais,
+          }).catch(e => console.warn('reTag FL error', p.id, e))
+        );
+      }
+      count++;
+    }
+    await Promise.all(batch);
+    this.toast(`✅ ${count} fotoloop${count!==1?'s':''} re-etiquetados`);
+    this._admRenderFotoloops();
   },
 
   async _admFLStatus(id, status) {
