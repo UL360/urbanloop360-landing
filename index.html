@@ -9987,13 +9987,34 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   },
 
   async _detectLocation(lat, lng) {
-    // 1. Cache: si está a menos de 500m y tiene menos de 30min, reusar
+    // 1. Siempre buscar primero en _GEO_KNOWN por distancia — es más preciso que BigDataCloud
+    //    para pueblos pequeños (San Gustavo, Santa Elena, Bovril, etc.)
+    let bestKnown = null, bestDist = Infinity;
+    for (const row of this._GEO_KNOWN) {
+      const d = this._haversineKm(lat, lng, row.lat, row.lng);
+      if (d < row.radio && d < bestDist) { bestDist = d; bestKnown = row; }
+    }
+    if (bestKnown) {
+      // Tenemos match exacto en nuestra tabla → usar directo sin API
+      const result = {
+        lat, lng, ts: Date.now(),
+        pais:         bestKnown.pais,
+        provincia:    bestKnown.provincia,
+        departamento: bestKnown.departamento,
+        ciudad:       bestKnown.ciudad,
+      };
+      console.log(`[geo] Tabla local → ${result.ciudad}, Dpto. ${result.departamento}, ${result.provincia}`);
+      return result;
+    }
+
+    // 2. Cache: solo si NO hay match en _GEO_KNOWN
     if (this._geoCache) {
       const distM = this._haversineKm(lat, lng, this._geoCache.lat, this._geoCache.lng) * 1000;
       const age   = Date.now() - (this._geoCache.ts || 0);
       if (distM < 500 && age < 30 * 60 * 1000) return this._geoCache;
     }
-    // 2. BigDataCloud (gratis, sin key, retorna país/provincia/ciudad en es)
+
+    // 3. BigDataCloud — para ciudades fuera de _GEO_KNOWN
     try {
       const res  = await fetch(
         `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=es`,
@@ -10004,7 +10025,6 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       let rawProv = data.principalSubdivision || data.principalSubdivisionCode || '';
       rawProv = rawProv.replace(/^Provincia de /i,'').replace(/^Province of /i,'').trim();
 
-      // Extraer departamento de localityInfo.administrative (adminLevel 6)
       let rawDept = '';
       const admLevels = data.localityInfo?.administrative || [];
       const deptEntry = admLevels.find(a => a.adminLevel === 6 || a.adminLevel === 7);
@@ -10016,41 +10036,27 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           .trim();
       }
 
-      const result = {
-        lat, lng,
-        pais:         data.countryName || 'Argentina',
-        provincia:    rawProv,
-        departamento: rawDept,
-        ciudad:       rawCiudad,
-        ts: Date.now()
-      };
-
-      // ── Normalizar contra _GEO_KNOWN para nombres canónicos ──
-      let bestKnown = null, bestDist = Infinity;
-      for (const row of this._GEO_KNOWN) {
-        const d = this._haversineKm(lat, lng, row.lat, row.lng);
-        if (d < row.radio && d < bestDist) { bestDist = d; bestKnown = row; }
-      }
-      if (bestKnown) {
-        result.ciudad        = bestKnown.ciudad;
-        result.provincia     = bestKnown.provincia;
-        result.pais          = bestKnown.pais;
-        result.departamento  = bestKnown.departamento || rawDept;
-      }
-
-      if (result.ciudad) {
+      if (rawCiudad) {
+        const result = {
+          lat, lng, ts: Date.now(),
+          pais:         data.countryName || 'Argentina',
+          provincia:    rawProv,
+          departamento: rawDept,
+          ciudad:       rawCiudad,
+        };
         this._geoCache = result;
-        console.log(`[geo] ${result.ciudad}, Dpto. ${result.departamento}, ${result.provincia}, ${result.pais}`);
+        console.log(`[geo] BigDataCloud → ${result.ciudad}, Dpto. ${result.departamento}, ${result.provincia}`);
         return result;
       }
     } catch(e) {
       console.warn('[geo] BigDataCloud falló, usando tabla local:', e.message);
     }
-    // 3. Fallback tabla local
-    const sync = this._geoFromCoordsSync(lat, lng);
-    const result = { lat, lng, ...sync, ts: Date.now() };
-    this._geoCache = result;
-    return result;
+
+    // 4. Fallback final
+    return {
+      lat, lng, ts: Date.now(),
+      pais: 'Argentina', provincia: '', departamento: '', ciudad: this._luCity || 'La Paz'
+    };
   },
 
   // ── Actualizar ciudad del usuario desde GPS (se llama al mover el marcador) ──
