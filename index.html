@@ -4613,8 +4613,15 @@ const App = {
         } catch(e) { console.warn('loops_municipio no disponible:', e.message); }
         this.routesMuni = muniLoops;
 
-        // ── Combinar: DEFAULTS + municipio + comunidad ──
-        const allCombined = [...muniLoops, ...allLoops];
+        // ── Cargar IDs de loops eliminados (para no mostrar loops borrados) ──
+        let deletedIds = new Set();
+        try {
+          const delSnap = await this._db.collection('_deleted_loops').get();
+          delSnap.forEach(d => deletedIds.add(d.id));
+        } catch(e) {}
+
+        // ── Combinar: DEFAULTS + municipio + comunidad ── filtrando eliminados
+        const allCombined = [...muniLoops, ...allLoops].filter(r => !deletedIds.has(r.id));
         this.routes = [...DEFAULTS, ...allCombined.filter(c => !DEFAULTS.find(d => d.id === c.id))];
 
         // Compatibilidad: limpiar marcadores [[base64]] de datos viejos
@@ -14353,13 +14360,22 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       delete this._layers[id];
     }
     if (this._db) {
-      try { await this._db.collection('loops').doc(id).delete(); } catch(e){}
+      try { await this._db.collection('loops').doc(id).delete(); }          catch(e){}
+      try { await this._db.collection('loops_municipio').doc(id).delete(); } catch(e){}
+      try { await this._db.collection('loops_municipio_pending').doc(id).delete(); } catch(e){}
+      // ── Registrar ID eliminado para que no vuelva a aparecer ──
+      try {
+        await this._db.collection('_deleted_loops').doc(id).set({
+          deletedAt: Date.now(),
+          deletedBy: this._uid,
+          name: name,
+        });
+      } catch(e) { console.warn('No se pudo registrar eliminación:', e); }
     }
     await this._deleteImg(`loops/${id}.jpg`);
     await this._saveData();
     this._admRenderLoops();
     this._renderCards('', this._activeFilter||'all');
-    // Sincronizar stat del dashboard
     const statEl = document.getElementById('aStat-loops');
     if (statEl) statEl.textContent = this.routes.filter(r=>r.type!=='fotostop').length;
     this.toast(`🗑️ Loop "${name}" eliminado`);
