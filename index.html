@@ -6470,15 +6470,20 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     const filterStatus = document.getElementById('adm-rep-filter-status')?.value || '';
     const filterCat    = document.getElementById('adm-rep-filter-cat')?.value    || '';
+    // BUG FIX: también filtrar por ciudad del selector global
+    const ciudad       = this._admCity || '';
+    const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
 
     try {
-      // Cargar todos los reportes urbanos
-      let q = this._db.collection('urban_reports').orderBy('ts','desc');
-      const snap = await q.get().catch(() => this._db.collection('urban_reports').get());
+      const snap = await this._db.collection('urban_reports').orderBy('ts','desc').get()
+        .catch(() => this._db.collection('urban_reports').get());
 
-      const all = snap.docs.map(d => ({id:d.id,...d.data()}));
+      let all = snap.docs.map(d => ({id:d.id,...d.data()}));
 
-      // Contadores
+      // Filtrar por ciudad global
+      if (ciudad) all = all.filter(r => norm(r.ciudad||r.cityId||'') === norm(ciudad));
+
+      // Contadores (sobre los de la ciudad activa)
       const ct = {pending:0, proceso:0, resuelto:0};
       all.forEach(r => { if (ct[r.status]!==undefined) ct[r.status]++; else ct.pending++; });
       const setEl = (id,v) => { const e = document.getElementById(id); if(e) e.textContent = v; };
@@ -6487,7 +6492,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       setEl('adm-rep-ct-resuelto', ct.resuelto);
       setEl('aStat-reportes', ct.pending);
 
-      // Filtrar
+      // Filtrar por estado y categoría
       const filtered = all.filter(r => {
         const statusMatch = !filterStatus || (r.status||'pending') === filterStatus;
         const catMatch    = !filterCat    || r.cat === filterCat;
@@ -6495,7 +6500,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       });
 
       if (filtered.length === 0) {
-        el.innerHTML = '';
+        el.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">
+          Sin reportes para "${ciudad||'todas las ciudades'}"</div>`;
         if (empty) empty.style.display = 'block';
         return;
       }
@@ -6513,6 +6519,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
             <div style="flex:1;min-width:0;">
               <div style="font-size:14px;font-weight:700;color:var(--dk);">${r.catLabel||r.cat||'Sin categoría'}</div>
               <div style="font-size:11px;color:var(--gr);margin-top:2px;">${r.userName||'Anónimo'} · ${fecha}</div>
+              <div style="font-size:11px;color:var(--or);margin-top:1px;">📍 ${r.ciudad||r.cityId||'—'}</div>
               <div style="font-size:12px;color:var(--md);margin-top:4px;line-height:1.4;">${App._esc(r.desc||'')}</div>
             </div>
             <span class="rep-cat-badge ${STATUS_CLASS[st]||'rep-status-pendiente'}">${STATUS_LABEL[st]||'Pendiente'}</span>
@@ -14721,8 +14728,9 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     } else {
       list = this._eventos || [];
     }
-    // Filtrar por ciudad global
-    if (ciudad) list = list.filter(ev => (ev.city||ev.ciudad||ev.cityId||'') === ciudad);
+    // Filtrar por ciudad global — normalizado
+    const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+    if (ciudad) list = list.filter(ev => norm(ev.city||ev.ciudad||ev.cityId||'') === norm(ciudad));
     if (list.length === 0) { el.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">Sin eventos</div>`; return; }
     const now = new Date().toISOString().split('T')[0];
     el.innerHTML = list.map(ev => {
@@ -14969,83 +14977,6 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   },
 
   // ── Reportes ──
-  async _admRenderReportes() {
-    const el    = document.getElementById('adm-rep-list');
-    const empty = document.getElementById('adm-rep-empty');
-    if (!el) return;
-    if (!this._db) { el.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">Firebase no disponible</div>`; return; }
-    el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">Cargando reportes...</div>`;
-
-    const filterStatus = document.getElementById('adm-rep-filter-status')?.value || '';
-    const filterCat    = document.getElementById('adm-rep-filter-cat')?.value    || '';
-    const ciudad       = this._admCity || '';
-
-    try {
-      // Cargar todos los reportes urbanos de la ciudad activa
-      let q = this._db.collection('urban_reports').orderBy('ts','desc');
-      const snap = await q.get().catch(() => this._db.collection('urban_reports').get());
-
-      let all = snap.docs.map(d => ({id:d.id,...d.data()}));
-
-      // Filtrar por ciudad global
-      if (ciudad) all = all.filter(r => (r.ciudad||r.cityId||'') === ciudad);
-
-      // Contadores
-      const ct = {pending:0, proceso:0, resuelto:0};
-      all.forEach(r => { if (ct[r.status]!==undefined) ct[r.status]++; else ct.pending++; });
-      const setEl = (id,v) => { const e = document.getElementById(id); if(e) e.textContent = v; };
-      setEl('adm-rep-ct-pending',  ct.pending);
-      setEl('adm-rep-ct-proceso',  ct.proceso);
-      setEl('adm-rep-ct-resuelto', ct.resuelto);
-      setEl('aStat-reportes', ct.pending);
-
-      // Filtrar por estado y categoría
-      const filtered = all.filter(r => {
-        const statusMatch = !filterStatus || (r.status||'pending') === filterStatus;
-        const catMatch    = !filterCat    || r.cat === filterCat;
-        return statusMatch && catMatch;
-      });
-
-      if (filtered.length === 0) {
-        el.innerHTML = '';
-        if (empty) empty.style.display = 'block';
-        return;
-      }
-      if (empty) empty.style.display = 'none';
-
-      const STATUS_LABEL = {pending:'🔴 Pendiente', proceso:'🟡 En proceso', resuelto:'🟢 Resuelto'};
-      const STATUS_CLASS = {pending:'rep-status-pendiente', proceso:'rep-status-proceso', resuelto:'rep-status-resuelto'};
-
-      el.innerHTML = filtered.map(r => {
-        const st = r.status || 'pending';
-        const fecha = r.ts ? new Date(r.ts).toLocaleDateString('es-AR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
-        return `<div class="adm-rep-card">
-          <div class="rep-header">
-            <div style="font-size:28px;">${r.catEmoji||'📋'}</div>
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:14px;font-weight:700;color:var(--dk);">${r.catLabel||r.cat||'Sin categoría'}</div>
-              <div style="font-size:11px;color:var(--gr);margin-top:2px;">${r.userName||'Anónimo'} · ${fecha}</div>
-              <div style="font-size:11px;color:var(--or);margin-top:1px;">📍 ${r.ciudad||r.cityId||'—'}</div>
-              <div style="font-size:12px;color:var(--md);margin-top:4px;line-height:1.4;">${App._esc(r.desc||'')}</div>
-            </div>
-            <span class="rep-cat-badge ${STATUS_CLASS[st]||'rep-status-pendiente'}">${STATUS_LABEL[st]||'Pendiente'}</span>
-          </div>
-          ${r.lat && r.lng ? `<div style="font-size:11px;color:var(--gr);">📍 ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)} <a href="https://maps.google.com/?q=${r.lat},${r.lng}" target="_blank" style="color:var(--or);text-decoration:none;">Ver en mapa →</a></div>` : ''}
-          ${r.img ? `<img${this._imgSrc(r.img)?` src="${this._imgSrc(r.img)}"`:''}${r.img.startsWith('firestore:')?` data-fsimg="${r.img}"`:''}  class="fs-lazy" style="width:100%;border-radius:10px;max-height:180px;object-fit:cover;cursor:pointer;" loading="lazy" onclick="App._admRepShowDetail('${r.id}')" onerror="this.style.display='none'">` : ''}
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            ${st !== 'proceso'   ? `<button class="adm-btn" onclick="App._admRepSetStatus('${r.id}','proceso')"  style="background:rgba(251,146,60,.15);color:#FB923C;border-color:#FB923C;">🟡 En proceso</button>` : ''}
-            ${st !== 'resuelto'  ? `<button class="adm-btn adm-btn-green" onclick="App._admRepSetStatus('${r.id}','resuelto')">✅ Resuelto</button>` : ''}
-            ${st !== 'pending'   ? `<button class="adm-btn" onclick="App._admRepSetStatus('${r.id}','pending')">🔴 Pendiente</button>` : ''}
-            <button class="adm-btn" onclick="App._admRepShowDetail('${r.id}')" style="margin-left:auto;">👁️ Detalle</button>
-          </div>
-        </div>`;
-      }).join('');
-      setTimeout(() => this._lazyLoadFsImgs(el), 50);
-    } catch(e) {
-      el.innerHTML = `<div style="text-align:center;padding:32px;color:#EF4444;font-size:13px;">Error: ${e.message}</div>`;
-    }
-  },
-
   // ── REPORTAR CONTENIDO (usuario) ──
   _reportContent(targetId, targetType) {
     if (!targetId) return;
@@ -16125,6 +16056,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       try {
         const snap = await this._db.collection('negocios').orderBy('nombre').get();
         lista = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        this._negociosCache = lista; // BUG FIX: guardar en cache para _negocioFiltrar
       } catch(e) { console.warn('negocios:', e); lista = []; }
     }
     // Filtrar por ciudad global
@@ -16302,7 +16234,10 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       const cd = document.getElementById('neg-coords-display');
       if (cd && n.lat && n.lng) cd.textContent = `📍 ${parseFloat(n.lat).toFixed(5)}, ${parseFloat(n.lng).toFixed(5)}`;
     } else {
-      ['neg-nombre','neg-ciudad','neg-direccion','neg-tel','neg-web','neg-horario','neg-desc','neg-notas'].forEach(fid => { const e = document.getElementById(fid); if (e) e.value = ''; });
+      ['neg-nombre','neg-direccion','neg-tel','neg-web','neg-horario','neg-desc','neg-notas'].forEach(fid => { const e = document.getElementById(fid); if (e) e.value = ''; });
+      // BUG FIX: pre-llenar ciudad con el municipio activo del selector global
+      const ciudadEl = document.getElementById('neg-ciudad');
+      if (ciudadEl) ciudadEl.value = this._admCity || '';
       const ca = document.getElementById('neg-activo'); if (ca) ca.checked = true;
       const cd2 = document.getElementById('neg-delivery'); if (cd2) cd2.checked = false;
       const prev = document.getElementById('neg-foto-preview');
