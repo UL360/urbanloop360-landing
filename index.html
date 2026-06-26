@@ -2546,7 +2546,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <div id="adm-tab-crear-loop" class="adm-panel" style="display:none;">
       <!-- ── Método de creación: OBLIGATORIO ── -->
       <div class="ac" style="border:1.5px solid var(--or);background:var(--orL);">
-        <div class="act" style="color:var(--or);">⚙️ Método de creación <span style="font-size:11px;font-weight:600;color:var(--or);background:rgba(255,95,0,.18);padding:2px 8px;border-radius:20px;margin-left:6px;">OBLIGATORIO</span></div>
+        <div class="act" style="color:var(--or);">⚙️ Método de creación <span style="font-size:11px;font-weight:600;color:var(--gr);margin-left:6px;">opcional</span></div>
         <div id="adm-method-btns" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
           <button type="button" class="adm-method-btn" data-method="fotoloop" onclick="App._selectCreationMethod('fotoloop',this)"
             style="padding:12px 6px;border-radius:12px;border:2px solid var(--bd);background:var(--wh);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;transition:all .2s;font-family:var(--fB);">
@@ -8806,12 +8806,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const name = document.getElementById('adm-name').value.trim();
     const desc = document.getElementById('adm-desc').value.trim();
     const type = document.getElementById('adm-type').value;
-    const creationMethod = this._admCreationMethod || '';
-    if (!creationMethod) {
-      const methodBox = document.getElementById('adm-method-btns');
-      if (methodBox) { methodBox.style.animation='none'; void methodBox.offsetWidth; methodBox.style.animation='fx-wiggle .45s ease'; setTimeout(()=>{methodBox.style.animation='';},500); }
-      this.toast('⚠️ Elegí un método de creación'); return;
-    }
+    const creationMethod = this._admCreationMethod || 'manual';
     if (!name) { this.toast('⚠️ Ingresá un nombre'); return; }
     if (this.aPts.length<2) { this.toast('⚠️ Necesitás al menos 2 puntos en el mapa'); return; }
     const cfg = {trad:{color:'#FF5F00',emoji:'☕',badge:'bt'},pesca:{color:'#5B7CFA',emoji:'🎣',badge:'bp'},gastro:{color:'#FF2DA0',emoji:'🍽️',badge:'bg'},atardecer:{color:'#C77DFF',emoji:'🌅',badge:'ba'},otra:{color:'#7CA0B0',emoji:'🗺️',badge:'bt'},running:{color:'#FF3B5C',emoji:'🏃',badge:'bsport'},mtb:{color:'#FFA630',emoji:'🚵',badge:'bmtb'},ciclismo:{color:'#00D4FF',emoji:'🚴',badge:'brelax'},caminata:{color:'#39FF6A',emoji:'🥾',badge:'btrab'},paseo:{color:'#2DE6C8',emoji:'🌳',badge:'bg'},relax:{color:'#00F5D4',emoji:'🧘',badge:'brelax'},trabajo:{color:'#7CA0B0',emoji:'💼',badge:'btrab'},vacaciones:{color:'#00E0E0',emoji:'🏖️',badge:'ba'},salidas:{color:'#FF4D9E',emoji:'🎉',badge:'bsport'},perro:{color:'#A06CFF',emoji:'🐕',badge:'btrab'}}[type]||{color:'#7CA0B0',emoji:'🗺️',badge:'bt'};
