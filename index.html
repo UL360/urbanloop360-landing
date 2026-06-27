@@ -1805,34 +1805,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 </style>
 
   <!-- PWA Manifest inline -->
-  <script>
-  // Generar manifest como blob URL — Chrome acepta esto para beforeinstallprompt
-  (function() {
-    const manifest = {
-      name: 'Urban Loop 360°',
-      short_name: 'UL360',
-      description: 'Descubrí, viví y compartí loops en tu ciudad',
-      start_url: '/',
-      scope: '/',
-      display: 'standalone',
-      background_color: '#0a0f1a',
-      theme_color: '#FF5F00',
-      orientation: 'portrait',
-      icons: [
-        { src: 'https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/LOGO%20SOLO.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
-        { src: 'https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/LOGO%20SOLO.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
-      ],
-      screenshots: [],
-      categories: ['sports', 'lifestyle', 'navigation']
-    };
-    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-    const url  = URL.createObjectURL(blob);
-    const link = document.createElement('link');
-    link.rel   = 'manifest';
-    link.href  = url;
-    document.head.appendChild(link);
-  })();
-  </script>
+  <link rel="manifest" href="/manifest.json">
 
 </head>
 <body>
