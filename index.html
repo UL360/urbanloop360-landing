@@ -1805,7 +1805,34 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 </style>
 
   <!-- PWA Manifest inline -->
-  <link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22Urban+Loop+360%C2%B0%22%2C%22short_name%22%3A%22UL360%22%2C%22description%22%3A%22Descubr%C3%AD%2C+viv%C3%AD+y+compart%C3%AD+loops+en+tu+ciudad%22%2C%22start_url%22%3A%22%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230a0f1a%22%2C%22theme_color%22%3A%22%23FF5F00%22%2C%22orientation%22%3A%22portrait%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fraw.githubusercontent.com%2FUL360%2Fhome%2Frefs%2Fheads%2Fmain%2Fimagenes%2FLOGO%2520SOLO.png%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fraw.githubusercontent.com%2FUL360%2Fhome%2Frefs%2Fheads%2Fmain%2Fimagenes%2FLOGO%2520SOLO.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
+  <script>
+  // Generar manifest como blob URL — Chrome acepta esto para beforeinstallprompt
+  (function() {
+    const manifest = {
+      name: 'Urban Loop 360°',
+      short_name: 'UL360',
+      description: 'Descubrí, viví y compartí loops en tu ciudad',
+      start_url: '/',
+      scope: '/',
+      display: 'standalone',
+      background_color: '#0a0f1a',
+      theme_color: '#FF5F00',
+      orientation: 'portrait',
+      icons: [
+        { src: 'https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/LOGO%20SOLO.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+        { src: 'https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/LOGO%20SOLO.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+      ],
+      screenshots: [],
+      categories: ['sports', 'lifestyle', 'navigation']
+    };
+    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const link = document.createElement('link');
+    link.rel   = 'manifest';
+    link.href  = url;
+    document.head.appendChild(link);
+  })();
+  </script>
 
 </head>
 <body>
@@ -16962,34 +16989,9 @@ document.addEventListener('DOMContentLoaded',()=>{
     // ── PWA Service Worker ──
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       window.addEventListener('load', () => {
-        // SW inline via blob para no depender de archivo externo
-        const swCode = `
-          const CACHE = 'ul360-v1';
-          const PRECACHE = ['/'];
-          self.addEventListener('install', e => {
-            e.waitUntil(caches.open(CACHE).then(c => c.addAll(PRECACHE)));
-            self.skipWaiting();
-          });
-          self.addEventListener('activate', e => {
-            e.waitUntil(caches.keys().then(keys =>
-              Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-            ));
-            self.clients.claim();
-          });
-          self.addEventListener('fetch', e => {
-            if (e.request.method !== 'GET') return;
-            // Solo cachear recursos propios, no Firebase ni APIs externas
-            const url = new URL(e.request.url);
-            if (url.hostname.includes('firestore') ||
-                url.hostname.includes('googleapis') ||
-                url.hostname.includes('maptiler') ||
-                url.hostname.includes('openstreetmap')) return;
-            e.respondWith(
-              caches.match(e.request).then(cached => cached || fetch(e.request))
-            );
-          });
-        `;
-        // SW via blob no soportado en producción — omitido
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+          .then(reg => console.log('[SW] Registrado:', reg.scope))
+          .catch(err => console.warn('[SW] Error:', err));
       });
     }
   </script>
