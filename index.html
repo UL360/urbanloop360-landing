@@ -2116,6 +2116,14 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/></svg>
           FotoLoop
         </button>
+        <!-- Separador -->
+        <div style="border-top:0.5px solid rgba(255,255,255,.12);margin:4px 0;"></div>
+        <!-- Instalar app -->
+        <button onclick="App._helpCloseMenu();App._helpInstallApp()"
+          style="display:flex;align-items:center;gap:10px;padding:14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:12px;color:#F0F0F8;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--fH);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v13m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          📲 Instalá la app en tu celular
+        </button>
       </div>
       <button onclick="App._helpCloseMenu()" style="display:block;margin:14px auto 0;background:none;border:none;color:rgba(255,255,255,.45);font-size:12.5px;cursor:pointer;font-family:var(--fB);">Ahora no</button>
     </div>
@@ -4947,19 +4955,8 @@ const App = {
     // Capturar prompt nativo de Chrome Android cuando esté disponible
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
-      this._pwaPrompt = e;
+      this._pwaPrompt = e; // guardamos para usar desde _helpInstallApp
     });
-
-    // Mostrar banner siempre a los 5s — sin esperar beforeinstallprompt
-    setTimeout(() => {
-      if (isIOS) {
-        this._pwaShowBanner('ios');
-      } else {
-        // Android o desktop — el botón usará el prompt nativo si existe,
-        // o mostrará instrucciones manuales si no
-        this._pwaShowBanner('android');
-      }
-    }, 5000);
 
     // Botón instalar
     const btn = document.getElementById('pwa-install-btn');
@@ -4989,6 +4986,86 @@ const App = {
       localStorage.setItem('ul360_pwa_dismissed', Date.now());
       this._pwaHideBanner();
     });
+  },
+
+  _helpInstallApp() {
+    const isIOS      = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+    const isInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+    if (isInstalled) {
+      this.toast('✅ ¡Ya tenés Urban Loop 360° instalada!');
+      return;
+    }
+
+    const ov = document.createElement('div');
+    ov.id = 'install-help-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;display:flex;align-items:flex-end;justify-content:center;';
+
+    if (!isIOS && this._pwaPrompt) {
+      // Android con prompt nativo disponible → instalar directo
+      ov.remove();
+      this._pwaPrompt.prompt();
+      this._pwaPrompt.userChoice.then(({ outcome }) => {
+        if (outcome === 'accepted') this.toast('🎉 ¡Urban Loop 360° instalada!');
+        this._pwaPrompt = null;
+      });
+      return;
+    }
+
+    const steps = isIOS ? `
+      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.06);border-radius:12px;">
+          <div style="width:32px;height:32px;background:#FF5F00;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:white;flex-shrink:0;">1</div>
+          <div style="font-size:13px;color:#E0E0E8;line-height:1.4;">Abrí esta página en <strong style="color:#FF5F00;">Safari</strong> (no Chrome ni otro navegador)</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.06);border-radius:12px;">
+          <div style="width:32px;height:32px;background:#FF5F00;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:white;flex-shrink:0;">2</div>
+          <div style="font-size:13px;color:#E0E0E8;line-height:1.4;">Tocá el botón <strong style="color:#FF5F00;">Compartir ⬆️</strong> abajo en la barra de Safari</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.06);border-radius:12px;">
+          <div style="width:32px;height:32px;background:#FF5F00;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:white;flex-shrink:0;">3</div>
+          <div style="font-size:13px;color:#E0E0E8;line-height:1.4;">Elegí <strong style="color:#FF5F00;">"Agregar a pantalla de inicio"</strong></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.06);border-radius:12px;">
+          <div style="width:32px;height:32px;background:#FF5F00;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:white;flex-shrink:0;">4</div>
+          <div style="font-size:13px;color:#E0E0E8;line-height:1.4;">Tocá <strong style="color:#FF5F00;">"Agregar"</strong> — ¡el ícono queda en tu pantalla!</div>
+        </div>
+      </div>` : `
+      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.06);border-radius:12px;">
+          <div style="width:32px;height:32px;background:#FF5F00;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:white;flex-shrink:0;">1</div>
+          <div style="font-size:13px;color:#E0E0E8;line-height:1.4;">Tocá el menú <strong style="color:#FF5F00;">⋮</strong> (tres puntos) arriba a la derecha de Chrome</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.06);border-radius:12px;">
+          <div style="width:32px;height:32px;background:#FF5F00;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:white;flex-shrink:0;">2</div>
+          <div style="font-size:13px;color:#E0E0E8;line-height:1.4;">Tocá <strong style="color:#FF5F00;">"Agregar a pantalla de inicio"</strong></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.06);border-radius:12px;">
+          <div style="width:32px;height:32px;background:#FF5F00;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:white;flex-shrink:0;">3</div>
+          <div style="font-size:13px;color:#E0E0E8;line-height:1.4;">Tocá <strong style="color:#FF5F00;">"Instalar"</strong> — ¡el ícono queda en tu pantalla!</div>
+        </div>
+      </div>`;
+
+    ov.innerHTML = `
+      <div style="background:#1E1E26;border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:20px 20px 40px;animation:slideUp .35s cubic-bezier(.4,0,.2,1);">
+        <div style="width:36px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:0 auto 18px;"></div>
+        <!-- Header -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+          <div style="width:48px;height:48px;background:#FF5F00;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">📲</div>
+          <div>
+            <div style="font-family:var(--fH);font-size:17px;font-weight:800;color:#F0F0F8;">Instalá Urban Loop 360°</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:2px;">${isIOS ? 'Instrucciones para iPhone / iPad' : 'Instrucciones para Android'}</div>
+          </div>
+        </div>
+        ${steps}
+        <button onclick="document.getElementById('install-help-overlay').remove()"
+          style="width:100%;padding:14px;border:none;border-radius:14px;background:#FF5F00;color:white;font-family:var(--fH);font-size:15px;font-weight:700;cursor:pointer;">
+          ¡Entendido!
+        </button>
+      </div>`;
+
+    ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+    document.body.appendChild(ov);
   },
 
   _pwaShowFromProfile() {
