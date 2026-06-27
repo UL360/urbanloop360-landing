@@ -15476,77 +15476,106 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   },
 
   _showAuthGate(accion, onSuccess) {
-    // Eliminar gate previo si existe
+    // Máx 1 vez por sesión para el popup de invitación general
+    // (los gates funcionales siempre se muestran)
     const prev = document.getElementById('auth-gate-overlay');
     if (prev) prev.remove();
 
     const ov = document.createElement('div');
     ov.id = 'auth-gate-overlay';
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;display:flex;align-items:flex-end;justify-content:center;';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:300;display:flex;align-items:flex-end;justify-content:center;';
     ov.innerHTML = `
-      <div style="background:var(--bg1);border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:24px 20px 44px;animation:slideUp .3s ease;">
-        <div style="width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 20px;"></div>
+      <div style="background:var(--bg1);border-radius:24px 24px 0 0;width:100%;max-width:480px;overflow:hidden;animation:slideUp .35s cubic-bezier(.4,0,.2,1);">
 
-        <!-- Ícono + título -->
-        <div style="text-align:center;margin-bottom:20px;">
-          <div style="font-size:44px;margin-bottom:10px;">🔁</div>
-          <div style="font-family:var(--fH);font-size:20px;font-weight:800;color:var(--dk);margin-bottom:6px;">
-            Para ${accion} necesitás una cuenta
+        <!-- OLA NARANJA superior con emoji corredor -->
+        <div style="background:#FF5F00;padding:20px 20px 36px;position:relative;overflow:hidden;">
+          <!-- Patrón de fondo sutil -->
+          <div style="position:absolute;inset:0;opacity:.08;">
+            <svg width="100%" height="100%" viewBox="0 0 200 100" preserveAspectRatio="xMidYMid slice">
+              <circle cx="20" cy="20" r="40" fill="white"/><circle cx="180" cy="80" r="50" fill="white"/>
+            </svg>
           </div>
-          <div style="font-size:13px;color:var(--gr);line-height:1.55;">
-            Es gratis y tarda menos de un minuto.<br>
-            Tu ciudad te espera.
+          <!-- Línea de puntos decorativa -->
+          <div style="position:absolute;bottom:14px;left:0;right:0;border-top:2px dashed rgba(255,255,255,.3);"></div>
+          <!-- Pin decorativo derecha -->
+          <div style="position:absolute;right:16px;top:12px;font-size:36px;opacity:.25;">📍</div>
+          <!-- Contenido -->
+          <div style="position:relative;display:flex;align-items:center;gap:14px;">
+            <!-- Logo UL360 -->
+            <div style="width:60px;height:60px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 16px rgba(0,0,0,.2);">
+              <span style="font-size:30px;">📍</span>
+            </div>
+            <div>
+              <!-- Corredor -->
+              <div style="font-size:22px;margin-bottom:2px;">🏃</div>
+              <!-- Título -->
+              <div style="font-family:var(--fH);font-size:22px;font-weight:900;color:white;line-height:1.1;">
+                ¡Convertite en<br><span style="font-size:26px;">Looper!</span>
+              </div>
+            </div>
           </div>
+          <!-- Ola blanca abajo -->
+          <div style="position:absolute;bottom:-1px;left:0;right:0;height:28px;background:var(--bg1);border-radius:100% 100% 0 0;"></div>
         </div>
 
-        <!-- Beneficios rápidos -->
-        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:22px;">
-          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--md);">
-            <span style="font-size:18px;">📸</span> Subí fotos al mapa de tu ciudad
+        <!-- CUERPO -->
+        <div style="padding:16px 20px 0;">
+          <!-- Subtítulo -->
+          <p style="font-size:14px;color:var(--md);text-align:center;line-height:1.5;margin:0 0 18px;">
+            Registráte y guardá tus puntos,<br>participá en desafíos y sumáte a la comunidad.
+          </p>
+
+          <!-- Tres beneficios -->
+          <div style="display:flex;justify-content:space-around;gap:8px;margin-bottom:20px;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:5px;flex:1;">
+              <div style="width:44px;height:44px;background:#FFF3ED;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;">🏆</div>
+              <div style="font-size:10px;font-weight:800;color:#FF5F00;text-align:center;letter-spacing:.3px;text-transform:uppercase;line-height:1.2;">Sumá<br>puntos</div>
+            </div>
+            <div style="width:0.5px;background:var(--bd);"></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:5px;flex:1;">
+              <div style="width:44px;height:44px;background:#FFF3ED;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;">🎯</div>
+              <div style="font-size:10px;font-weight:800;color:#FF5F00;text-align:center;letter-spacing:.3px;text-transform:uppercase;line-height:1.2;">Participá en<br>desafíos</div>
+            </div>
+            <div style="width:0.5px;background:var(--bd);"></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:5px;flex:1;">
+              <div style="width:44px;height:44px;background:#FFF3ED;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;">👥</div>
+              <div style="font-size:10px;font-weight:800;color:#FF5F00;text-align:center;letter-spacing:.3px;text-transform:uppercase;line-height:1.2;">Sé parte de<br>la comunidad</div>
+            </div>
           </div>
-          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--md);">
-            <span style="font-size:18px;">🔁</span> Creá recorridos y compartílos
+
+          <!-- TyC -->
+          <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;padding:10px 12px;background:var(--bg2);border-radius:12px;border:0.5px solid var(--bd);">
+            <input type="checkbox" id="gate-tyc-check"
+              style="width:18px;height:18px;accent-color:#FF5F00;cursor:pointer;flex-shrink:0;margin-top:1px;">
+            <label for="gate-tyc-check" style="font-size:12px;color:var(--gr);line-height:1.5;cursor:pointer;">
+              Leí y acepto los
+              <span style="color:#FF5F00;font-weight:700;" onclick="event.preventDefault();App.openTyC()">Términos y Condiciones</span>
+              de Urban Loop 360°.
+            </label>
           </div>
-          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--md);">
-            <span style="font-size:18px;">👥</span> Conectá con otros Loopers
+
+          <!-- Botones -->
+          <div style="display:flex;flex-direction:column;gap:10px;padding-bottom:36px;">
+            <!-- Google -->
+            <button id="gate-google-btn" onclick="App._gateLoginGoogle()"
+              style="width:100%;padding:15px;border:none;border-radius:14px;background:white;color:#1f1f1f;font-family:var(--fH);font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 2px 12px rgba(0,0,0,.15);">
+              <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+              Continuar con Google
+            </button>
+            <!-- Email -->
+            <button onclick="document.getElementById('auth-gate-overlay').remove();App.openRegisterModal();"
+              style="width:100%;padding:13px;border:1.5px solid #FF5F00;border-radius:14px;background:transparent;color:#FF5F00;font-family:var(--fH);font-size:14px;font-weight:700;cursor:pointer;">
+              📧 Registrarme con email
+            </button>
+            <!-- Ahora no -->
+            <button onclick="document.getElementById('auth-gate-overlay').remove();"
+              style="width:100%;padding:8px;border:none;background:transparent;color:var(--gr);font-size:13px;cursor:pointer;">
+              Ahora no, seguir explorando
+            </button>
           </div>
-        </div>
-
-        <!-- TyC con checkbox -->
-        <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:18px;padding:12px;background:var(--bg2);border-radius:12px;border:0.5px solid var(--bd);">
-          <input type="checkbox" id="gate-tyc-check"
-            style="width:18px;height:18px;accent-color:var(--or);cursor:pointer;flex-shrink:0;margin-top:1px;">
-          <label for="gate-tyc-check" style="font-size:12px;color:var(--gr);line-height:1.5;cursor:pointer;">
-            Leí y acepto los
-            <span style="color:var(--or);font-weight:700;" onclick="event.preventDefault();App.openTyC()">Términos y Condiciones</span>
-            de Urban Loop 360°. Entiendo que mi contenido es público y puede ser moderado.
-          </label>
-        </div>
-
-        <!-- Botones -->
-        <div style="display:flex;flex-direction:column;gap:10px;">
-
-          <!-- Google -->
-          <button id="gate-google-btn" onclick="App._gateLoginGoogle()"
-            style="width:100%;padding:15px;border:none;border-radius:14px;background:#fff;color:#1f1f1f;font-family:var(--fH);font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 2px 12px rgba(0,0,0,.15);">
-            <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-            Continuar con Google
-          </button>
-
-          <!-- Email -->
-          <button onclick="document.getElementById('auth-gate-overlay').remove();App.openRegisterModal();"
-            style="width:100%;padding:13px;border:0.5px solid var(--bd);border-radius:14px;background:transparent;color:var(--md);font-family:var(--fH);font-size:14px;font-weight:600;cursor:pointer;">
-            📧 Registrarme con email
-          </button>
-
-          <button onclick="document.getElementById('auth-gate-overlay').remove();"
-            style="width:100%;padding:10px;border:none;background:transparent;color:var(--gr);font-size:13px;cursor:pointer;">
-            Ahora no
-          </button>
         </div>
       </div>`;
 
-    // Cerrar al tocar el fondo
     ov.addEventListener('click', e => { if(e.target===ov) ov.remove(); });
     document.body.appendChild(ov);
   },
