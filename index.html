@@ -4933,42 +4933,54 @@ const App = {
   _pwaPrompt: null,
 
   _pwaInit() {
-    // No mostrar si ya está instalada
+    // No mostrar si ya está instalada como app
     if (window.matchMedia('(display-mode: standalone)').matches) return;
-    if (window.navigator.standalone) return; // iOS ya instalada
+    if (window.navigator.standalone) return;
 
+    // No mostrar si el usuario lo descartó en los últimos 7 días
     const dismissed = localStorage.getItem('ul360_pwa_dismissed');
-    if (dismissed && Date.now() - parseInt(dismissed) < 7 * 24 * 60 * 60 * 1000) return; // 7 días
+    if (dismissed && Date.now() - parseInt(dismissed) < 7 * 24 * 60 * 60 * 1000) return;
 
-    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const isIOS     = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+    const isAndroid = /android/i.test(navigator.userAgent);
 
-    if (isIOS && isSafari) {
-      // iOS: mostrar instrucciones manuales después de 4s
-      setTimeout(() => this._pwaShowBanner('ios'), 4000);
-      return;
-    }
-
-    // Android/Chrome: capturar evento nativo
+    // Capturar prompt nativo de Chrome Android cuando esté disponible
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       this._pwaPrompt = e;
-      const dismissed = localStorage.getItem('ul360_pwa_dismissed');
-      const reciente  = dismissed && (Date.now() - parseInt(dismissed)) < 7 * 24 * 60 * 60 * 1000;
-      if (!reciente) setTimeout(() => this._pwaShowBanner('android'), 3000);
     });
+
+    // Mostrar banner siempre a los 5s — sin esperar beforeinstallprompt
+    setTimeout(() => {
+      if (isIOS) {
+        this._pwaShowBanner('ios');
+      } else {
+        // Android o desktop — el botón usará el prompt nativo si existe,
+        // o mostrará instrucciones manuales si no
+        this._pwaShowBanner('android');
+      }
+    }, 5000);
 
     // Botón instalar
     const btn = document.getElementById('pwa-install-btn');
     if (btn) btn.addEventListener('click', async () => {
-      if (!this._pwaPrompt) return;
-      this._pwaPrompt.prompt();
-      const { outcome } = await this._pwaPrompt.userChoice;
-      if (outcome === 'accepted') {
-        this.toast('🎉 ¡Urban Loop 360° instalada!');
+      if (this._pwaPrompt) {
+        // Tenemos el prompt nativo → usarlo
+        this._pwaPrompt.prompt();
+        const { outcome } = await this._pwaPrompt.userChoice;
+        if (outcome === 'accepted') {
+          this.toast('🎉 ¡Urban Loop 360° instalada!');
+          this._pwaHideBanner();
+        }
+        this._pwaPrompt = null;
+      } else if (isIOS) {
+        // iOS — el botón no hace nada, los pasos ya están visibles
+      } else {
+        // Android sin prompt — mostrar instrucciones manuales
+        const sub = document.getElementById('pwa-banner-sub-text');
+        if (sub) sub.textContent = 'Menú ⋮ → "Agregar a pantalla de inicio"';
+        this.toast('📲 Menú ⋮ → "Agregar a pantalla de inicio"');
       }
-      this._pwaPrompt = null;
-      this._pwaHideBanner();
     });
 
     // Botón descartar
