@@ -262,51 +262,51 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
 
 /* ── PWA Install Banner ── */
 #pwa-install-banner {
-  position:fixed;top:0;left:0;right:0;z-index:999;
+  position:fixed;bottom:0;left:0;right:0;z-index:999;
   background:var(--bg1);
-  border-bottom:0.5px solid var(--bd);
-  border-radius:0 0 20px 20px;
-  padding:14px 16px 16px;
-  transform:translateY(-110%);
-  transition:transform .4s cubic-bezier(.34,1.1,.64,1);
-  box-shadow:0 8px 32px rgba(0,0,0,.25);
+  border-top:0.5px solid var(--bd);
+  border-radius:20px 20px 0 0;
+  padding:20px 18px 36px;
+  transform:translateY(100%);
+  transition:transform .35s cubic-bezier(.34,1.2,.64,1);
+  box-shadow:0 -8px 40px rgba(0,0,0,.4);
 }
 #pwa-install-banner.show { transform:translateY(0); }
-.pwa-banner-inner {
-  display:flex;align-items:center;gap:12px;
+.pwa-banner-handle {
+  width:36px;height:4px;background:var(--bd);
+  border-radius:2px;margin:0 auto 16px;
+}
+.pwa-banner-row {
+  display:flex;align-items:center;gap:14px;margin-bottom:16px;
 }
 .pwa-banner-logo {
-  width:48px;height:48px;border-radius:12px;
-  object-fit:contain;background:#FF5F00;padding:3px;flex-shrink:0;
+  width:56px;height:56px;border-radius:14px;
+  object-fit:contain;background:#FF5F00;padding:4px;flex-shrink:0;
 }
-.pwa-banner-texts { flex:1;min-width:0; }
 .pwa-banner-title {
-  font-family:var(--fH);font-size:14px;font-weight:800;color:var(--dk);line-height:1.2;
+  font-family:var(--fH);font-size:17px;font-weight:800;color:var(--dk);line-height:1.2;
 }
 .pwa-banner-sub {
-  font-size:11px;color:var(--gr);margin-top:2px;line-height:1.35;
+  font-size:12px;color:var(--gr);margin-top:3px;line-height:1.4;
 }
 .pwa-install-btn {
-  padding:10px 16px;border:none;border-radius:12px;
-  background:#FF5F00;color:#fff;
-  font-family:var(--fH);font-size:13px;font-weight:800;
-  cursor:pointer;flex-shrink:0;white-space:nowrap;
-  box-shadow:0 4px 14px rgba(255,95,0,.4);
+  width:100%;padding:15px;border:none;border-radius:14px;
+  background:var(--or);color:#fff;
+  font-family:var(--fH);font-size:15px;font-weight:800;
+  cursor:pointer;margin-bottom:10px;
+  box-shadow:0 6px 20px rgba(255,95,0,.4);
 }
 .pwa-dismiss-btn {
-  padding:8px;border:none;background:transparent;
-  color:var(--gr);font-size:12px;cursor:pointer;
-  flex-shrink:0;
+  width:100%;padding:10px;border:none;background:transparent;
+  color:var(--gr);font-size:13px;cursor:pointer;
 }
-/* iOS steps — se muestran debajo de la fila principal */
+/* Instrucciones iOS */
 .pwa-ios-steps {
-  display:flex;flex-direction:column;gap:8px;
-  margin-top:12px;padding-top:12px;
-  border-top:0.5px solid var(--bd);
+  display:flex;flex-direction:column;gap:10px;margin-bottom:16px;
 }
 .pwa-ios-step {
   display:flex;align-items:center;gap:10px;
-  font-size:12px;color:var(--md);line-height:1.4;
+  font-size:13px;color:var(--md);line-height:1.4;
 }
 .pwa-ios-step-num {
   width:24px;height:24px;border-radius:50%;
@@ -4953,20 +4953,9 @@ const App = {
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       this._pwaPrompt = e;
-      // Mostrar banner a los 3s si no fue descartado recientemente
-      const dismissed = localStorage.getItem('ul360_pwa_dismissed');
-      const reciente  = dismissed && (Date.now() - parseInt(dismissed)) < 7 * 24 * 60 * 60 * 1000;
-      if (!reciente) setTimeout(() => this._pwaShowBanner('android'), 3000);
+      // Mostrar banner a los 3s
+      setTimeout(() => this._pwaShowBanner('android'), 3000);
     });
-
-    // iOS: no tiene beforeinstallprompt → mostrar pasos manualmente
-    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
-    const isInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-    if (isIOS && !isInstalled) {
-      const dismissed = localStorage.getItem('ul360_pwa_dismissed');
-      const reciente  = dismissed && (Date.now() - parseInt(dismissed)) < 7 * 24 * 60 * 60 * 1000;
-      if (!reciente) setTimeout(() => this._pwaShowBanner('ios'), 4000);
-    }
 
     // Botón instalar
     const btn = document.getElementById('pwa-install-btn');
@@ -5010,30 +4999,25 @@ const App = {
 
   _pwaShowBanner(type) {
     const banner  = document.getElementById('pwa-install-banner');
-    const iosSteps = document.getElementById('pwa-ios-content');
-    const installBtn = document.getElementById('pwa-install-btn');
-    const subText = document.getElementById('pwa-banner-sub-text');
+    const android = document.getElementById('pwa-android-content');
+    const ios     = document.getElementById('pwa-ios-content');
     if (!banner) return;
-
-    // No mostrar si ya está instalada
-    const isInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-    if (isInstalled) return;
-
     if (type === 'ios') {
-      // iOS: mostrar pasos debajo, cambiar texto del botón a "¿Cómo instalo?"
-      if (iosSteps) iosSteps.style.display = 'block';
-      if (installBtn) { installBtn.textContent = '¿Cómo instalo?'; installBtn.onclick = () => {}; }
-      if (subText) subText.textContent = 'Seguí estos pasos en Safari:';
-    } else if (type === 'android') {
-      // Android: botón directo
-      if (iosSteps) iosSteps.style.display = 'none';
-      if (installBtn) installBtn.textContent = '📲 Instalar';
-      if (subText) subText.textContent = 'Gratis, sin pasar por el Play Store.';
-    } else {
-      // Manual / desktop
-      if (iosSteps) iosSteps.style.display = 'none';
-      if (installBtn) { installBtn.textContent = 'Ver cómo'; installBtn.onclick = () => {}; }
-      if (subText) subText.textContent = 'Menú ⋮ → "Agregar a pantalla de inicio"';
+      if (android) android.style.display = 'none';
+      if (ios)     ios.style.display     = 'block';
+    } else if (type === 'manual') {
+      // Mostrar instrucciones para Chrome desktop u otros
+      if (android) android.innerHTML = `
+        <div style="font-size:13px;color:var(--md);line-height:1.6;margin-bottom:14px;">
+          En Chrome o Edge desktop buscá el ícono
+          <strong style="color:var(--or);">⊕</strong> en la barra de direcciones
+          y hacé click en <strong style="color:var(--or);">"Instalar"</strong>.
+          <br><br>
+          En Android, abrí el menú del navegador
+          <strong style="color:var(--or);">⋮</strong> →
+          <strong style="color:var(--or);">"Agregar a pantalla de inicio"</strong>.
+        </div>
+        <button class="pwa-dismiss-btn" onclick="App._pwaHideBanner()">Entendido</button>`;
     }
     banner.classList.add('show');
   },
@@ -16847,35 +16831,43 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   <!-- ══ PWA INSTALL BANNER ══ -->
   <div id="pwa-install-banner">
-    <!-- Fila principal: logo + textos + botón instalar + cerrar -->
-    <div class="pwa-banner-inner">
+    <div class="pwa-banner-handle"></div>
+    <div class="pwa-banner-row">
       <img class="pwa-banner-logo"
         src="https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/LOGO%20SOLO.png"
-        alt="Urban Loop 360°" onerror="this.style.display='none'">
-      <div class="pwa-banner-texts">
-        <div class="pwa-banner-title">📲 Instalá Urban Loop 360°</div>
-        <div class="pwa-banner-sub" id="pwa-banner-sub-text">En tu celular, gratis, sin tiendas.</div>
+        alt="Urban Loop 360°">
+      <div>
+        <div class="pwa-banner-title">Urban Loop 360°</div>
+        <div class="pwa-banner-sub">Instalá la app en tu celular.<br>Gratis, sin pasar por ninguna tienda.</div>
       </div>
-      <button class="pwa-install-btn" id="pwa-install-btn">Instalar</button>
-      <button class="pwa-dismiss-btn" id="pwa-dismiss-btn">✕</button>
     </div>
 
-    <!-- Pasos iOS (ocultos por defecto, se muestran solo en iOS) -->
+    <!-- Contenido Android/Chrome -->
+    <div id="pwa-android-content">
+      <button class="pwa-install-btn" id="pwa-install-btn">
+        📲 Instalar en mi celular
+      </button>
+      <button class="pwa-dismiss-btn" id="pwa-dismiss-btn">Ahora no</button>
+    </div>
+
+    <!-- Contenido iOS -->
     <div id="pwa-ios-content" style="display:none;">
       <div class="pwa-ios-steps">
         <div class="pwa-ios-step">
           <div class="pwa-ios-step-num">1</div>
-          Tocá <strong style="color:#FF5F00;">Compartir</strong> <span style="font-size:15px;">⬆️</span> en Safari
+          Tocá el botón <strong style="color:var(--or);">Compartir</strong> 
+          <span style="font-size:16px;">⬆️</span> abajo en Safari
         </div>
         <div class="pwa-ios-step">
           <div class="pwa-ios-step-num">2</div>
-          Elegí <strong style="color:#FF5F00;">"Agregar a pantalla de inicio"</strong>
+          Elegí <strong style="color:var(--or);">"Agregar a pantalla de inicio"</strong>
         </div>
         <div class="pwa-ios-step">
           <div class="pwa-ios-step-num">3</div>
-          Tocá <strong style="color:#FF5F00;">"Agregar"</strong> — ¡listo!
+          Tocá <strong style="color:var(--or);">"Agregar"</strong> — ¡listo!
         </div>
       </div>
+      <button class="pwa-dismiss-btn" onclick="App._pwaHideBanner()">Entendido</button>
     </div>
   </div>
 
