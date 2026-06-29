@@ -5,29 +5,13 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#0a0f1a",
+  "background_color": "#FF5F00",
   "theme_color": "#FF5F00",
   "orientation": "portrait",
   "lang": "es",
-  "categories": ["sports", "lifestyle", "navigation"],
   "icons": [
-    {
-      "src": "https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/LOGO%20SOLO.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/LOGO%20SOLO.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/LOGO%20SOLO.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
+    { "src": "/imagenes/icon-192.png",    "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/imagenes/icon-512.png",    "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/imagenes/icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
