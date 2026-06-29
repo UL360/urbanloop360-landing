@@ -7556,10 +7556,21 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     document.getElementById('stops-list').innerHTML = r.pois && r.pois.length
       ? r.pois.map((p,i)=>`
-          <div class="stop-row">
-            <div class="stop-n">${i+1}</div>
-            <div class="stop-info"><h4>${p.em?p.em+' ':''}${p.name}</h4><p>${p.desc}</p></div>
-            <div class="stop-cat">${p.cat}</div>
+          <div class="stop-row" style="flex-direction:column;gap:8px;align-items:flex-start;">
+            <div style="display:flex;align-items:center;gap:10px;width:100%;">
+              <div class="stop-n">${i+1}</div>
+              <div class="stop-info" style="flex:1;">
+                <h4>${p.em?p.em+' ':''}${p.name||'Parada'}</h4>
+                ${p.desc ? `<p>${p.desc}</p>` : ''}
+                ${p.lat && p.lng ? `<p style="font-size:10px;color:var(--gr);">📍 ${parseFloat(p.lat).toFixed(5)}, ${parseFloat(p.lng).toFixed(5)}</p>` : ''}
+              </div>
+              ${p.cat ? `<div class="stop-cat">${p.cat}</div>` : ''}
+            </div>
+            ${p.img && p.img !== 'undefined' && p.img !== '' ? `
+              <img src="${this._imgSrc(p.img)||p.img}" 
+                style="width:100%;max-height:180px;object-fit:cover;border-radius:10px;cursor:pointer;"
+                onclick="App._openImgViewer('${p.img}')"
+                onerror="this.style.display='none'">` : ''}
           </div>`).join('')
       : '<p style="color:var(--gr);font-size:14px;padding:10px 0;">Sin paradas registradas.</p>';
 
@@ -7940,6 +7951,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if (this.grabState !== 'recording' && this.grabState !== 'paused') {
       return this.toast('⚠️ Iniciá la grabación primero');
     }
+    // ── Capturar coordenadas GPS exactas en este momento ──
+    const lastPt = this.grabPts.length ? this.grabPts[this.grabPts.length - 1] : null;
+    this._fotoStopLat = lastPt ? lastPt[0] : null;
+    this._fotoStopLng = lastPt ? lastPt[1] : null;
+
     const ov = document.getElementById('foto-stop-overlay');
     if (ov) { ov.style.display = 'flex'; }
     document.getElementById('fs-desc').value = '';
@@ -7992,27 +8008,37 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const desc = document.getElementById('fs-desc')?.value?.trim();
     if (!this._fotoStopImg && !desc) return this.toast('⚠️ Agregá una foto o descripción');
     if (!this._grabStopPois) this._grabStopPois = [];
-    // Obtener posición actual del GPS
-    const pos = this.grabPts.length ? this.grabPts[this.grabPts.length - 1] : null;
+
+    // ── Coordenadas del momento exacto en que se saca la foto ──
+    // Se capturan al abrir el modal (openFotoStop), no al guardar
+    const lat = this._fotoStopLat || (this.grabPts.length ? this.grabPts[this.grabPts.length - 1][0] : null);
+    const lng = this._fotoStopLng || (this.grabPts.length ? this.grabPts[this.grabPts.length - 1][1] : null);
+
     const poi = {
       name: desc || 'Parada fotográfica',
-      img: this._fotoStopImg || '',
-      lat: pos ? pos[0] : null,
-      lng: pos ? pos[1] : null,
+      img:  this._fotoStopImg || '',
+      lat,
+      lng,
       ts: Date.now()
     };
     this._grabStopPois.push(poi);
-    // Marcar en el mapa de grabación
-    if (this.grabMap && pos) {
+
+    // Marcar en el mapa con las coordenadas correctas
+    if (this.grabMap && lat && lng) {
       const el = document.createElement('div');
-      el.style.cssText = 'width:32px;height:32px;border-radius:50%;background:#FF5F00;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.4);';
+      el.style.cssText = 'width:32px;height:32px;border-radius:50%;background:#FF5F00;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:pointer;';
       el.textContent = '📸';
       const popup = new maplibregl.Popup({ offset: 18 }).setHTML(`<b>${poi.name}</b>`);
       new maplibregl.Marker({ element: el, anchor: 'center' })
-        .setLngLat([pos[1], pos[0]])
+        .setLngLat([lng, lat])
         .setPopup(popup)
         .addTo(this.grabMap);
     }
+
+    // Limpiar coords temporales
+    this._fotoStopLat = null;
+    this._fotoStopLng = null;
+
     this.closeFotoStop();
     this.toast(`📸 Parada guardada (${this._grabStopPois.length} en este loop)`);
   },
