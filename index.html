@@ -7982,27 +7982,15 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
   _handleFotoStopImg(input) {
     const file = input.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      const img = new Image();
-      img.onload = () => {
-        const maxW = 800, maxH = 600, q = 0.72;
-        let w = img.width, h = img.height;
-        if (w > maxW || h > maxH) { const r = Math.min(maxW/w, maxH/h); w=Math.round(w*r); h=Math.round(h*r); }
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        this._fotoStopImg = canvas.toDataURL('image/jpeg', q);
-        const prev = document.getElementById('fs-preview');
-        const thumb = document.getElementById('fs-thumb');
-        const label = document.getElementById('fs-cam-label');
-        if (prev)  prev.style.display  = 'block';
-        if (label) label.style.display = 'none';
-        if (thumb) thumb.src = this._fotoStopImg;
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+    this._compressImg(file, (b64, kb) => {
+      this._fotoStopImg = b64;
+      const prev  = document.getElementById('fs-preview');
+      const thumb = document.getElementById('fs-thumb');
+      const label = document.getElementById('fs-cam-label');
+      if (prev)  prev.style.display  = 'block';
+      if (label) label.style.display = 'none';
+      if (thumb) thumb.src = b64;
+    });
   },
 
   saveFotoStop() {
