@@ -3783,8 +3783,8 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 <!-- ════════════ BOTTOM NAV ════════════ -->
 
 <!-- ════════════ ONBOARDING ════════════ -->
-<div id="onboarding-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9000;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:var(--wh);border-radius:24px;width:100%;max-width:360px;padding:26px 22px 22px;box-shadow:var(--shL);position:relative;">
+<div id="onboarding-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9000;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:var(--wh);border-radius:24px;width:100%;max-width:480px;padding:18px 18px 20px;box-shadow:var(--shL);position:relative;">
     <!-- Dots -->
     <div style="display:flex;justify-content:center;gap:6px;margin-bottom:6px;" id="onb-dots">
       <div class="onb-dot on" style="width:22px;height:7px;border-radius:4px;background:var(--or);transition:all .3s;"></div>
@@ -3792,73 +3792,38 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       <div class="onb-dot" style="width:7px;height:7px;border-radius:4px;background:var(--bd);transition:all .3s;"></div>
     </div>
     <!-- Barra de progreso -->
-    <div style="width:100%;height:3px;background:var(--bd);border-radius:2px;margin-bottom:20px;overflow:hidden;">
+    <div style="width:100%;height:3px;background:var(--bd);border-radius:2px;margin-bottom:14px;overflow:hidden;">
       <div id="onb-progress" style="height:100%;border-radius:2px;background:var(--or);width:33%;transition:width .35s ease;"></div>
     </div>
-    <!-- Pasos -->
+    <!-- Pasos: cada uno es una imagen completa -->
     <div id="onb-steps">
       <!-- Paso 1 -->
       <div class="onb-step" data-step="0" style="text-align:center;">
-        <div style="width:62px;height:62px;border-radius:50%;background:#FF5F0018;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:28px;">🗺️</div>
-        <div style="font-family:var(--fH);font-size:18px;font-weight:800;color:var(--dk);margin-bottom:6px;line-height:1.3;">Tu ciudad deja de ser invisible</div>
-        <div style="font-size:13px;color:var(--gr);line-height:1.55;margin-bottom:12px;">Contanos por dónde caminás, entrenás, disfrutás. Los loops que creás le dan vida al mapa.</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;">
-          <span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:#FF5F0015;color:#C44D00;border:1px solid #FF5F0025;">🏃 Running</span>
-          <span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:#FF5F0015;color:#C44D00;border:1px solid #FF5F0025;">🚲 Ciclismo</span>
-          <span style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--lt);color:var(--md);border:1px solid var(--bd);">🚶 Caminatas</span>
-          <span style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--lt);color:var(--md);border:1px solid var(--bd);">🐾 Paseos</span>
-          <span style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--lt);color:var(--md);border:1px solid var(--bd);">🎣 Pesca</span>
-          <span style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--lt);color:var(--md);border:1px solid var(--bd);">🌙 Salidas</span>
+        <div style="width:100%;border-radius:16px;overflow:hidden;background:var(--lt);display:flex;align-items:center;justify-content:center;">
+          <img src="https://raw.githubusercontent.com/UL360/urbanloop360-landing/main/imagenes/deapp/panta1.png"
+            alt="Tu ciudad deja de ser invisible"
+            style="width:100%;height:auto;display:block;object-fit:contain;">
         </div>
       </div>
       <!-- Paso 2 -->
       <div class="onb-step" data-step="1" style="display:none;text-align:center;">
-        <div style="width:62px;height:62px;border-radius:50%;background:#06D6A018;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:28px;">⏺️</div>
-        <div style="font-family:var(--fH);font-size:18px;font-weight:800;color:var(--dk);margin-bottom:6px;">Grabá el tuyo</div>
-        <div style="font-size:13px;color:var(--gr);line-height:1.55;margin-bottom:14px;">Tocá el botón <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;background:var(--or);border-radius:50%;color:white;font-size:13px;font-weight:800;vertical-align:-4px;">+</span> para empezar. Dos formas de crear un loop:</div>
-        <div style="display:flex;flex-direction:column;gap:8px;text-align:left;">
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--lt);border:1px solid var(--bd);">
-            <div style="font-size:22px;flex-shrink:0;">📍</div>
-            <div>
-              <div style="font-size:12px;font-weight:700;color:var(--dk);">GPS en tiempo real</div>
-              <div style="font-size:11px;color:var(--gr);margin-top:2px;">Salís a correr y grabás la ruta en vivo</div>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--lt);border:1px solid var(--bd);">
-            <div style="font-size:22px;flex-shrink:0;">✏️</div>
-            <div>
-              <div style="font-size:12px;font-weight:700;color:var(--dk);">Creación manual</div>
-              <div style="font-size:11px;color:var(--gr);margin-top:2px;">Dibujás la ruta tocando el mapa</div>
-            </div>
-          </div>
+        <div style="width:100%;border-radius:16px;overflow:hidden;background:var(--lt);display:flex;align-items:center;justify-content:center;">
+          <img src="https://raw.githubusercontent.com/UL360/urbanloop360-landing/main/imagenes/deapp/panta2.png"
+            alt="Foto Loop: capturá, compartí, dale vida a tu ciudad"
+            style="width:100%;height:auto;display:block;object-fit:contain;">
         </div>
       </div>
       <!-- Paso 3 -->
       <div class="onb-step" data-step="2" style="display:none;text-align:center;">
-        <div style="width:62px;height:62px;border-radius:50%;background:#118AB218;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:28px;">🌐</div>
-        <div style="font-family:var(--fH);font-size:18px;font-weight:800;color:var(--dk);margin-bottom:6px;">Compartilo con la comunidad</div>
-        <div style="font-size:13px;color:var(--gr);line-height:1.55;margin-bottom:14px;">Publicá tu loop para que todos puedan recorrerlo. También podés subir <b style="color:var(--or);">Foto Loops</b> con lugares copados.</div>
-        <div style="display:flex;gap:8px;">
-          <div style="flex:1;padding:10px 8px;border-radius:12px;background:var(--lt);border:1px solid var(--bd);text-align:center;">
-            <div style="font-size:20px;margin-bottom:4px;">🗺️</div>
-            <div style="font-size:11px;font-weight:700;color:var(--dk);">Loops</div>
-            <div style="font-size:10px;color:var(--gr);margin-top:2px;">Rutas completas</div>
-          </div>
-          <div style="flex:1;padding:10px 8px;border-radius:12px;background:var(--lt);border:1px solid var(--bd);text-align:center;">
-            <div style="font-size:20px;margin-bottom:4px;">📸</div>
-            <div style="font-size:11px;font-weight:700;color:var(--dk);">Foto Loops</div>
-            <div style="font-size:10px;color:var(--gr);margin-top:2px;">Lugares con foto</div>
-          </div>
-          <div style="flex:1;padding:10px 8px;border-radius:12px;background:var(--lt);border:1px solid var(--bd);text-align:center;">
-            <div style="font-size:20px;margin-bottom:4px;">🏛️</div>
-            <div style="font-size:11px;font-weight:700;color:var(--dk);">Municipio</div>
-            <div style="font-size:10px;color:var(--gr);margin-top:2px;">Proponé rutas</div>
-          </div>
+        <div style="width:100%;max-height:62vh;border-radius:16px;overflow:hidden;background:var(--lt);display:flex;align-items:center;justify-content:center;">
+          <img src="https://raw.githubusercontent.com/UL360/urbanloop360-landing/main/imagenes/deapp/panta3.png"
+            alt="Compartilo con la comunidad"
+            style="width:100%;height:auto;max-height:62vh;display:block;object-fit:contain;">
         </div>
       </div>
     </div>
     <!-- Botones -->
-    <div style="display:flex;gap:10px;margin-top:20px;align-items:center;">
+    <div style="display:flex;gap:10px;margin-top:16px;align-items:center;">
       <button id="onb-skip" onclick="App._onbClose()" style="flex:1;padding:12px;border-radius:12px;border:1.5px solid var(--bd);background:none;font-size:13px;font-weight:600;color:var(--gr);cursor:pointer;">Saltar</button>
       <button id="onb-next" onclick="App._onbNext()" style="flex:2;padding:12px;border-radius:12px;border:none;background:var(--or);color:white;font-size:14px;font-weight:700;cursor:pointer;">Siguiente →</button>
     </div>
