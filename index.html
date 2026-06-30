@@ -3975,6 +3975,8 @@ const App = {
 
     try {
       await this._initFirebase();
+      // Inicializar cola offline para subida de imágenes pendientes
+      this._initOfflineQueue();
 
       if (this._db) {
         await new Promise(res => {
@@ -7538,9 +7540,12 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
               ${p.cat ? `<div class="stop-cat">${p.cat}</div>` : ''}
             </div>
             ${p.img && p.img !== 'undefined' && p.img !== '' ? 
-              this._imgTag(p.img, 'width:100%;max-height:180px;object-fit:cover;border-radius:10px;cursor:pointer;', 'stop-img')
-                .replace('<img', `<img onclick="App._openImgViewer('${p.img}')"`)
-              : ''}
+              `<div style="position:relative;">
+                ${this._imgTag(p.img, 'width:100%;max-height:180px;object-fit:cover;border-radius:10px;cursor:pointer;', 'stop-img')
+                  .replace('<img', `<img onclick="App._openImgViewer('${p.img}')"`)
+                }
+                ${p._pendingUpload ? `<div style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.7);color:#FFC83D;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;">📴 Subiendo cuando haya señal</div>` : ''}
+              </div>` : ''}
           </div>`).join('')
       : '<p style="color:var(--gr);font-size:14px;padding:10px 0;">Sin paradas registradas.</p>';
 
@@ -7734,7 +7739,100 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     } catch(e) { /* no existe, OK */ }
   },
 
-  // Resolver imagen: si es marcador 'firestore:col/id', cargar desde Firestore
+  // ══ COLA OFFLINE — sube imágenes pendientes cuando vuelve internet ══
+  _offlineQueueAdd(item) {
+    if (!this._offlineQueue) this._offlineQueue = [];
+    this._offlineQueue.push({ ...item, addedAt: Date.now() });
+    // Persistir en localStorage por si el usuario cierra la app
+    try {
+      const saved = JSON.parse(localStorage.getItem('ul360_offline_queue') || '[]');
+      saved.push(item);
+      localStorage.setItem('ul360_offline_queue', JSON.stringify(saved));
+    } catch(e) {}
+    this.toast('📴 Sin internet — foto guardada localmente, se sube cuando haya señal');
+  },
+
+  async _offlineQueueProcess() {
+    // Cargar cola de localStorage también
+    let queue = this._offlineQueue || [];
+    try {
+      const saved = JSON.parse(localStorage.getItem('ul360_offline_queue') || '[]');
+      // Combinar sin duplicados
+      const ids = new Set(queue.map(q => q.path));
+      saved.forEach(q => { if (!ids.has(q.path)) queue.push(q); });
+    } catch(e) {}
+
+    if (!queue.length || !this._db) return;
+    const pending = [...queue];
+    this._offlineQueue = [];
+    let subidas = 0;
+
+    for (const item of pending) {
+      try {
+        if (item.type === 'cover_img' || item.type === 'poi_img') {
+          const imgRef = await this._uploadImg(item.imgB64, item.path);
+          // Actualizar el loop en Firestore con la referencia real
+          const loopDoc = await this._db.collection('loops').doc(item.loopId).get()
+            .catch(() => null);
+          if (loopDoc && loopDoc.exists) {
+            if (item.type === 'cover_img') {
+              await this._db.collection('loops').doc(item.loopId).update({ img: imgRef });
+            } else if (item.type === 'poi_img') {
+              const data = loopDoc.data();
+              const pois = [...(data.pois || [])];
+              if (pois[item.poiIdx]) {
+                pois[item.poiIdx] = { ...pois[item.poiIdx], img: imgRef, _pendingUpload: false };
+                await this._db.collection('loops').doc(item.loopId).update({ pois });
+              }
+            }
+          }
+          // También actualizar en memoria
+          const route = this.routes.find(r => r.id === item.loopId);
+          if (route) {
+            if (item.type === 'cover_img') route.img = imgRef;
+            if (item.type === 'poi_img' && route.pois?.[item.poiIdx]) {
+              route.pois[item.poiIdx].img = imgRef;
+              route.pois[item.poiIdx]._pendingUpload = false;
+            }
+          }
+          subidas++;
+        }
+      } catch(e) {
+        // Sigue sin internet — volver a la cola
+        this._offlineQueue.push(item);
+      }
+    }
+
+    // Limpiar los que sí subieron del localStorage
+    if (subidas > 0) {
+      const remaining = this._offlineQueue || [];
+      try { localStorage.setItem('ul360_offline_queue', JSON.stringify(remaining)); } catch(e) {}
+      this.toast(`✅ ${subidas} foto${subidas > 1 ? 's' : ''} subida${subidas > 1 ? 's' : ''} al servidor`);
+    }
+  },
+
+  // Inicializar el listener de reconexión
+  _initOfflineQueue() {
+    // Cargar cola pendiente de sesiones anteriores
+    try {
+      const saved = JSON.parse(localStorage.getItem('ul360_offline_queue') || '[]');
+      if (saved.length > 0) {
+        this._offlineQueue = saved;
+        console.log(`[Offline] ${saved.length} imagen(es) pendiente(s) de subida`);
+      }
+    } catch(e) {}
+
+    // Cuando vuelve internet → procesar cola automáticamente
+    window.addEventListener('online', () => {
+      console.log('[Offline] Conexión restaurada — procesando cola...');
+      setTimeout(() => this._offlineQueueProcess(), 2000); // esperar 2s a que estabilice
+    });
+
+    // Si ya hay internet al iniciar y hay pendientes → subir
+    if (navigator.onLine && (this._offlineQueue || []).length > 0) {
+      setTimeout(() => this._offlineQueueProcess(), 3000);
+    }
+  },
   // Si ya es data: o http: devolverla tal cual
   async _resolveImg(imgRef) {
     if (!imgRef) return '';
@@ -13645,16 +13743,28 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       createdAt:  Date.now()
     };
 
-    // Guardar portada en Firestore (loop_imgs) en vez de Storage
+    // Guardar portada en Firestore (loop_imgs)
     if (this._grabCoverB64) {
       try {
         r.img = await this._uploadImg(this._grabCoverB64, `loops/${grabId}.jpg`);
-        // En memoria mantenemos el base64 para preview inmediato
         r._imgPreview = this._grabCoverB64;
-      } catch(e) { console.warn('[Firestore] grab cover:', e.message); }
+      } catch(e) {
+        console.warn('[Offline] portada no subió, guardando en cola:', e.message);
+        // Guardar en cola offline
+        this._offlineQueueAdd({
+          type:   'cover_img',
+          loopId: grabId,
+          imgB64: this._grabCoverB64,
+          path:   `loops/${grabId}.jpg`,
+        });
+        // Conservar base64 para mostrar la portada localmente
+        r.img = this._grabCoverB64;
+        r._pendingUpload = true;
+      }
     }
 
-    // Guardar imágenes de paradas fotográficas en Firestore (quitar base64 del doc loops)
+    // Guardar imágenes de paradas fotográficas en Firestore
+    // Si no hay internet: conservar base64 y agregar a cola offline para reintento
     if (r.pois && r.pois.length > 0) {
       r.pois = await Promise.all(r.pois.map(async (poi, idx) => {
         if (poi.img && poi.img.startsWith('data:')) {
@@ -13662,8 +13772,17 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
             const imgRef = await this._uploadImg(poi.img, `loops/${grabId}_stop${idx}.jpg`);
             return { ...poi, img: imgRef };
           } catch(e) {
-            console.warn(`[Firestore] stop ${idx} img:`, e.message);
-            return { ...poi, img: '' };
+            console.warn(`[Offline] stop ${idx} img no subió, guardando en cola:`, e.message);
+            // Guardar en cola offline para reintento cuando vuelva internet
+            this._offlineQueueAdd({
+              type:    'poi_img',
+              loopId:  grabId,
+              poiIdx:  idx,
+              imgB64:  poi.img,
+              path:    `loops/${grabId}_stop${idx}.jpg`,
+            });
+            // Conservar el base64 en el documento para mostrar la foto aunque sea localmente
+            return { ...poi, img: poi.img, _pendingUpload: true };
           }
         }
         return poi;
