@@ -5484,20 +5484,18 @@ const App = {
           this._lastMapMove = now;
 
           // Bearing del mapa:
-          // - Con brújula: bearing = -compassHeading (el mapa rota para que la dirección
-          //   que mirás quede "arriba")
-          // - Con GPS heading: heading ya viene en grados desde norte, sentido horario.
-          //   MapLibre bearing positivo = rotación horaria del mapa.
-          //   Para que "hacia donde vas" quede arriba: bearing = gpsHeading
+          // - Con brújula activa: bearing = -compassHeading (el mapa rota para que la
+          //   dirección que mirás quede "arriba")
+          // - Sin brújula: el mapa mantiene su orientación actual (norte fijo arriba),
+          //   "Mi ubicación" solo centra y marca dónde estás parado, no rota.
           let bearing = this.mainMap.getBearing();
           if (this._mapRotating && this._compassHeading != null) {
             bearing = -this._compassHeading;  // correcto: norte fijo, mapa rota bajo vos
-          } else if (!this._mapRotating && gpsHeading != null && !isNaN(gpsHeading) && acc < 50) {
-            bearing = gpsHeading;  // hacia donde vas queda "arriba"
           }
+          // (el auto-rotate por gpsHeading fue removido — solo la brújula puede rotar el mapa)
 
-          // Pitch: 50 en 3D, 45 en followMe normal
-          const followPitch3d = this._is3D ? 50 : (this._followMe ? 45 : this.mainMap.getPitch());
+          // Pitch: 50 en 3D, 0 en followMe normal (sin inclinar de más)
+          const followPitch3d = this._is3D ? 50 : (this._followMe ? 0 : this.mainMap.getPitch());
           this.mainMap.easeTo({
             center: [lng, lat],
             bearing,
@@ -5731,19 +5729,15 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       btn.style.color      = this._followMe ? 'white'   : '#C0C0C8';
     }
     if (this._followMe) {
+      // Solo centrar el mapa en mi posición y marcarla — SIN rotar.
+      // La rotación es responsabilidad exclusiva del botón brújula.
       if (this._locMarker) {
         const ll = this._locMarker.getLngLat();
-        const followPitch = this._is3D ? 50 : 45;
+        const followPitch = this._is3D ? 50 : 0;
         this.mainMap.flyTo({ center: [ll.lng, ll.lat], zoom: 17, pitch: followPitch, duration: 800 });
       }
-      // Activar brújula automáticamente al seguir
-      if (!this._mapRotating) this._toggleMapRotation();
-      this.toast('🧭 Siguiendo — el mapa gira con vos');
+      this.toast('📍 Centrado en tu ubicación');
     } else {
-      // Desactivar followMe; si 3D activo preservar brújula y pitch
-      if (!this._is3D && this._mapRotating) this._toggleMapRotation();
-      const freeBearing = (this._mapRotating && this._compassHeading != null) ? -this._compassHeading : 0;
-      this.mainMap.easeTo({ pitch: this._is3D ? 50 : 0, bearing: freeBearing, duration: 600 });
       this.toast('📍 Navegación libre');
     }
   },
