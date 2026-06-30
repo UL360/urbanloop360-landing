@@ -4121,16 +4121,33 @@ const App = {
       // Inicializar solo si no está ya inicializado
       if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 
-      this._db      = firebase.firestore();
       this._auth    = firebase.auth();
-      this._storage = null; // Storage no activado — imágenes guardadas en Firestore (loop_imgs)
+      this._storage = null;
 
-      // ── Persistencia de sesión: SESSION funciona en incógnito (usa sessionStorage) ──
-      // LOCAL usa IndexedDB que está bloqueado en incógnito y Safari estricto
+      // ── Firestore: configurar ANTES de cualquier operación ──
+      this._db = firebase.firestore();
+      // settings() DEBE ir antes de cualquier .collection() o .get()
+      try {
+        this._db.settings({ experimentalAutoDetectLongPolling: true, merge: true });
+      } catch(e) {
+        // Ya inicializado en una recarga — ignorar, settings ya aplicados
+        console.log('[Firebase] settings ya aplicados (reload)');
+      }
+
+      // Habilitar persistencia offline
+      try {
+        await this._db.enablePersistence({ synchronizeTabs: false });
+        console.log('[Firebase] Persistencia offline habilitada ✓');
+      } catch(err) {
+        if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') {
+          console.warn('[Firebase] Persistencia no disponible:', err.code);
+        }
+      }
+
+      // ── Persistencia de sesión ──
       try {
         await this._auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
       } catch(e) {
-        // IndexedDB bloqueado (incógnito, Safari) → fallback a SESSION
         try {
           await this._auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
           console.log('[auth] Usando SESSION persistence (incógnito/Safari)');
@@ -4139,7 +4156,7 @@ const App = {
         }
       }
 
-      // ── Capturar resultado de signInWithRedirect (regreso desde login Google) ──
+      // ── Capturar resultado de signInWithRedirect ──
       try {
         const redirectResult = await this._auth.getRedirectResult();
         if (redirectResult && redirectResult.user) {
@@ -4150,7 +4167,7 @@ const App = {
         console.warn('[auth] getRedirectResult error:', e.code, e.message);
       }
 
-      // Cargar API key de Anthropic desde Firestore (_config/keys) — no se guarda en el código
+      // Cargar API key de Anthropic (ahora sí, después de settings)
       try {
         const cfgSnap = await this._db.collection('_config').doc('keys').get();
         if (cfgSnap.exists && cfgSnap.data().anthropic) {
@@ -4158,17 +4175,6 @@ const App = {
           console.log('[config] Anthropic key cargada ✓');
         }
       } catch(e) { console.warn('[config] No se pudo cargar Anthropic key:', e.message); }
-
-      // Long-polling: usar autoDetect (no mezclar con ForceLongPolling)
-      this._db.settings({ experimentalAutoDetectLongPolling: true, merge: true });
-
-      // Habilitar persistencia offline
-      try {
-        await this._db.enablePersistence({ synchronizeTabs: false });
-        console.log('[Firebase] Persistencia offline habilitada ✓');
-      } catch(err) {
-        console.warn('[Firebase] Persistencia no disponible:', err.code);
-      }
 
       // Escuchar cambios de sesión: login, logout, token refresh
       this._auth.onAuthStateChanged(async (user) => {
@@ -17087,9 +17093,23 @@ document.addEventListener('DOMContentLoaded',()=>{
     // ── PWA Service Worker ──
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       window.addEventListener('load', () => {
+        // Intentar registrar /sw.js — si Cloudflare lo bloquea, crear uno inline como fallback
         navigator.serviceWorker.register('/sw.js', { scope: '/' })
           .then(reg => console.log('[SW] Registrado:', reg.scope))
-          .catch(err => console.warn('[SW] Error:', err));
+          .catch(err => {
+            console.warn('[SW] /sw.js bloqueado, usando SW inline:', err.message);
+            // Fallback: SW mínimo inline via blob (no cachea nada, solo permite PWA install)
+            const swCode = `
+              self.addEventListener('install', e => self.skipWaiting());
+              self.addEventListener('activate', e => self.clients.claim());
+              self.addEventListener('fetch', e => {});
+            `;
+            const blob = new Blob([swCode], { type: 'application/javascript' });
+            const url  = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(url, { scope: '/' })
+              .then(() => console.log('[SW] SW inline registrado ✓'))
+              .catch(e2 => console.warn('[SW] SW inline también falló:', e2.message));
+          });
       });
     }
   </script>
