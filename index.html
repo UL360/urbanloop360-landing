@@ -4747,10 +4747,15 @@ const App = {
         rClean.pts = rClean.pts.map(p => Array.isArray(p) ? {lat:p[0],lng:p[1]} : p);
       }
       if (Array.isArray(rClean.pois)) {
+        console.log(`[_saveData] POIs del loop ${r.id}:`);
+        rClean.pois.forEach((p,i) => console.log(`  POI ${i}: img="${p.img?.slice(0,60)||'VACÍO'}"`));
         rClean.pois = rClean.pois.map(poi => {
           const p = {...poi};
-          // Quitar imágenes base64 de los pois (se guardan por separado)
-          if (p.img && p.img.startsWith('data:')) delete p.img;
+          // Quitar imágenes base64 de los pois (se guardan por separado en loop_imgs)
+          if (p.img && p.img.startsWith('data:')) {
+            console.warn(`[_saveData] POI tiene base64 aún sin subir — eliminando para no romper Firestore`);
+            delete p.img;
+          }
           Object.keys(p).forEach(k => { if (p[k] === undefined) delete p[k]; });
           return p;
         });
@@ -13764,16 +13769,19 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     }
 
     // Guardar imágenes de paradas fotográficas en Firestore
-    // Si no hay internet: conservar base64 y agregar a cola offline para reintento
+    console.log(`[saveGrabLoop] POIs a guardar: ${(r.pois||[]).length}`);
+    r.pois && r.pois.forEach((p,i) => console.log(`  POI ${i}: name="${p.name}" img="${p.img?.slice(0,40)||'VACÍO'}"`));
+
     if (r.pois && r.pois.length > 0) {
       r.pois = await Promise.all(r.pois.map(async (poi, idx) => {
         if (poi.img && poi.img.startsWith('data:')) {
+          console.log(`[saveGrabLoop] Subiendo img POI ${idx} (${Math.round(poi.img.length*0.75/1024)}KB)...`);
           try {
             const imgRef = await this._uploadImg(poi.img, `loops/${grabId}_stop${idx}.jpg`);
+            console.log(`[saveGrabLoop] ✅ POI ${idx} img subida → ${imgRef}`);
             return { ...poi, img: imgRef };
           } catch(e) {
             console.warn(`[Offline] stop ${idx} img no subió, guardando en cola:`, e.message);
-            // Guardar en cola offline para reintento cuando vuelva internet
             this._offlineQueueAdd({
               type:    'poi_img',
               loopId:  grabId,
@@ -13781,9 +13789,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
               imgB64:  poi.img,
               path:    `loops/${grabId}_stop${idx}.jpg`,
             });
-            // Conservar el base64 en el documento para mostrar la foto aunque sea localmente
             return { ...poi, img: poi.img, _pendingUpload: true };
           }
+        } else {
+          console.log(`[saveGrabLoop] POI ${idx} sin img o ya subida`);
         }
         return poi;
       }));
