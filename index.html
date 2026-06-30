@@ -7566,11 +7566,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
               </div>
               ${p.cat ? `<div class="stop-cat">${p.cat}</div>` : ''}
             </div>
-            ${p.img && p.img !== 'undefined' && p.img !== '' ? `
-              <img src="${this._imgSrc(p.img)||p.img}" 
-                style="width:100%;max-height:180px;object-fit:cover;border-radius:10px;cursor:pointer;"
-                onclick="App._openImgViewer('${p.img}')"
-                onerror="this.style.display='none'">` : ''}
+            ${p.img && p.img !== 'undefined' && p.img !== '' ? 
+              this._imgTag(p.img, 'width:100%;max-height:180px;object-fit:cover;border-radius:10px;cursor:pointer;', 'stop-img')
+                .replace('<img', `<img onclick="App._openImgViewer('${p.img}')"`)
+              : ''}
           </div>`).join('')
       : '<p style="color:var(--gr);font-size:14px;padding:10px 0;">Sin paradas registradas.</p>';
 
@@ -7607,6 +7606,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     }
 
     this.go('detail');
+    // Cargar imágenes firestore: de las paradas (lazy)
+    setTimeout(() => this._lazyLoadFsImgs(document.getElementById('detail')), 80);
   },
 
   toggleFav() {
