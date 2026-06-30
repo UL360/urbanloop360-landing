@@ -216,6 +216,22 @@ body.day {
   --c-rojo:   #FEE8E8;  --c-rojo-b:   #EF4444;  --c-rojo-t:   #7F1D1D;
 }
 
+/* ── DAY MODE: paleta pastel cálida para FotoLoop / Grabar / Crear Manual ── */
+body.day #foto-loop-overlay,
+body.day #grabar,
+body.day #crear-manual {
+  --bg0: #FBEFDC; --bg1: #F3E9D8; --bg2: #E8D9BD; --bg3: #DFCBA0;
+  --lt:  #FBEFDC; --bd:  #D8C49E; --wh:  #F3E9D8;
+  --dk:  #3A2E1F; --md:  #5A4630; --gr:  #8A7A60;
+}
+body.day #grabar [style*="background:#1C1C1E"],
+body.day #grabar .grab-type-row { background:var(--bg2) !important; border-color:var(--bd) !important; }
+body.day #grabar .grab-type-chip { background:var(--bg2) !important; border-color:var(--bd) !important; color:var(--md) !important; }
+body.day #grabar .grab-hdr h2 { color:var(--dk) !important; }
+body.day #grabar .grab-back { color:var(--gr) !important; }
+body.day #grabar .grab-sl { color:var(--gr) !important; }
+
+
 /* Secciones de color aplicadas a badges/chips de tipo */
 .badge-verde  { background:var(--c-verde)!important;  border-color:var(--c-verde-b)!important;  color:var(--c-verde-t)!important; }
 .badge-azul   { background:var(--c-azul)!important;   border-color:var(--c-azul-b)!important;   color:var(--c-azul-t)!important; }
@@ -2923,12 +2939,12 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
           <div id="grab-cover-size" style="position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.6);color:white;font-size:10px;padding:2px 7px;border-radius:8px;"></div>
         </div>
         <div id="grab-cover-label" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <label style="aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:2px dashed var(--bd);border-radius:12px;cursor:pointer;background:var(--bg0);">
+          <label style="width:100%;height:100px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:2px dashed var(--bd);border-radius:12px;cursor:pointer;background:var(--bg0);">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
             <span style="font-size:13px;font-weight:600;color:var(--or);">Cámara</span>
             <input type="file" accept="image/*" capture="environment" style="display:none" onchange="App._handleGrabCover(this)">
           </label>
-          <label style="aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:2px dashed var(--bd);border-radius:12px;cursor:pointer;background:var(--bg0);">
+          <label style="width:100%;height:100px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:2px dashed var(--bd);border-radius:12px;cursor:pointer;background:var(--bg0);">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             <span style="font-size:13px;font-weight:600;color:var(--or);">Galería</span>
             <input type="file" id="grab-cover-input" accept="image/*" style="display:none" onchange="App._handleGrabCover(this)">
@@ -3033,12 +3049,12 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
         <button onclick="App._cmClearImg()" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.6);border:none;color:white;font-size:18px;cursor:pointer;">×</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <label style="aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:2px dashed var(--bd);border-radius:16px;cursor:pointer;background:var(--lt);">
+        <label style="width:100%;height:110px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:2px dashed var(--bd);border-radius:16px;cursor:pointer;background:var(--lt);">
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
           <span style="font-size:16px;color:var(--or);font-weight:700;">Cámara</span>
           <input type="file" accept="image/*" capture="environment" style="display:none" onchange="App._cmHandleImg(this)">
         </label>
-        <label style="aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:2px dashed var(--bd);border-radius:16px;cursor:pointer;background:var(--lt);">
+        <label style="width:100%;height:110px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:2px dashed var(--bd);border-radius:16px;cursor:pointer;background:var(--lt);">
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           <span style="font-size:16px;color:var(--or);font-weight:700;">Galería</span>
           <input type="file" accept="image/*" style="display:none" onchange="App._cmHandleImg(this)">
@@ -3727,12 +3743,12 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 
     <!-- Botones foto: cámara + galería separados, cuadrados y grandes -->
     <div id="fl-cam-label" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
-      <label style="aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:10px;border:2px dashed var(--bd);border-radius:16px;cursor:pointer;background:var(--bg0);">
+      <label style="width:100%;height:110px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:10px;border:2px dashed var(--bd);border-radius:16px;cursor:pointer;background:var(--bg0);">
         <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         <span style="font-size:16px;font-weight:700;color:var(--or);">Cámara</span>
         <input type="file" id="fl-input-cam" accept="image/*" capture="environment" style="display:none" onchange="App._handleFotoLoopImg(this)">
       </label>
-      <label style="aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:10px;border:2px dashed var(--bd);border-radius:16px;cursor:pointer;background:var(--bg0);">
+      <label style="width:100%;height:110px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:10px;border:2px dashed var(--bd);border-radius:16px;cursor:pointer;background:var(--bg0);">
         <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
         <span style="font-size:16px;font-weight:700;color:var(--or);">Galería</span>
         <input type="file" id="fl-input" accept="image/*" style="display:none" onchange="App._handleFotoLoopImg(this)">
