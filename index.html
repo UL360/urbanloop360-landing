@@ -1290,20 +1290,22 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
 .grab-type-row::-webkit-scrollbar{display:none;}
 .grab-type-chip{flex-shrink:0;height:30px;padding:0 12px;border-radius:20px;border:0.5px solid #2C2C2E;background:#1C1C1E;font-size:12px;font-weight:500;color:#8A8A98;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .2s;white-space:nowrap;}
 .grab-type-chip.on{background:var(--or);border-color:var(--or);color:var(--wh);}
-.grab-map-wrap{flex:1;position:relative;min-height:0;overflow:hidden;}
+.grab-map-wrap{width:100%;aspect-ratio:1/1;flex-shrink:0;position:relative;overflow:hidden;}
 #grab-map{position:absolute!important;top:0;left:0;right:0;bottom:0;width:100%!important;height:100%!important;}
-.grab-overlay{position:absolute;bottom:0;left:0;right:0;z-index:400;background:var(--bg1);border-radius:var(--r) var(--r) 0 0;padding:14px 16px 20px;box-shadow:0 -4px 24px rgba(0,0,0,.5);border-top:0.5px solid var(--bd);}
-.grab-state-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;margin-bottom:10px;}
-.grab-state-badge.idle{background:#252528;color:#5A5A68;}
-.grab-state-badge.rec{background:#FEE2E2;color:#EF4444;}
-.grab-state-badge.paused{background:#FEF3C7;color:#D97706;}
-.grab-state-badge.done{background:#D1FAE5;color:#059669;}
+.grab-map-hdr{position:absolute;top:10px;left:10px;right:10px;z-index:400;display:flex;align-items:center;justify-content:space-between;}
+.grab-panel{flex:1;min-height:0;overflow-y:auto;background:var(--bg1);padding:14px 16px 20px;}
+.grab-overlay{display:contents;}
+.grab-state-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:14px;font-weight:700;background:rgba(0,0,0,.55);}
+.grab-state-badge.idle{color:#fff;}
+.grab-state-badge.rec{color:#FF6B6B;}
+.grab-state-badge.paused{color:#FBBF24;}
+.grab-state-badge.done{color:#34D399;}
 .grab-stats{display:flex;justify-content:space-around;margin-bottom:14px;}
-.grab-stat{text-align:center;background:var(--bg2);border-radius:10px;padding:8px 12px;}
-.grab-sv{font-family:var(--fH);font-size:26px;font-weight:700;color:#F5F5F5;}
-.grab-sl{font-size:10px;color:#5A5A68;text-transform:uppercase;letter-spacing:.5px;margin-top:2px;}
+.grab-stat{text-align:center;background:var(--bg2);border-radius:12px;padding:10px 14px;flex:1;margin:0 4px;}
+.grab-sv{font-family:var(--fH);font-size:30px;font-weight:700;color:var(--or);}
+.grab-sl{font-size:12px;color:#5A5A68;text-transform:uppercase;letter-spacing:.5px;margin-top:2px;}
 .grab-btns{display:flex;gap:10px;}
-.grab-btn{flex:1;height:52px;border:none;border-radius:var(--r);font-family:var(--fH);font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;}
+.grab-btn{flex:1;height:62px;border:none;border-radius:16px;font-family:var(--fH);font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;}
 .grab-btn.start{background:var(--or);color:white;box-shadow:0 4px 16px rgba(255,95,0,.35);}
 .grab-btn.pause{background:var(--lt);color:var(--md);border:1.5px solid var(--bd);}
 .grab-btn.stop{background:#EF4444;color:white;}
@@ -1753,15 +1755,15 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 }
 /* Selector de visibilidad al publicar loop */
 .vis-opt {
-  flex:1; padding:10px 8px; border-radius:11px; border:1.5px solid var(--bd);
+  flex:1; padding:14px 8px; border-radius:14px; border:2px solid var(--bd);
   background:var(--lt); cursor:pointer; display:flex; flex-direction:column;
-  align-items:center; gap:4px; font-family:var(--fB); font-size:11px;
-  font-weight:600; color:var(--md); transition:all .2s; text-align:center;
+  align-items:center; gap:6px; font-family:var(--fB); font-size:13px;
+  font-weight:700; color:var(--md); transition:all .2s; text-align:center;
 }
 .vis-opt.on        { border-color:var(--or); background:var(--orL); color:var(--or); }
 .vis-opt.on.muni   { border-color:#0F6E56; background:#E1F5EE; color:#085041; }
 .vis-opt.on.privado{ border-color:#888; background:var(--bg3); color:var(--dk); }
-.vis-opt .vis-em   { font-size:20px; }
+.vis-opt .vis-em   { font-size:26px; }
 
 /* ── REGISTRO MODAL ── */
 .rg-field { display:flex; flex-direction:column; gap:5px; }
@@ -2881,20 +2883,21 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
   </div>
   <div class="grab-map-wrap">
     <div id="grab-map" style="width:100%;height:100%;"></div>
-    <div class="grab-overlay">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <div class="grab-state-badge idle" id="grab-state-badge">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
-          Listo para grabar
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <!-- Brújula -->
-          <div id="grab-compass" style="width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;cursor:pointer;" title="Orientar norte" onclick="App._toggleMapRotation()">
-            <svg id="grab-compass-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" style="transition:transform .3s;"><path d="M12 2L8 10h8L12 2z" fill="#EF4444" stroke="none"/><path d="M12 22L8 14h8L12 22z" fill="white" stroke="none"/><circle cx="12" cy="12" r="2" fill="white"/></svg>
-          </div>
-          <div style="font-size:11px;color:var(--gr);" id="grab-pts-ct">0 pts GPS</div>
+    <div class="grab-map-hdr">
+      <div class="grab-state-badge idle" id="grab-state-badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+        Listo para grabar
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <!-- Brújula -->
+        <div id="grab-compass" style="width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;cursor:pointer;" title="Orientar norte" onclick="App._toggleMapRotation()">
+          <svg id="grab-compass-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" style="transition:transform .3s;"><path d="M12 2L8 10h8L12 2z" fill="#EF4444" stroke="none"/><path d="M12 22L8 14h8L12 22z" fill="white" stroke="none"/><circle cx="12" cy="12" r="2" fill="white"/></svg>
         </div>
       </div>
+    </div>
+    <div id="grab-pts-ct" style="position:absolute;bottom:10px;right:10px;font-size:11px;color:#fff;background:rgba(0,0,0,.55);padding:4px 10px;border-radius:10px;">0 pts GPS</div>
+  </div>
+  <div class="grab-panel">
       <div class="grab-stats">
         <div class="grab-stat"><div class="grab-sv" id="grab-dist">0.0</div><div class="grab-sl">km</div></div>
         <div class="grab-stat"><div class="grab-sv" id="grab-time">00:00</div><div class="grab-sl">tiempo</div></div>
@@ -2907,32 +2910,31 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
         </button>
       </div>
       <!-- Botón parada foto — solo visible mientras graba -->
-      <button id="grab-foto-btn" onclick="App.openFotoStop()" style="margin-top:10px;width:100%;padding:11px;border-radius:12px;border:1.5px solid rgba(255,255,255,.3);background:rgba(0,0,0,.45);color:white;font-size:13px;font-weight:600;cursor:pointer;display:none;align-items:center;justify-content:center;gap:8px;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      <button id="grab-foto-btn" onclick="App.openFotoStop()" style="margin-top:10px;width:100%;padding:15px;border-radius:14px;border:2px solid var(--bd);background:var(--bg2);color:var(--dk);font-size:15px;font-weight:600;cursor:pointer;display:none;align-items:center;justify-content:center;gap:8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
         📸 Agregar parada con foto
       </button>
       <!-- Foto de portada del loop — visible al finalizar -->
-      <div id="grab-cover-section" style="display:none;margin-top:10px;background:rgba(0,0,0,.35);border-radius:12px;padding:12px;">
-        <div style="font-size:12px;font-weight:600;color:white;margin-bottom:8px;">📷 Foto de portada del loop</div>
+      <div id="grab-cover-section" style="display:none;margin-top:10px;background:var(--bg2);border-radius:14px;padding:12px;">
+        <div style="font-size:13px;font-weight:600;color:var(--dk);margin-bottom:8px;">📷 Foto de portada del loop</div>
         <div id="grab-cover-preview" style="display:none;position:relative;border-radius:10px;overflow:hidden;aspect-ratio:16/9;margin-bottom:8px;">
           <img id="grab-cover-thumb" style="width:100%;height:100%;object-fit:cover;" src="" alt="Preview de portada del loop grabado">
           <button onclick="App._clearGrabCover()" style="position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.7);border:none;color:white;font-size:15px;line-height:1;cursor:pointer;">×</button>
           <div id="grab-cover-size" style="position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.6);color:white;font-size:10px;padding:2px 7px;border-radius:8px;"></div>
         </div>
-        <div id="grab-cover-label" style="display:flex;gap:8px;">
-          <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border:1.5px dashed rgba(255,255,255,.4);border-radius:10px;cursor:pointer;background:rgba(255,255,255,.08);">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-            <span style="font-size:11px;color:rgba(255,255,255,.85);">Cámara</span>
+        <div id="grab-cover-label" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <label style="aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:2px dashed var(--bd);border-radius:12px;cursor:pointer;background:var(--bg0);">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <span style="font-size:13px;font-weight:600;color:var(--or);">Cámara</span>
             <input type="file" accept="image/*" capture="environment" style="display:none" onchange="App._handleGrabCover(this)">
           </label>
-          <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border:1.5px dashed rgba(255,255,255,.4);border-radius:10px;cursor:pointer;background:rgba(255,255,255,.08);">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            <span style="font-size:11px;color:rgba(255,255,255,.85);">Galería</span>
+          <label style="aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:2px dashed var(--bd);border-radius:12px;cursor:pointer;background:var(--bg0);">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span style="font-size:13px;font-weight:600;color:var(--or);">Galería</span>
             <input type="file" id="grab-cover-input" accept="image/*" style="display:none" onchange="App._handleGrabCover(this)">
           </label>
         </div>
       </div>
-    </div>
   </div>
 </div>
 
@@ -2962,20 +2964,20 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       <button onclick="App.go('profile')" style="background:#FF5F00;color:white;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Ingresar</button>
     </div>
     <div>
-      <label style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:5px;">NOMBRE DEL LOOP *</label>
-      <input type="text" id="cm-name" class="fi" placeholder="ej. Loop del Arroyo Las Tunas…" aria-label="Nombre del loop" style="font-size:14px;">
+      <label style="font-size:12px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:6px;">NOMBRE DEL LOOP *</label>
+      <input type="text" id="cm-name" class="fi" placeholder="ej. Loop del Arroyo Las Tunas…" aria-label="Nombre del loop" style="font-size:16px;padding:14px;">
     </div>
 
     <!-- Descripción -->
     <div>
-      <label style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:5px;">DESCRIPCIÓN</label>
-      <textarea id="cm-desc" class="fi" rows="2" placeholder="Describí la experiencia de este loop..." aria-label="Descripción del loop" style="font-size:13px;resize:none;"></textarea>
+      <label style="font-size:12px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:6px;">DESCRIPCIÓN</label>
+      <textarea id="cm-desc" class="fi" rows="2" placeholder="Describí la experiencia de este loop..." aria-label="Descripción del loop" style="font-size:16px;padding:14px;resize:none;"></textarea>
     </div>
 
     <!-- Tipo -->
     <div>
-      <label style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:5px;">TIPO</label>
-      <select id="cm-type" class="fi" aria-label="Tipo de actividad" style="font-size:13px;">
+      <label style="font-size:12px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:6px;">TIPO</label>
+      <select id="cm-type" class="fi" aria-label="Tipo de actividad" style="font-size:16px;padding:14px;">
         <option value="trad">☕ Tradicional</option>
         <option value="running">🏃 Running</option>
         <option value="mtb">🚵 MTB</option>
@@ -2994,9 +2996,9 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 
     <!-- Mapa para dibujar -->
     <div>
-      <label style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:5px;">TRAZADO DEL RECORRIDO</label>
-      <div style="border-radius:14px;overflow:hidden;border:1.5px solid var(--bd);position:relative;">
-        <div id="cm-map" style="width:100%;height:320px;min-height:320px;display:block;"></div>
+      <label style="font-size:12px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:6px;">TRAZADO DEL RECORRIDO</label>
+      <div style="border-radius:14px;overflow:hidden;border:2px solid var(--bd);position:relative;aspect-ratio:1/1;width:100%;">
+        <div id="cm-map" style="width:100%;height:100%;display:block;"></div>
         <!-- Info overlay -->
         <div style="position:absolute;top:10px;left:10px;right:10px;pointer-events:none;">
           <div id="cm-map-hint" style="background:rgba(0,0,0,.6);color:white;font-size:11px;font-weight:600;padding:6px 10px;border-radius:8px;text-align:center;backdrop-filter:blur(4px);">
@@ -3025,20 +3027,20 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 
     <!-- Foto de portada -->
     <div id="cm-img-preview-zone">
-      <label style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:5px;">FOTO DE PORTADA (opcional)</label>
+      <label style="font-size:12px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:6px;">FOTO DE PORTADA (opcional)</label>
       <div id="cm-img-preview" style="display:none;position:relative;border-radius:12px;overflow:hidden;aspect-ratio:16/9;background:var(--bg0);margin-bottom:8px;">
         <img id="cm-img-thumb" style="width:100%;height:100%;object-fit:cover;" src="" alt="Preview de imagen del post">
         <button onclick="App._cmClearImg()" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.6);border:none;color:white;font-size:18px;cursor:pointer;">×</button>
       </div>
-      <div style="display:flex;gap:8px;">
-        <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:1.5px dashed var(--bd);border-radius:12px;cursor:pointer;background:var(--lt);">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          <span style="font-size:12px;color:var(--or);font-weight:600;">Cámara</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <label style="aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:2px dashed var(--bd);border-radius:16px;cursor:pointer;background:var(--lt);">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span style="font-size:16px;color:var(--or);font-weight:700;">Cámara</span>
           <input type="file" accept="image/*" capture="environment" style="display:none" onchange="App._cmHandleImg(this)">
         </label>
-        <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:1.5px dashed var(--bd);border-radius:12px;cursor:pointer;background:var(--lt);">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          <span style="font-size:12px;color:var(--or);font-weight:600;">Galería</span>
+        <label style="aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:2px dashed var(--bd);border-radius:16px;cursor:pointer;background:var(--lt);">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <span style="font-size:16px;color:var(--or);font-weight:700;">Galería</span>
           <input type="file" accept="image/*" style="display:none" onchange="App._cmHandleImg(this)">
         </label>
       </div>
@@ -3065,7 +3067,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 
     <!-- Guardar -->
     <button id="cm-save-btn" onclick="App._cmSave()"
-      style="width:100%;padding:15px;background:var(--or);color:white;border:none;border-radius:14px;font-family:var(--fH);font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(255,95,0,.4);margin-bottom:24px;">
+      style="width:100%;padding:18px;background:var(--or);color:white;border:none;border-radius:16px;font-family:var(--fH);font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(255,95,0,.4);margin-bottom:24px;">
       💾 Guardar Loop
     </button>
 
@@ -3712,36 +3714,36 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5m0 0l7-7m-7 7l7 7"/></svg>
       </button>
       <div>
-        <div style="font-family:var(--fH);font-size:16px;font-weight:700;color:var(--dk);">📍 Foto Loop</div>
-        <div style="font-size:11px;color:var(--gr);">Compartí tu parada con foto</div>
+        <div style="font-family:var(--fH);font-size:19px;font-weight:700;color:var(--dk);">📍 Foto Loop</div>
+        <div style="font-size:13px;color:var(--gr);">Compartí tu parada con foto</div>
       </div>
     </div>
 
     <!-- Preview foto -->
     <div id="fl-preview" style="display:none;position:relative;border-radius:12px;overflow:hidden;aspect-ratio:4/3;background:var(--bg0);margin-bottom:12px;">
       <img id="fl-thumb" style="width:100%;height:100%;object-fit:cover;" src="" alt="">
-      <button onclick="App._clearFotoLoop()" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.6);border:none;color:white;cursor:pointer;font-size:16px;line-height:1;">×</button>
+      <button onclick="App._clearFotoLoop()" style="position:absolute;top:8px;right:8px;width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.6);border:none;color:white;cursor:pointer;font-size:18px;line-height:1;">×</button>
     </div>
 
-    <!-- Botones foto: cámara + galería separados -->
-    <div id="fl-cam-label" style="display:flex;gap:8px;margin-bottom:12px;">
-      <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border:1.5px dashed var(--bd);border-radius:12px;cursor:pointer;background:var(--bg0);">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        <span style="font-size:13px;font-weight:600;color:var(--or);">Cámara</span>
+    <!-- Botones foto: cámara + galería separados, cuadrados y grandes -->
+    <div id="fl-cam-label" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <label style="aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:10px;border:2px dashed var(--bd);border-radius:16px;cursor:pointer;background:var(--bg0);">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <span style="font-size:16px;font-weight:700;color:var(--or);">Cámara</span>
         <input type="file" id="fl-input-cam" accept="image/*" capture="environment" style="display:none" onchange="App._handleFotoLoopImg(this)">
       </label>
-      <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border:1.5px dashed var(--bd);border-radius:12px;cursor:pointer;background:var(--bg0);">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-        <span style="font-size:13px;font-weight:600;color:var(--or);">Galería</span>
+      <label style="aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:10px;border:2px dashed var(--bd);border-radius:16px;cursor:pointer;background:var(--bg0);">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span style="font-size:16px;font-weight:700;color:var(--or);">Galería</span>
         <input type="file" id="fl-input" accept="image/*" style="display:none" onchange="App._handleFotoLoopImg(this)">
       </label>
     </div>
 
-    <input id="fl-name" type="text" placeholder="Nombre del lugar (ej: Costanera Norte, Bar El Viejo)" aria-label="Nombre del lugar" class="fi" style="margin-bottom:10px;width:100%;box-sizing:border-box;">
-    <textarea id="fl-desc" placeholder="Contales a los demás por qué vale la pena parar acá..." aria-label="Descripción del lugar" style="width:100%;box-sizing:border-box;border:0.5px solid var(--bd);border-radius:12px;padding:12px;font-size:14px;color:var(--dk);background:var(--lt);resize:none;height:60px;font-family:var(--fB);margin-bottom:10px;"></textarea>
+    <input id="fl-name" type="text" placeholder="Nombre del lugar (ej: Costanera Norte, Bar El Viejo)" aria-label="Nombre del lugar" class="fi" style="margin-bottom:10px;width:100%;box-sizing:border-box;font-size:16px;padding:14px;">
+    <textarea id="fl-desc" placeholder="Contales a los demás por qué vale la pena parar acá..." aria-label="Descripción del lugar" style="width:100%;box-sizing:border-box;border:0.5px solid var(--bd);border-radius:12px;padding:14px;font-size:16px;color:var(--dk);background:var(--lt);resize:none;height:70px;font-family:var(--fB);margin-bottom:10px;"></textarea>
 
     <!-- Categorías / Etiquetas -->
-    <div style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;text-transform:uppercase;margin-bottom:7px;">Etiqueta</div>
+    <div style="font-size:12px;font-weight:700;color:var(--gr);letter-spacing:.5px;text-transform:uppercase;margin-bottom:7px;">Etiqueta</div>
     <select id="fl-cat-select" class="fi" aria-label="Etiqueta del lugar" style="width:100%;margin-bottom:14px;" onchange="App._setFLCatSelect(this)">
       <option value="lugar">📍 Lugar</option>
       <option value="gastro">🍽️ Gastronomía</option>
@@ -3765,29 +3767,31 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 
     <!-- Mapa de ubicación -->
     <div style="margin-bottom:12px;">
-      <div style="font-size:12px;font-weight:600;color:var(--md);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+      <div style="font-size:13px;font-weight:600;color:var(--md);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
         📌 Ubicación en el mapa
-        <button onclick="App._flUseMyLocation()" style="margin-left:auto;background:var(--orL);border:none;color:var(--or);font-size:11px;font-weight:600;padding:3px 10px;border-radius:8px;cursor:pointer;">📍 Usar mi ubicación</button>
+        <button onclick="App._flUseMyLocation()" style="margin-left:auto;background:var(--orL);border:none;color:var(--or);font-size:12px;font-weight:700;padding:6px 12px;border-radius:10px;cursor:pointer;">📍 Usar mi ubicación</button>
       </div>
-      <div id="fl-map" style="height:160px;border-radius:12px;border:0.5px solid var(--bd);overflow:hidden;background:var(--bg0);"></div>
-      <div id="fl-coords" style="font-size:11px;color:var(--gr);margin-top:4px;text-align:center;">Tocá el mapa para marcar el lugar</div>
+      <div id="fl-map" style="aspect-ratio:1/1;width:100%;height:auto;border-radius:14px;border:1.5px solid var(--bd);overflow:hidden;background:var(--bg0);"></div>
+      <div id="fl-coords" style="font-size:12px;color:var(--gr);margin-top:4px;text-align:center;">Tocá el mapa para marcar el lugar</div>
     </div>
 
-    <div id="fl-option-loop" style="background:var(--bg0);border-radius:12px;padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;gap:10px;">
-      <input type="checkbox" id="fl-make-loop" style="width:18px;height:18px;accent-color:var(--or);">
-      <label for="fl-make-loop" style="font-size:12px;color:var(--dk);cursor:pointer;line-height:1.4;">Crear también un <b>mini-loop</b> para llegar a este lugar</label>
+    <div id="fl-option-loop" style="background:var(--bg0);border-radius:12px;padding:12px 13px;margin-bottom:12px;display:flex;align-items:center;gap:10px;">
+      <input type="checkbox" id="fl-make-loop" style="width:21px;height:21px;accent-color:var(--or);flex-shrink:0;">
+      <label for="fl-make-loop" style="font-size:13px;color:var(--dk);cursor:pointer;line-height:1.4;">Crear también un <b>mini-loop</b> para llegar a este lugar</label>
     </div>
 
     <!-- Proponer al municipio -->
-    <div style="background:var(--c-viola);border:1px solid var(--c-viola-b);border-radius:12px;padding:10px 13px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
-      <input type="checkbox" id="fl-municipio" style="width:18px;height:18px;accent-color:var(--or);flex-shrink:0;">
-      <label for="fl-municipio" style="font-size:13px;color:var(--dk);cursor:pointer;font-weight:600;flex:1;">🏛 Proponer al municipio</label>
-      <span style="font-size:10px;color:var(--gr);text-align:right;line-height:1.3;">Se comparte en la<br>comunidad + revisión oficial</span>
+    <div style="background:var(--orL);border:2px solid var(--or);border-radius:14px;padding:14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:12px;">
+      <input type="checkbox" id="fl-municipio" style="width:24px;height:24px;accent-color:var(--or);flex-shrink:0;margin-top:1px;">
+      <div style="flex:1;">
+        <label for="fl-municipio" style="font-size:16px;color:var(--or);cursor:pointer;font-weight:700;display:block;">🏛 Proponer al municipio</label>
+        <span style="font-size:12px;color:var(--md);line-height:1.4;">Se comparte en la comunidad + revisión oficial</span>
+      </div>
     </div>
 
     <div style="display:flex;gap:10px;">
-      <button onclick="App.closeFotoLoop()" style="flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--bd);background:var(--lt);font-size:14px;font-weight:600;color:var(--md);cursor:pointer;">Cancelar</button>
-      <button id="fl-publish-btn" onclick="App.publishFotoLoop()" style="flex:2;padding:13px;border-radius:12px;border:none;background:var(--or);color:white;font-size:14px;font-weight:700;cursor:pointer;">🌐 Publicar parada</button>
+      <button onclick="App.closeFotoLoop()" style="flex:1;padding:16px;border-radius:14px;border:1.5px solid var(--bd);background:var(--lt);font-size:16px;font-weight:600;color:var(--md);cursor:pointer;">Cancelar</button>
+      <button id="fl-publish-btn" onclick="App.publishFotoLoop()" style="flex:2;padding:16px;border-radius:14px;border:none;background:var(--or);color:white;font-size:16px;font-weight:700;cursor:pointer;">🌐 Publicar parada</button>
     </div>
   </div>
 </div>
