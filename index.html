@@ -1952,8 +1952,13 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <span style="font-family:var(--fH);font-size:13px;font-weight:700;color:#F5F5F5;">La Paz, Entre Ríos</span>
   </div>
 
-  <!-- ── TOP RIGHT: Locate + Compass + 3D + Satellite + Report ── -->
+  <!-- ── TOP RIGHT: Theme + Locate + Compass + 3D + Satellite + Report ── -->
   <div style="position:absolute;top:14px;right:14px;z-index:10;display:flex;flex-direction:column;gap:6px;">
+    <!-- Toggle Día/Noche -->
+    <button onclick="App.toggleTheme()" id="map-theme-toggle-btn" title="Día/Noche" aria-label="Cambiar tema día/noche" aria-pressed="false"
+      style="width:40px;height:40px;background:#1C1C1E;border:0.5px solid #2C2C2E;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;transition:all .2s;">
+      ☀️
+    </button>
     <!-- Locate me button -->
     <button id="locate-btn" onclick="App.toggleFollowMe()" title="Mi ubicación" aria-label="Centrar en mi ubicación" aria-pressed="false"
       style="width:40px;height:40px;background:#1C1C1E;border:0.5px solid #2C2C2E;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#C0C0C8;transition:all .2s;">
@@ -15909,8 +15914,11 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const goingDark = document.body.classList.contains('day');
     document.body.classList.toggle('day', !goingDark);
     try{localStorage.setItem('ul360_theme',goingDark?'dark':'light');}catch(e){}
+    const icon = goingDark ? '☀️' : '🌙';
     const btn = document.getElementById('theme-toggle-btn');
-    if (btn) btn.textContent = goingDark ? '☀️' : '🌙';
+    if (btn) btn.textContent = icon;
+    const mapBtn = document.getElementById('map-theme-toggle-btn');
+    if (mapBtn) mapBtn.textContent = icon;
 
     if (this.mainMap && !this._isSatellite) {
       const newStyle = goingDark ? this._ML_STYLE_DARK : this._ML_STYLE_LIGHT;
@@ -16707,11 +16715,18 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
 document.addEventListener('DOMContentLoaded',()=>{
   // Arrancar en modo oscuro por defecto
   let saved; try{saved=localStorage.getItem('ul360_theme');}catch(e){}
-  if (saved === 'light') {
+  const isLight = saved === 'light';
+  if (isLight) {
     document.body.classList.add('day');
   } else {
     document.body.classList.remove('day'); // dark por defecto
   }
+  // Sincronizar ícono inicial de ambos botones de tema
+  const initIcon = isLight ? '☀️' : '🌙';
+  const t1 = document.getElementById('theme-toggle-btn');
+  if (t1) t1.textContent = initIcon;
+  const t2 = document.getElementById('map-theme-toggle-btn');
+  if (t2) t2.textContent = initIcon;
   App._hwRoundRectPolyfill();
   App.init();
 });
