@@ -1970,10 +1970,17 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <!-- Brújula / orientación -->
     <button id="main-compass" onclick="App._toggleMapRotation()" title="Orientar mapa" aria-label="Orientar mapa al norte" aria-pressed="false"
       style="width:40px;height:40px;background:#1C1C1E;border:0.5px solid #2C2C2E;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;">
-      <svg id="main-compass-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" style="transition:transform .3s;">
-        <path d="M12 2L8 10h8L12 2z" fill="#EF4444"/>
-        <path d="M12 22L8 14h8L12 22z" fill="#C0C0C8"/>
-        <circle cx="12" cy="12" r="2" fill="#C0C0C8"/>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <!-- Círculo exterior fijo (carcasa de la brújula, no rota) -->
+        <circle cx="12" cy="12" r="10.5" stroke="#5A5A68" stroke-width="1.2" fill="none"/>
+        <!-- Marca N fija arriba (referencia visual, no rota) -->
+        <text x="12" y="4.2" text-anchor="middle" font-size="5" font-weight="800" fill="#8A8A95" font-family="Arial">N</text>
+        <!-- Grupo que SÍ rota: la aguja -->
+        <g id="main-compass-svg" style="transition:transform .3s;transform-origin:12px 12px;">
+          <path d="M12 3.2L9 12h6L12 3.2z" fill="#EF4444"/>
+          <path d="M12 20.8L9 12h6L12 20.8z" fill="#E8E8ED"/>
+          <circle cx="12" cy="12" r="1.8" fill="#1C1C1E" stroke="#C0C0C8" stroke-width="0.8"/>
+        </g>
       </svg>
     </button>
     <!-- Toggle 3D -->
@@ -5484,13 +5491,13 @@ const App = {
           this._lastMapMove = now;
 
           // Bearing del mapa:
-          // - Con brújula activa: bearing = -compassHeading (el mapa rota para que la
-          //   dirección que mirás quede "arriba")
+          // - Con brújula activa: bearing = compassHeading (la dirección que mirás
+          //   queda arriba en pantalla — ver fix de inversión Este/Oeste)
           // - Sin brújula: el mapa mantiene su orientación actual (norte fijo arriba),
           //   "Mi ubicación" solo centra y marca dónde estás parado, no rota.
           let bearing = this.mainMap.getBearing();
           if (this._mapRotating && this._compassHeading != null) {
-            bearing = -this._compassHeading;  // correcto: norte fijo, mapa rota bajo vos
+            bearing = this._compassHeading;  // dirección real que mirás queda arriba
           }
           // (el auto-rotate por gpsHeading fue removido — solo la brújula puede rotar el mapa)
 
@@ -8417,9 +8424,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
       // Si _followMe está activo, el GPS tracking ya maneja el easeTo con bearing
       if (!this._followMe && this.mainMap) {
-        // bearing del mapa = -h: si el dispositivo mira al este (h=90), el mapa
-        // rota -90° para que el este quede "arriba" (hacia el usuario)
-        this.mainMap.easeTo({ bearing: -h, duration: 250 });
+        // MapLibre bearing = hacia qué dirección geográfica apunta "arriba" en pantalla.
+        // Si el dispositivo mira al Oeste (h=270°), quiero que el Oeste quede arriba →
+        // bearing = h directamente (NO -h, eso causaba el error Este/Oeste invertido).
+        this.mainMap.easeTo({ bearing: h, duration: 250 });
       }
     };
 
