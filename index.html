@@ -15550,10 +15550,8 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   toggleSidebar() {
     const isMobile = window.innerWidth <= 768;
     if (isMobile) {
-      // Mobile: 0→1(rail), 1→2(open), 2→0(closed) — pero si ya estaba abierto completo volvemos al cerrado
-      if (this._sbState === 0) this._sbApply(1);
-      else if (this._sbState === 1) this._sbApply(2);
-      else this._sbApply(0);
+      // Mobile: un solo toque abre completo (2), volver a tocar cierra (0)
+      this._sbApply(this._sbState === 2 ? 0 : 2);
     } else {
       // Desktop: alterna rail ↔ open
       this._sbApply(this._sbState === 1 ? 2 : 1);
