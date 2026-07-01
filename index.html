@@ -5969,8 +5969,12 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
               ${p.desc ? `<br><small style="color:#6B7280">${this._esc(p.desc)}</small>` : ''}
             </div>`);
         popup.on('open', () => {
+          if (hasImg) this._activePoiPopup = { popup, routeId: r.id, poiIdx: i };
           const node = popup.getElement && popup.getElement();
           if (node) this._lazyLoadFsImgs(node);
+        });
+        popup.on('close', () => {
+          if (this._activePoiPopup && this._activePoiPopup.popup === popup) this._activePoiPopup = null;
         });
         const mkr = new maplibregl.Marker({ element: el, anchor: 'center' })
           .setLngLat([lng, lat])
@@ -6364,6 +6368,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       else this._setRouteVisible(r.id, true, false);
     });
     this._drawFotoStopsOnMap();
+    this._refreshPoiMarkersVisibility();
   },
 
   _removeNavLine() {
@@ -6376,6 +6381,17 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       try { if (this.mainMap.getSource(sid)) this.mainMap.removeSource(sid); } catch(e) {}
     });
     this._navLine = null;
+  },
+
+  // Sincroniza SIEMPRE los pines de fotos con la ruta seleccionada actual (this.selId)
+  _refreshPoiMarkersVisibility() {
+    if (!this._poiMarkers) return;
+    Object.keys(this._poiMarkers).forEach(rid => {
+      (this._poiMarkers[rid] || []).forEach(m => {
+        if (!m) return;
+        try { m.getElement().style.display = (rid === this.selId) ? 'flex' : 'none'; } catch(e) {}
+      });
+    });
   },
 
   _setRouteVisible(id, visible, includeMarkers = true) {
@@ -6400,6 +6416,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   // ── SELECT ROUTE ──
   selectRoute(id) {
     this.selId = id;
+    this._refreshPoiMarkersVisibility();
     document.querySelectorAll('.rc').forEach(c => c.classList.toggle('sel', c.dataset.id===id));
     const r = this.routes.find(x => x.id===id);
     if (!r || !this.mainMap) return;
@@ -6438,6 +6455,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     // Popup con foto en el mapa — el usuario decide si toca "Ir"
     this._showLoopMapCard(r);
+    this._refreshPoiMarkersVisibility();
   },
 
   // Mostrar solo la ruta indicada, ocultar el resto
@@ -6465,6 +6483,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       const show = !filter || filter==='all' || (r && r.type===filter);
       this._setRouteVisible(rid, show, false);
     });
+    this._refreshPoiMarkersVisibility();
 
     // Volar a los bounds de las rutas visibles
     if (filter && filter !== 'all') {
@@ -7601,7 +7620,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       document.querySelectorAll('.rc').forEach(c => c.classList.remove('sel'));
       if (this._layers) Object.keys(this._layers).forEach(rid => this._setRouteVisible(rid, true));
       // Los pines de fotos solo deben verse con un Loop seleccionado
-      if (this._poiMarkers) Object.values(this._poiMarkers).flat().forEach(m => { try { m.getElement().style.display = 'none'; } catch(e){} });
+      this._refreshPoiMarkersVisibility();
     });
   },
 
@@ -7610,6 +7629,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const r = this.routes.find(x=>x.id===id);
     if (!r) return;
     this.selId = id;
+    this._refreshPoiMarkersVisibility();
 
     document.getElementById('dt-title').textContent = r.name;
     document.getElementById('dt-sub').textContent = `La Paz, Entre Ríos · ${r.pois?r.pois.length:0} paradas`;
@@ -7744,6 +7764,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       // Mostrar solo este loop en el mapa y volar a sus bounds
       this._showOnlyRoute(r.id);
       this.selId = r.id;
+      this._refreshPoiMarkersVisibility();
       const b = document.getElementById('rt-badge');
       if (b) { b.style.display='flex'; document.getElementById('rt-name').textContent=r.name; document.getElementById('rt-dot').style.background=r.color; }
       if (r.pts && r.pts.length) {
@@ -8862,17 +8883,23 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const newPos = pos + dir;
     if (newPos < 0 || newPos >= items.length) return;
     const item = items[newPos];
-    const mk = this._poiMarkers && this._poiMarkers[routeId] && this._poiMarkers[routeId][item.idx];
-    const popup = mk && mk.getPopup && mk.getPopup();
+
+    // Usar el popup que está realmente abierto (evita cualquier desalineación de índices)
+    const active = this._activePoiPopup;
+    const popup = (active && active.popup) ||
+      (this._poiMarkers && this._poiMarkers[routeId] && this._poiMarkers[routeId][poiIdx] &&
+       this._poiMarkers[routeId][poiIdx].getPopup && this._poiMarkers[routeId][poiIdx].getPopup());
     if (!popup) return;
 
     popup.setHTML(this._poiPopupHTML(routeId, item.idx));
     popup.setLngLat([item.lng, item.lat]);
+    if (active) active.poiIdx = item.idx;
 
     if (this.mainMap) {
       this.mainMap.easeTo({ center: [item.lng, item.lat], zoom: Math.max(this.mainMap.getZoom(), 16), duration: 450 });
     }
-    try { this._bouncePin(mk.getElement()); } catch(e) {}
+    const mk = this._poiMarkers && this._poiMarkers[routeId] && this._poiMarkers[routeId][item.idx];
+    if (mk) { try { this._bouncePin(mk.getElement()); } catch(e) {} }
 
     const node = popup.getElement && popup.getElement();
     if (node) this._lazyLoadFsImgs(node);
