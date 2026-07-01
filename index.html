@@ -2282,7 +2282,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 <!-- ════════════ DETAIL ════════════ -->
 <div id="detail" class="screen">
   <div class="dt-hero" id="dt-hero">
-    <img id="dt-img" class="dt-hero-img" src="" alt="">
+    <img id="dt-img" class="dt-hero-img" src="" alt="" style="cursor:pointer;" onclick="App.openDtGallery('cover')">
     <div class="dt-hero-grad"></div>
     <button class="dt-back" onclick="App.go(App._prevScreen||'explore')">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2.2"><path d="M19 12H5m0 0l7-7m-7 7l7 7"/></svg>
@@ -5891,8 +5891,18 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         const el = document.createElement('div');
         el.style.cssText = `background:white;border:2.5px solid ${r.color};border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.2);cursor:pointer;`;
         el.textContent = p.em || '📍';
-        const popup = new maplibregl.Popup({ offset: 18, closeButton: false })
-          .setHTML(`<b>${p.name}</b><br><small style="color:#6B7280">${p.desc||''}</small>`);
+        const hasImg = p.img && p.img !== 'undefined' && p.img !== '';
+        const popup = new maplibregl.Popup({ offset: 18, closeButton: false, maxWidth: '220px' })
+          .setHTML(`
+            <div style="min-width:150px;">
+              ${hasImg ? this._imgTag(p.img, 'width:100%;max-height:130px;object-fit:cover;border-radius:8px;margin-bottom:6px;display:block;', 'poi-popup-img') : ''}
+              <b>${this._esc(p.name||'Parada')}</b>
+              ${p.desc ? `<br><small style="color:#6B7280">${this._esc(p.desc)}</small>` : ''}
+            </div>`);
+        popup.on('open', () => {
+          const node = popup.getElement && popup.getElement();
+          if (node) this._lazyLoadFsImgs(node);
+        });
         const mkr = new maplibregl.Marker({ element: el, anchor: 'center' })
           .setLngLat([lng, lat])
           .setPopup(popup)
@@ -7576,7 +7586,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
             ${p.img && p.img !== 'undefined' && p.img !== '' ? 
               `<div style="position:relative;">
                 ${this._imgTag(p.img, 'width:100%;max-height:180px;object-fit:cover;border-radius:10px;cursor:pointer;', 'stop-img')
-                  .replace('<img', `<img onclick="App._openImgViewer('${p.img}')"`)
+                  .replace('<img', `<img onclick="App.openDtGallery(${i})"`)
                 }
                 ${p._pendingUpload ? `<div style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.7);color:#FFC83D;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;">📴 Subiendo cuando haya señal</div>` : ''}
               </div>` : ''}
@@ -8728,6 +8738,111 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
   _closeImgViewer() {
     const m = document.getElementById('img-viewer-modal');
+    if (m) m.style.display = 'none';
+  },
+
+  // ── GALERÍA DEL DETALLE DE LOOP: portada + fotos de cada parada, con flechas ← → ──
+  _dtGallery: { items: [], idx: 0 },
+
+  openDtGallery(target) {
+    const r = this.routes.find(x => x.id === this.selId);
+    if (!r) return;
+
+    const items = [];
+    if (r.img && r.img !== 'undefined' && r.img !== '') {
+      items.push({ img: r.img, title: r.name || 'Portada', sub: 'Portada del loop', poiIndex: -1 });
+    }
+    (r.pois || []).forEach((p, idx) => {
+      if (p.img && p.img !== 'undefined' && p.img !== '') {
+        items.push({
+          img: p.img,
+          title: (p.em ? p.em + ' ' : '') + (p.name || 'Parada ' + (idx + 1)),
+          sub: p.desc || '',
+          poiIndex: idx
+        });
+      }
+    });
+    if (!items.length) return;
+
+    let startIdx = 0;
+    if (target !== 'cover') {
+      const found = items.findIndex(it => it.poiIndex === target);
+      if (found >= 0) startIdx = found;
+    }
+    this._dtGallery = { items, idx: startIdx };
+    this._renderDtGallery();
+  },
+
+  async _renderDtGallery() {
+    const g = this._dtGallery;
+    const item = g.items[g.idx];
+    if (!item) return;
+
+    let modal = document.getElementById('dt-gallery-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'dt-gallery-modal';
+      modal.style.cssText = 'position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.92);backdrop-filter:blur(6px);padding:0;animation:fadeInModal .2s ease;';
+      document.body.appendChild(modal);
+    }
+    modal.onclick = (e) => { if (e.target === modal) this._closeDtGallery(); };
+
+    // Resolver imagen (soporta base64, http y refs de firestore)
+    let src = item.img;
+    if (src && src.startsWith('firestore:')) {
+      src = await this._resolveImg(item.img).catch(() => '');
+    }
+
+    const hasPrev = g.idx > 0;
+    const hasNext = g.idx < g.items.length - 1;
+
+    modal.innerHTML = `
+      <button onclick="App._closeDtGallery()" style="position:absolute;top:16px;right:16px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:white;font-size:22px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:3;">×</button>
+
+      <div style="position:absolute;top:16px;left:16px;background:rgba(255,255,255,.15);color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:20px;z-index:3;">
+        ${g.idx + 1} / ${g.items.length}
+      </div>
+
+      ${hasPrev ? `
+      <button onclick="App._dtGalleryNav(-1)" aria-label="Anterior" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:3;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>` : ''}
+
+      ${hasNext ? `
+      <button onclick="App._dtGalleryNav(1)" aria-label="Siguiente" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:3;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+      </button>` : ''}
+
+      <div style="position:relative;width:100%;max-width:520px;max-height:70vh;display:flex;align-items:center;justify-content:center;padding:0 16px;">
+        ${src
+          ? `<img src="${src}" style="max-width:100%;max-height:65vh;border-radius:16px;object-fit:contain;box-shadow:0 8px 48px rgba(0,0,0,.6);" loading="lazy">`
+          : `<div style="width:36px;height:36px;border:3px solid rgba(255,255,255,0.2);border-top-color:#FF5F00;border-radius:50%;animation:spin .8s linear infinite;"></div>`
+        }
+      </div>
+
+      <div style="width:100%;max-width:520px;background:var(--wh);border-radius:20px 20px 0 0;padding:16px 20px 28px;margin-top:auto;position:absolute;bottom:0;">
+        <div style="width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 12px;"></div>
+        <div style="font-family:var(--fH);font-size:16px;font-weight:800;color:var(--dk);margin-bottom:2px;">${this._esc(item.title)}</div>
+        ${item.sub ? `<div style="font-size:12px;color:var(--gr);line-height:1.4;">${this._esc(item.sub)}</div>` : ''}
+        <!-- Puntitos indicadores -->
+        <div style="display:flex;justify-content:center;gap:5px;margin-top:12px;">
+          ${g.items.map((_, k) => `<div style="width:${k===g.idx?16:6}px;height:6px;border-radius:3px;background:${k===g.idx?'var(--or)':'var(--bd)'};transition:width .2s;"></div>`).join('')}
+        </div>
+      </div>`;
+
+    modal.style.display = 'flex';
+  },
+
+  _dtGalleryNav(dir) {
+    const g = this._dtGallery;
+    const next = g.idx + dir;
+    if (next < 0 || next >= g.items.length) return;
+    g.idx = next;
+    this._renderDtGallery();
+  },
+
+  _closeDtGallery() {
+    const m = document.getElementById('dt-gallery-modal');
     if (m) m.style.display = 'none';
   },
 
