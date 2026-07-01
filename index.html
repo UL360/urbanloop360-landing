@@ -3868,8 +3868,8 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
   style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:95;backdrop-filter:blur(3px);"></div>
 <div id="loop-modal"
   style="position:fixed;bottom:-800px;left:0;right:0;margin:0 auto;max-width:430px;
-         z-index:96;background:var(--wh);border-radius:22px 22px 0 0;
-         padding:20px 18px 42px;
+         z-index:96;background:var(--wh);border-radius:20px 20px 0 0;
+         padding:20px 20px 40px;
          box-shadow:0 -6px 40px rgba(0,0,0,.6);
          transition:bottom .35s cubic-bezier(.34,1.56,.64,1);
          overflow-y:auto;max-height:85vh;">
@@ -15881,16 +15881,23 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const modalBody = document.getElementById('loop-modal');
     if (modalBody) {
       modalBody.innerHTML = `
-        <div style="width:38px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 16px;"></div>
-        <div style="font-family:var(--fH);font-size:18px;font-weight:800;color:var(--dk);margin-bottom:2px;">+ Loop</div>
-        <div style="font-size:12px;color:var(--gr);margin-bottom:18px;">Creá o explorá loops</div>
+        <div style="width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 14px;"></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+          <button onclick="App.closeLoopModal()" style="width:34px;height:34px;border-radius:10px;border:0.5px solid var(--bd);background:var(--lt);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-label="Cerrar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5m0 0l7-7m-7 7l7 7"/></svg>
+          </button>
+          <div>
+            <div style="font-family:var(--fH);font-size:19px;font-weight:700;color:var(--dk);">🌀 + Loop</div>
+            <div style="font-size:13px;color:var(--gr);">Creá o explorá loops</div>
+          </div>
+        </div>
 
         <!-- ── CREAR ── -->
         <div style="margin-bottom:4px;">
           <div style="font-family:var(--fH);font-size:13px;font-weight:700;color:var(--dk);margin-bottom:1px;">Crear loop</div>
           <div style="font-size:11px;color:var(--gr);margin-bottom:10px;">Salí a grabar, armalo o marcá una parada</div>
           <button onclick="App.closeLoopModal();App.go('grabar');"
-            style="width:100%;height:58px;background:var(--or);color:white;border:none;border-radius:14px;font-family:var(--fH);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:12px;padding:0 16px;margin-bottom:8px;transition:all .2s;">
+            style="width:100%;height:58px;background:var(--or);color:white;border:none;border-radius:14px;font-family:var(--fH);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:12px;padding:0 16px;margin-bottom:8px;transition:all .2s;box-shadow:0 4px 16px rgba(255,95,0,.35);">
             <div style="width:36px;height:36px;background:rgba(255,255,255,.2);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
               <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="white"/></svg>
             </div>
