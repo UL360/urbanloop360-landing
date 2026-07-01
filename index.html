@@ -2034,48 +2034,45 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
   </div>
 
 
-  <!-- ── PILL FLOTANTE DE ACCIONES (glass, expande hacia la izquierda) ── -->
+  <!-- ── BOTONES FLOTANTES DE ACCIONES (separados, con label visible) ── -->
   <div id="map-pill"
     style="position:absolute;bottom:28px;right:12px;z-index:15;
-           display:none;flex-direction:column;gap:6px;padding:7px;
-           background:rgba(20,26,32,.82);backdrop-filter:blur(14px);
-           border:1px solid rgba(255,255,255,.12);border-radius:28px;
-           box-shadow:0 4px 24px rgba(0,0,0,.5);">
+           display:none;flex-direction:column;align-items:flex-end;gap:10px;">
 
-    <!-- Botón 1: Opciones de loop -->
-    <div id="pill-layers" onclick="App._pillAction('layers')"
-      style="display:flex;align-items:center;border-radius:22px;cursor:pointer;
-             background:#FF5F00;overflow:hidden;transition:background .2s;">
-      <div style="width:38px;height:38px;border-radius:50%;flex-shrink:0;
+    <!-- Botón 1: + Loop (principal) -->
+    <div id="pill-loop" onclick="App._pillAction('loop')"
+      style="display:flex;align-items:center;gap:10px;border-radius:26px;cursor:pointer;
+             background:#FF5F00;padding:8px 18px 8px 8px;overflow:hidden;
+             box-shadow:0 3px 12px rgba(255,95,0,.4);transition:transform .15s;">
+      <div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;
                   background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       </div>
-      <span id="pill-lbl-layers" style="font-size:13px;font-weight:600;color:#fff;white-space:nowrap;
-            display:inline-block;padding-right:14px;">Vistas</span>
+      <span id="pill-lbl-loop" style="font-size:14px;font-weight:700;color:#fff;white-space:nowrap;">+ Loop</span>
     </div>
 
     <!-- Botón 2: FotoLoop -->
     <div id="pill-foto" onclick="App._pillAction('foto')"
-      style="display:flex;align-items:center;border-radius:22px;cursor:pointer;
-             background:transparent;overflow:hidden;transition:background .2s;">
-      <div style="width:38px;height:38px;border-radius:50%;flex-shrink:0;
-                  background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="6" width="13" height="10" rx="2"/><circle cx="8.5" cy="11" r="2.2"/><path d="M5.5 6V4.5C5.5 4 5.9 3.5 6.5 3.5H10.5C11.1 3.5 11.5 4 11.5 4.5V6"/><path d="M19 8c-1.7 0-3 1.3-3 3 0 2.5 3 7 3 7s3-4.5 3-7c0-1.7-1.3-3-3-3z" fill="rgba(255,255,255,.75)" stroke="none"/><circle cx="19" cy="10.8" r="1.5" fill="rgba(20,26,32,1)" stroke="none"/></svg>
+      style="display:flex;align-items:center;gap:10px;border-radius:26px;cursor:pointer;
+             background:#22262E;padding:8px 18px 8px 8px;overflow:hidden;
+             box-shadow:0 3px 12px rgba(0,0,0,.35);transition:transform .15s;">
+      <div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;
+                  background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="6" width="13" height="10" rx="2"/><circle cx="8.5" cy="11" r="2.2"/><path d="M5.5 6V4.5C5.5 4 5.9 3.5 6.5 3.5H10.5C11.1 3.5 11.5 4 11.5 4.5V6"/><path d="M19 8c-1.7 0-3 1.3-3 3 0 2.5 3 7 3 7s3-4.5 3-7c0-1.7-1.3-3-3-3z" fill="rgba(255,255,255,.85)" stroke="none"/><circle cx="19" cy="10.8" r="1.5" fill="#22262E" stroke="none"/></svg>
       </div>
-      <span id="pill-lbl-foto" style="font-size:13px;font-weight:600;color:rgba(255,255,255,.75);white-space:nowrap;
-            display:inline-block;padding-right:14px;">FotoLoop</span>
+      <span id="pill-lbl-foto" style="font-size:14px;font-weight:700;color:rgba(255,255,255,.85);white-space:nowrap;">FotoLoop</span>
     </div>
 
-    <!-- Botón 3: + Loop -->
-    <div id="pill-loop" onclick="App._pillAction('loop')"
-      style="display:flex;align-items:center;border-radius:22px;cursor:pointer;
-             background:transparent;overflow:hidden;transition:background .2s;">
-      <div style="width:38px;height:38px;border-radius:50%;flex-shrink:0;
-                  background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    <!-- Botón 3: Vistas -->
+    <div id="pill-layers" onclick="App._pillAction('layers')"
+      style="display:flex;align-items:center;gap:10px;border-radius:26px;cursor:pointer;
+             background:#22262E;padding:8px 18px 8px 8px;overflow:hidden;
+             box-shadow:0 3px 12px rgba(0,0,0,.35);transition:transform .15s;">
+      <div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;
+                  background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
       </div>
-      <span id="pill-lbl-loop" style="font-size:13px;font-weight:600;color:rgba(255,255,255,.75);white-space:nowrap;
-            display:inline-block;padding-right:14px;">+ Loop</span>
+      <span id="pill-lbl-layers" style="font-size:14px;font-weight:700;color:rgba(255,255,255,.85);white-space:nowrap;">Vistas</span>
     </div>
   </div>
 
