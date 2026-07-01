@@ -4933,7 +4933,7 @@ const App = {
     if (sid==='eventos')         { this._renderEventos(); }
     if (sid==='ranking')         { this._renderRanking(); }
     if (sid==='explorar-ciudades') { this._renderExplorar(); }
-    if (sid==='actividades')       { this.go('actividades'); this._renderHacemosHoy(); }
+    if (sid==='actividades')       { this._renderHacemosHoy(); }
     if (sid==='home')              { this._renderHome(); }
     if (sid==='grabar')          { setTimeout(()=>this._initGrabMap(),100); }
     if (sid==='crear-manual')    { setTimeout(()=>this._cmInit(),200); }
