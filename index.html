@@ -3820,10 +3820,11 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       <div class="onb-dot on" style="width:22px;height:7px;border-radius:4px;background:var(--or);transition:all .3s;"></div>
       <div class="onb-dot" style="width:7px;height:7px;border-radius:4px;background:var(--bd);transition:all .3s;"></div>
       <div class="onb-dot" style="width:7px;height:7px;border-radius:4px;background:var(--bd);transition:all .3s;"></div>
+      <div class="onb-dot" style="width:7px;height:7px;border-radius:4px;background:var(--bd);transition:all .3s;"></div>
     </div>
     <!-- Barra de progreso -->
     <div style="width:100%;height:3px;background:var(--bd);border-radius:2px;margin-bottom:14px;overflow:hidden;">
-      <div id="onb-progress" style="height:100%;border-radius:2px;background:var(--or);width:33%;transition:width .35s ease;"></div>
+      <div id="onb-progress" style="height:100%;border-radius:2px;background:var(--or);width:25%;transition:width .35s ease;"></div>
     </div>
     <!-- Pasos: cada uno es una imagen completa -->
     <div id="onb-steps">
@@ -3837,17 +3838,25 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       </div>
       <!-- Paso 2 -->
       <div class="onb-step" data-step="1" style="display:none;text-align:center;">
-        <div style="width:100%;border-radius:16px;overflow:hidden;background:var(--lt);display:flex;align-items:center;justify-content:center;">
-          <img src="https://raw.githubusercontent.com/UL360/urbanloop360-landing/main/imagenes/deapp/panta2.png"
-            alt="Foto Loop: capturá, compartí, dale vida a tu ciudad"
-            style="width:100%;height:auto;display:block;object-fit:contain;">
+        <div style="width:100%;max-height:62vh;border-radius:16px;overflow:hidden;background:var(--lt);display:flex;align-items:center;justify-content:center;">
+          <img src="https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pantalla2n.png"
+            alt="Foto Loop: capturá y compartí los mejores lugares de tu ciudad"
+            style="width:100%;height:auto;max-height:62vh;display:block;object-fit:contain;">
         </div>
       </div>
       <!-- Paso 3 -->
       <div class="onb-step" data-step="2" style="display:none;text-align:center;">
         <div style="width:100%;max-height:62vh;border-radius:16px;overflow:hidden;background:var(--lt);display:flex;align-items:center;justify-content:center;">
-          <img src="https://raw.githubusercontent.com/UL360/urbanloop360-landing/main/imagenes/deapp/panta3.png"
-            alt="Compartilo con la comunidad"
+          <img src="https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pantalla3n.png"
+            alt="Dejá tu huella en el mapa: recorré, compartí, inspirá"
+            style="width:100%;height:auto;max-height:62vh;display:block;object-fit:contain;">
+        </div>
+      </div>
+      <!-- Paso 4 -->
+      <div class="onb-step" data-step="3" style="display:none;text-align:center;">
+        <div style="width:100%;max-height:62vh;border-radius:16px;overflow:hidden;background:var(--lt);display:flex;align-items:center;justify-content:center;">
+          <img src="https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pantalla4n.png"
+            alt="Compartí tu ciudad con el mundo: comunidad, municipios y viajeros"
             style="width:100%;height:auto;max-height:62vh;display:block;object-fit:contain;">
         </div>
       </div>
@@ -4088,13 +4097,15 @@ const App = {
       d.style.width = i === this._onbStep ? '22px' : '7px';
       d.style.background = i === this._onbStep ? 'var(--or)' : 'var(--bd)';
     });
+    const total = document.querySelectorAll('.onb-step').length;
     const progress = document.getElementById('onb-progress');
-    if (progress) progress.style.width = ((this._onbStep + 1) / 3 * 100) + '%';
+    if (progress) progress.style.width = ((this._onbStep + 1) / total * 100) + '%';
     const btn = document.getElementById('onb-next');
-    if (btn) btn.textContent = this._onbStep === 2 ? '¡Empezar! 🚀' : 'Siguiente →';
+    if (btn) btn.textContent = this._onbStep === total - 1 ? '¡Empezar! 🚀' : 'Siguiente →';
   },
   _onbNext() {
-    if (this._onbStep < 2) { this._onbStep++; this._onbRender(); }
+    const total = document.querySelectorAll('.onb-step').length;
+    if (this._onbStep < total - 1) { this._onbStep++; this._onbRender(); }
     else this._onbClose();
   },
   _onbClose() {
