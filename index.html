@@ -4729,6 +4729,65 @@ const App = {
     try { this.likes = JSON.parse(localStorage.getItem('ul360_likes') || '[]'); } catch(e) {}
   },
 
+  // ── Limpia un loop para guardarlo en Firestore (sin base64, arrays anidados, etc) ──
+  _cleanLoopForFirestore(r) {
+    const imgData = r.img && r.img.startsWith('data:') ? r.img : null;
+    const isResolved = r.img && (r.img.startsWith('firestore:') || r.img.startsWith('http://') || r.img.startsWith('https://'));
+    const rClean = { ...r, img: isResolved ? r.img : (imgData ? '' : (r.img || '')) };
+    Object.keys(rClean).forEach(k => { if (rClean[k] === undefined) delete rClean[k]; });
+    rClean.updatedAt = Date.now();
+    if (Array.isArray(rClean.pts)) {
+      rClean.pts = rClean.pts.map(p => Array.isArray(p) ? { lat: p[0], lng: p[1] } : p);
+    }
+    if (Array.isArray(rClean.pois)) {
+      rClean.pois = rClean.pois.map(poi => {
+        const p = { ...poi };
+        if (p.img && p.img.startsWith('data:')) delete p.img; // se guardan por separado
+        Object.keys(p).forEach(k => { if (p[k] === undefined) delete p[k]; });
+        return p;
+      });
+    }
+    return { rClean, imgData, isResolved };
+  },
+
+  // ── Persiste UN loop editado directo en Firestore ──
+  // No depende del filtro "authorId===uid" de _saveData, que se salteaba
+  // en silencio (edición de admin, o loops viejos sin authorId) dando
+  // una falsa sensación de guardado exitoso.
+  async _persistSingleLoop(r) {
+    if (!this._db) {
+      App._ls('set', 'ul360_routes', JSON.stringify(this.routes.filter(x => !DEFAULTS.find(d => d.id === x.id))));
+      return;
+    }
+    if (!this._user || this._uid === 'public') {
+      throw new Error('Necesitás iniciar sesión para guardar cambios en la nube.');
+    }
+    const { rClean, imgData, isResolved } = this._cleanLoopForFirestore(r);
+    rClean.authorId   = r.authorId || this._uid;
+    rClean.authorName = r.authorName || this._user.displayName || this._user.email?.split('@')[0] || 'Anónimo';
+
+    if (imgData && !isResolved) {
+      try {
+        rClean.img = await this._uploadImg(imgData, `loops/${r.id}.jpg`);
+      } catch (e) {
+        console.warn('[_persistSingleLoop] Firestore img error:', e.message);
+        rClean.img = '';
+      }
+    }
+
+    const setPromise = this._db.collection('loops').doc(r.id).set(rClean);
+    const timeoutPromise = new Promise((_, rej) =>
+      setTimeout(() => rej(new Error(
+        'Timeout: Firestore no respondió en 10 segundos.\n' +
+        'Revisá tu conexión o los permisos del documento.'
+      )), 10000)
+    );
+    await Promise.race([setPromise, timeoutPromise]);
+
+    // Backup local
+    App._ls('set', 'ul360_routes', JSON.stringify(this.routes.filter(x => !DEFAULTS.find(d => d.id === x.id))));
+  },
+
   async _saveData() {
     const custom = this.routes.filter(r => !DEFAULTS.find(d=>d.id===r.id));
 
@@ -9176,7 +9235,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
             updatedAt: Date.now()
           };
           console.log(`[saveRoute] Actualizando "${name}" authorId=${this.routes[idx].authorId}`);
-          await this._saveData();
+          await this._persistSingleLoop(this.routes[idx]);
           if (this.mainMap && this._layers && this._layers[this._editingId]) {
             this._layers[this._editingId].forEach(lid=>{ try{ if(this.mainMap.getLayer(lid)) this.mainMap.removeLayer(lid); }catch(e){} });
             delete this._layers[this._editingId];
