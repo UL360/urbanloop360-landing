@@ -5879,15 +5879,20 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     // POIs como marcadores HTML
     if (r.pois) {
       r.pois.forEach((p, i) => {
-        const pt = r.pts[i];
-        if (!pt) return;
-        const lng = Array.isArray(pt) ? pt[1] : pt.lng;
-        const lat = Array.isArray(pt) ? pt[0] : pt.lat;
+        // Usar las coordenadas reales guardadas en el POI (momento exacto de la foto).
+        // Solo si faltan, caer como respaldo a un punto del trazado GPS.
+        let lat = p.lat, lng = p.lng;
+        if ((lat == null || lng == null) && r.pts && r.pts[i]) {
+          const pt = r.pts[i];
+          lat = Array.isArray(pt) ? pt[0] : pt.lat;
+          lng = Array.isArray(pt) ? pt[1] : pt.lng;
+        }
+        if (lat == null || lng == null) return;
         const el = document.createElement('div');
         el.style.cssText = `background:white;border:2.5px solid ${r.color};border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.2);cursor:pointer;`;
         el.textContent = p.em || '📍';
         const popup = new maplibregl.Popup({ offset: 18, closeButton: false })
-          .setHTML(`<b>${p.name}</b><br><small style="color:#6B7280">${p.desc}</small>`);
+          .setHTML(`<b>${p.name}</b><br><small style="color:#6B7280">${p.desc||''}</small>`);
         const mkr = new maplibregl.Marker({ element: el, anchor: 'center' })
           .setLngLat([lng, lat])
           .setPopup(popup)
