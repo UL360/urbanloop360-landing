@@ -6361,7 +6361,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if(b) b.style.display = 'none';
     this.routes.forEach(r => {
       if (!this._layers || !this._layers[r.id]) this._drawRoute(r);
-      else this._setRouteVisible(r.id, true);
+      else this._setRouteVisible(r.id, true, false);
     });
     this._drawFotoStopsOnMap();
   },
@@ -6378,12 +6378,13 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     this._navLine = null;
   },
 
-  _setRouteVisible(id, visible) {
+  _setRouteVisible(id, visible, includeMarkers = true) {
     if (!this.mainMap || !this._layers || !this._layers[id]) return;
     const vis = visible ? 'visible' : 'none';
     this._layers[id].forEach(lid => {
       try { if (this.mainMap.getLayer(lid)) this.mainMap.setLayoutProperty(lid, 'visibility', vis); } catch(e) {}
     });
+    if (!includeMarkers) return;
     // POI markers
     if (this._poiMarkers && this._poiMarkers[id]) {
       this._poiMarkers[id].forEach(m => {
@@ -6462,7 +6463,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     Object.keys(this._layers).forEach(rid => {
       const r = this.routes.find(x => x.id===rid);
       const show = !filter || filter==='all' || (r && r.type===filter);
-      this._setRouteVisible(rid, show);
+      this._setRouteVisible(rid, show, false);
     });
 
     // Volar a los bounds de las rutas visibles
@@ -7065,7 +7066,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if (this._layers) {
       this.routes.forEach(r => {
         const show = showLoops && visible.find(v => v.id === r.id);
-        this._setRouteVisible(r.id, !!show);
+        this._setRouteVisible(r.id, !!show, false);
       });
     }
 
@@ -7599,6 +7600,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       this._stopVoice();
       document.querySelectorAll('.rc').forEach(c => c.classList.remove('sel'));
       if (this._layers) Object.keys(this._layers).forEach(rid => this._setRouteVisible(rid, true));
+      // Los pines de fotos solo deben verse con un Loop seleccionado
+      if (this._poiMarkers) Object.values(this._poiMarkers).flat().forEach(m => { try { m.getElement().style.display = 'none'; } catch(e){} });
     });
   },
 
@@ -16392,6 +16395,8 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     this._stopVoice();
     document.querySelectorAll('.rc').forEach(c => c.classList.remove('sel'));
     if (this._layers) Object.keys(this._layers).forEach(rid => this._setRouteVisible(rid, true));
+    // Los pines de fotos solo deben verse con un Loop seleccionado
+    if (this._poiMarkers) Object.values(this._poiMarkers).flat().forEach(m => { try { m.getElement().style.display = 'none'; } catch(e){} });
   },
 
   // ── TOAST ──
