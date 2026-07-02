@@ -2926,7 +2926,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       <!-- Botón parada foto — solo visible mientras graba -->
       <button id="grab-foto-btn" onclick="App.openFotoStop()" style="margin-top:10px;width:100%;padding:15px;border-radius:14px;border:2px solid var(--bd);background:var(--bg2);color:var(--dk);font-size:15px;font-weight:600;cursor:pointer;display:none;align-items:center;justify-content:center;gap:8px;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-        📸 Agregar parada con foto
+        <span id="grab-foto-btn-label">📸 Agregar parada con foto</span>
       </button>
       <!-- Foto de portada del loop — visible al finalizar -->
       <div id="grab-cover-section" style="display:none;margin-top:10px;background:var(--bg2);border-radius:14px;padding:12px;">
@@ -8187,9 +8187,35 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if (input) input.value = '';
   },
 
+  // Contador visible "X/límite" en el botón + lo deshabilita al llegar al tope
+  _updateFotoStopBtnLabel() {
+    const fotoBtn = document.getElementById('grab-foto-btn');
+    const label   = document.getElementById('grab-foto-btn-label');
+    if (!fotoBtn || !label) return;
+    const limit = this._getFotoStopLimit();
+    const count = (this._grabStopPois || []).length;
+    if (limit >= 999) {
+      label.textContent = `📸 Agregar parada con foto (${count})`;
+      fotoBtn.style.opacity = '1'; fotoBtn.style.cursor = 'pointer';
+      return;
+    }
+    label.textContent = `📸 Agregar parada con foto (${count}/${limit})`;
+    if (count >= limit) {
+      fotoBtn.style.opacity = '.5'; fotoBtn.style.cursor = 'not-allowed';
+    } else {
+      fotoBtn.style.opacity = '1'; fotoBtn.style.cursor = 'pointer';
+    }
+  },
+
   openFotoStop() {
     if (this.grabState !== 'recording' && this.grabState !== 'paused') {
       return this.toast('⚠️ Iniciá la grabación primero');
+    }
+    // ── Límite de paradas fotográficas por rol (no dejar cargar nada si ya llegó al tope) ──
+    const fsLimit = this._getFotoStopLimit();
+    const fsCount = (this._grabStopPois || []).length;
+    if (fsCount >= fsLimit) {
+      return this.toast(`📸 Llegaste al máximo de ${fsLimit} paradas fotográficas para tu cuenta. ¡Elegí bien los lugares que más valen la pena! 😉`);
     }
     // ── Capturar coordenadas GPS exactas en este momento ──
     const lastPt = this.grabPts.length ? this.grabPts[this.grabPts.length - 1] : null;
@@ -8268,7 +8294,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     this._fotoStopLng = null;
 
     this.closeFotoStop();
-    this.toast(`📸 Parada guardada (${this._grabStopPois.length} en este loop)`);
+    this.toast(`📸 Parada guardada (${this._grabStopPois.length}/${this._getFotoStopLimit()} en este loop)`);
+    this._updateFotoStopBtnLabel();
   },
 
   // ══════════════════════════════════════════
@@ -14209,6 +14236,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if(badge){badge.className='grab-state-badge '+st.cls; badge.textContent=st.txt;}
     // Mostrar botón foto solo mientras graba o pausa
     if(fotoBtn) fotoBtn.style.display = (this.grabState==='recording'||this.grabState==='paused') ? 'flex' : 'none';
+    this._updateFotoStopBtnLabel();
     // Mostrar sección portada solo en idle (antes de iniciar, para preparar)
     const coverSec = document.getElementById('grab-cover-section');
     if(coverSec) coverSec.style.display = (this.grabState==='idle' && !this.grabPts.length) ? 'block' : 'none';
@@ -14285,6 +14313,13 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (this._isAdmin())                   return 999;
     if (this._userRole === 'moderador')    return this._userLoopSlots || 15;
     return this._userLoopSlots || 5;
+  },
+
+  // Límite de paradas fotográficas POR LOOP (para que no se llene de imágenes)
+  _getFotoStopLimit() {
+    if (this._isAdmin())                return 999;
+    if (this._userRole === 'moderador') return 15;
+    return 5;
   },
 
   _initAdmin() {
