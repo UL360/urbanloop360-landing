@@ -2684,6 +2684,16 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       <div style="display:flex;gap:8px;margin-bottom:12px;">
         <input id="adm-loops-q" type="text" class="fi" placeholder="Buscar loop..." aria-label="Buscar loop" style="flex:1;" oninput="App._admRenderLoops()">
       </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
+        <select class="fi" id="adm-loops-filter" aria-label="Filtrar loops" style="width:140px;" onchange="App._admRenderLoops()">
+          <option value="all">Todos</option>
+          <option value="pending">⏳ Pendientes</option>
+          <option value="approved">✅ Aprobados</option>
+          <option value="rejected">❌ Rechazados</option>
+        </select>
+        <button onclick="App._admLoopAprobarTodos()" class="adm-btn adm-btn-green" style="white-space:nowrap;">✅ Aprobar pendientes</button>
+        <span id="adm-loops-count" style="font-size:12px;color:var(--gr);margin-left:auto;"></span>
+      </div>
       <div style="display:flex;gap:8px;margin-bottom:12px;">
         <button class="adm-btn" style="flex:1;background:#1a1a1a;color:#fff;" onclick="App._testOnboardingNow()">
           🔄 Probar onboarding ahora
@@ -4608,8 +4618,13 @@ const App = {
           }
           // Marcar como comunidad si no tiene source explícito
           if (!loop.source) loop.source = 'comunidad';
-          // Ocultar contenido marcado por reportes (salvo para el propio autor o admin)
-          if (loop.hidden && loop.authorId !== this._uid && !this._isAdmin()) return;
+          // Ocultar contenido marcado por reportes (salvo para el propio autor, mod o admin)
+          if (loop.hidden && loop.authorId !== this._uid && !this._isMod()) return;
+          // Ocultar loops pendientes de moderación (salvo para el propio autor, mod o admin)
+          // Los loops viejos sin campo 'status' quedan aprobados por defecto (no se ocultan retroactivamente)
+          const loopStatus = loop.status || 'approved';
+          if (loopStatus === 'pending' && loop.authorId !== this._uid && !this._isMod()) return;
+          if (loopStatus === 'rejected' && loop.authorId !== this._uid && !this._isMod()) return;
           // Solo loops públicos (visibility public o undefined) o del propio usuario
           if (loop.visibility === 'private' && loop.authorId !== this._uid) return;
           allLoops.push(loop);
@@ -8504,7 +8519,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       authorName: this._user?.displayName || this._user?.email?.split('@')[0] || 'Anónimo',
       ts: Date.now(),
       createdAt: Date.now(),
-      likes: 0
+      likes: 0,
+      status: this._isAdmin() ? 'approved' : 'pending' // ── Moderación previa: espera aprobación de un mod/admin ──
     };
 
     try {
@@ -8568,7 +8584,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           pais:      _flLoc.pais      || this._luPais || 'Argentina',
           authorId: this._uid,
           authorName: this._user?.displayName || 'Anónimo',
-          createdAt: Date.now()
+          createdAt: Date.now(),
+          status: 'pending'
         };
         const loopForMap = { ...loopData, pts: [[lat, lng]] };
         this.routes.push(loopForMap);
@@ -8587,7 +8604,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       this._drawNegociosOnMap();
       this._addPts(30, 'Parada publicada');
       if (toMuni) this._addPts(15, 'Propuesta al municipio');
-      this._showSaveSuccess(name, toMuni ? `🏛 Propuesto al municipio · publicado en ${cityId}` : `🌐 Publicado en ${cityId}`);
+      this._showSaveSuccess(name, stopData.status==='pending' ? '⏳ Enviado a revisión — se publicará apenas un moderador lo apruebe' : (toMuni ? `🏛 Propuesto al municipio · publicado en ${cityId}` : `🌐 Publicado en ${cityId}`));
       // FX
       this._fxBurst(document.getElementById('foto-loop-overlay'), 12);
       setTimeout(() => this._fxPts(30), 180);
@@ -9477,7 +9494,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           authorId: this._uid,
           authorName: this._user ? (this._user.displayName || this._user.email?.split('@')[0] || 'Anónimo') : 'Anónimo',
           createdAt: Date.now(),
-          creationMethod: creationMethod
+          creationMethod: creationMethod,
+          status: this._isAdmin() ? 'approved' : 'pending'
         };
         console.log(`[saveRoute] "${name}" → ${r.ciudad}, ${r.provincia}, ${r.pais} (author=${r.authorId}, method=${creationMethod})`);
         this.routes.push(r);
@@ -9485,7 +9503,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         if (this.mainMap) this._drawRoute(r);
         this._addPts(50,'Loop publicado');
         if((r.pois||[]).length>0) this._addPts((r.pois.length)*15,'POIs agregados');
-        this._showSaveSuccess(name, '☁️ Loop subido a la nube');
+        this._showSaveSuccess(name, r.status==='pending' ? '⏳ Enviado a revisión — se publicará apenas un moderador lo apruebe' : '☁️ Loop subido a la nube');
         // Sincronizar stat del dashboard
         const statEl2 = document.getElementById('aStat-loops');
         if (statEl2) statEl2.textContent = this.routes.filter(r=>r.type!=='fotostop').length;
@@ -14121,7 +14139,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       likes: 0, paseos: 0,
       authorId:   this._uid,
       authorName: this._user ? (this._user.displayName || this._user.email?.split('@')[0] || 'Anónimo') : 'Anónimo',
-      createdAt:  Date.now()
+      createdAt:  Date.now(),
+      status: this._isAdmin() ? 'approved' : 'pending' // ── Moderación previa: espera aprobación de un mod/admin ──
     };
 
     // Guardar portada en Firestore (loop_imgs)
@@ -14189,9 +14208,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       if (toMuni && this._db) {
         await this._db.collection('loops_municipio_pending').doc(r.id).set({...r, proposedAt: Date.now()});
         this._addPts(15, 'Propuesta al municipio');
-        this._showSaveSuccess(r.name, `🏛 Propuesta al municipio + publicado en ${city}`);
+        this._showSaveSuccess(r.name, r.status==='pending' ? `🏛 Propuesta al municipio · ⏳ pendiente de revisión` : `🏛 Propuesta al municipio + publicado en ${city}`);
       } else {
-        this._showSaveSuccess(r.name, `☁️ Subido a ${city}`);
+        this._showSaveSuccess(r.name, r.status==='pending' ? `⏳ Enviado a revisión — se publicará apenas un moderador lo apruebe` : `☁️ Subido a ${city}`);
       }
     } catch(e) {
       this.toast(`⚠️ Guardado local (${e.message.slice(0,40)})`);
@@ -14788,6 +14807,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   _admRenderLoops() {
     const q    = (document.getElementById('adm-loops-q')?.value||'').toLowerCase();
     const city = this._admCity || '';
+    const statusFilter = document.getElementById('adm-loops-filter')?.value || 'all';
 
     // Normalizar para comparar sin acentos ni mayúsculas
     const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
@@ -14795,8 +14815,11 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const list = this.routes.filter(r =>
       r.type !== 'fotostop' &&
       (!q    || norm(r.name).includes(norm(q))) &&
-      (!city || norm(r.cityId) === norm(city) || norm(r.ciudad) === norm(city))
+      (!city || norm(r.cityId) === norm(city) || norm(r.ciudad) === norm(city)) &&
+      (statusFilter === 'all' || (r.status||'approved') === statusFilter)
     );
+    const cntEl = document.getElementById('adm-loops-count');
+    if (cntEl) cntEl.textContent = `${list.length} loop${list.length!==1?'s':''}`;
     const el = document.getElementById('adm-loops-list');
     if (!el) return;
     if (list.length === 0) {
@@ -14819,6 +14842,9 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       const hotBadge = (r.likes||0) >= MUNI_THR
         ? `<span style="font-size:9px;background:#FFF3CD;color:#92400E;border-radius:6px;padding:1px 6px;font-weight:700;margin-left:4px;">🔥 DESTACADO</span>`
         : '';
+      const st = r.status || 'approved';
+      const stColor = {approved:'#D1FAE5',rejected:'#FEE2E2',pending:'#FEF3C7'}[st]||'#D1FAE5';
+      const stTxt   = {approved:'✅ Aprobado',rejected:'❌ Rechazado',pending:'⏳ Pendiente'}[st]||st;
       const alreadySentMuni = r._sentToMuni || (r.likes||0) >= MUNI_THR;
       return `<div class="adm-item">
         <div class="adm-item-row">
@@ -14829,9 +14855,12 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
             <div class="adm-item-name">${noImgBadge}${App._esc(r.name)}${hotBadge}</div>
             <div class="adm-item-meta">${r.ciudad||r.cityId||'—'} · ${r.type} · ${r.dist||'—'} · ❤️${r.likes||0}</div>
             <div class="adm-item-meta">Por: ${App._esc(r.authorName)||'Anónimo'}</div>
+            <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:${stColor};display:inline-block;margin-top:2px;">${stTxt}</span>
           </div>
         </div>
         <div class="adm-item-actions">
+          ${st!=='approved' ? `<button class="adm-btn adm-btn-green" onclick="App._admLoopStatus('${r.id}','approved')">✅ Aprobar</button>` : ''}
+          ${st!=='rejected' ? `<button class="adm-btn adm-btn-red"   onclick="App._admLoopStatus('${r.id}','rejected')">❌ Rechazar</button>` : ''}
           <button class="adm-btn adm-btn-blue" onclick="App._admEditLoop('${r.id}')">✏️ Editar</button>
           <button class="adm-btn adm-btn-orange" onclick="App.selectRoute('${r.id}');App.go('explore')">🗺️ Ver mapa</button>
           ${r.source !== 'municipio'
@@ -14852,6 +14881,35 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     }).join('');
     // Cargar imágenes firestore: en thumbnails
     setTimeout(() => this._lazyLoadFsImgs(document.getElementById('adm-tab-loops')), 50);
+  },
+
+  // ── Aprobar / rechazar un loop pendiente de moderación ──
+  async _admLoopStatus(id, status) {
+    const r = this.routes.find(x => x.id === id);
+    if (r) r.status = status;
+    if (this._db) {
+      try { await this._db.collection('loops').doc(id).update({ status }); } catch(e) {}
+    }
+    if (this.mainMap) this._refreshMain();
+    this._admRenderLoops();
+    this.toast(status==='approved' ? '✅ Loop aprobado — aparece en el mapa' : '❌ Loop rechazado — removido del mapa');
+  },
+
+  async _admLoopAprobarTodos() {
+    const pendientes = this.routes.filter(r => r.type !== 'fotostop' && (r.status||'approved') === 'pending');
+    if (pendientes.length === 0) { this.toast('✅ No hay Loops pendientes'); return; }
+    if (!confirm(`¿Aprobar los ${pendientes.length} Loop${pendientes.length!==1?'s':''} pendientes?`)) return;
+    this.toast(`⏳ Aprobando ${pendientes.length}...`);
+    let ok = 0;
+    for (const r of pendientes) {
+      r.status = 'approved';
+      if (this._db) {
+        try { await this._db.collection('loops').doc(r.id).update({ status: 'approved' }); ok++; } catch(e) {}
+      }
+    }
+    if (this.mainMap) this._refreshMain();
+    this._admRenderLoops();
+    this.toast(`✅ ${ok} Loop${ok!==1?'s':''} aprobados`);
   },
 
   // Re-etiquetar ciudad de un loop usando sus coordenadas reales
