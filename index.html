@@ -3711,6 +3711,9 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       <img id="fs-thumb" style="width:100%;height:100%;object-fit:cover;" src="" alt="">
       <button onclick="App._clearFotoStop()" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.6);border:none;color:white;cursor:pointer;font-size:16px;line-height:1;">×</button>
     </div>
+    <div id="fs-face-warning" style="display:none;background:#FFFBEB;border:1.5px solid #F59E0B;border-radius:10px;padding:10px 12px;margin:-4px 0 12px;font-size:12px;color:#92400E;font-weight:600;align-items:center;gap:8px;">
+      ⚠️ Detectamos una persona en la foto. Revisá que no sea reconocible antes de publicar.
+    </div>
 
     <!-- Botón cámara -->
     <label id="fs-cam-label" style="display:flex;align-items:center;justify-content:center;gap:10px;padding:16px;border:1.5px dashed var(--bd);border-radius:12px;cursor:pointer;background:var(--bg0);margin-bottom:12px;">
@@ -3722,9 +3725,18 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <!-- Descripción -->
     <textarea id="fs-desc" placeholder="¿Qué es este lugar? Contale a los demás..." aria-label="Descripción del foto spot" style="width:100%;box-sizing:border-box;border:0.5px solid var(--bd);border-radius:12px;padding:12px;font-size:14px;color:var(--dk);background:var(--lt);resize:none;height:80px;font-family:var(--fB);margin-bottom:14px;"></textarea>
 
+    <!-- Aviso: solo lugares, no personas -->
+    <div style="background:#FEF2F2;border:2px solid #EF4444;border-radius:14px;padding:12px;margin-bottom:14px;display:flex;align-items:flex-start;gap:10px;">
+      <input type="checkbox" id="fs-no-personas" onchange="App._toggleFSPublishBtn()" style="width:22px;height:22px;accent-color:#EF4444;flex-shrink:0;margin-top:1px;">
+      <div style="flex:1;">
+        <label for="fs-no-personas" style="font-size:13px;color:#991B1B;cursor:pointer;font-weight:700;display:block;line-height:1.4;">🚫 Solo lugares — sin personas</label>
+        <span style="font-size:11px;color:#7F1D1D;line-height:1.4;">Confirmo que esta foto NO tiene personas reconocibles (nada de selfies, familias ni menores).</span>
+      </div>
+    </div>
+
     <div style="display:flex;gap:10px;">
       <button onclick="App.closeFotoStop()" style="flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--bd);background:var(--lt);font-size:14px;font-weight:600;color:var(--md);cursor:pointer;">Cancelar</button>
-      <button onclick="App.saveFotoStop()" style="flex:2;padding:13px;border-radius:12px;border:none;background:var(--or);color:white;font-size:14px;font-weight:700;cursor:pointer;">💾 Guardar parada</button>
+      <button id="fs-save-btn" onclick="App.saveFotoStop()" disabled style="flex:2;padding:13px;border-radius:12px;border:none;background:var(--bd);color:white;font-size:14px;font-weight:700;cursor:not-allowed;transition:all .2s;">💾 Guardar parada</button>
     </div>
   </div>
 </div>
@@ -3747,6 +3759,9 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <div id="fl-preview" style="display:none;position:relative;border-radius:12px;overflow:hidden;aspect-ratio:4/3;background:var(--bg0);margin-bottom:12px;">
       <img id="fl-thumb" style="width:100%;height:100%;object-fit:cover;" src="" alt="">
       <button onclick="App._clearFotoLoop()" style="position:absolute;top:8px;right:8px;width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.6);border:none;color:white;cursor:pointer;font-size:18px;line-height:1;">×</button>
+    </div>
+    <div id="fl-face-warning" style="display:none;background:#FFFBEB;border:1.5px solid #F59E0B;border-radius:10px;padding:10px 12px;margin:-4px 0 12px;font-size:12px;color:#92400E;font-weight:600;align-items:center;gap:8px;">
+      ⚠️ Detectamos una persona en la foto. Revisá que no sea reconocible antes de publicar.
     </div>
 
     <!-- Botones foto: cámara + galería separados, cuadrados y grandes -->
@@ -3813,9 +3828,18 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       </div>
     </div>
 
+    <!-- Aviso: solo lugares, no personas -->
+    <div style="background:#FEF2F2;border:2px solid #EF4444;border-radius:14px;padding:14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:12px;">
+      <input type="checkbox" id="fl-no-personas" onchange="App._toggleFLPublishBtn()" style="width:24px;height:24px;accent-color:#EF4444;flex-shrink:0;margin-top:1px;">
+      <div style="flex:1;">
+        <label for="fl-no-personas" style="font-size:14px;color:#991B1B;cursor:pointer;font-weight:700;display:block;line-height:1.4;">🚫 Solo lugares — sin personas</label>
+        <span style="font-size:12px;color:#7F1D1D;line-height:1.4;">Confirmo que esta foto NO tiene personas reconocibles (nada de selfies, familias ni menores). Las fotos con personas se rechazan en la revisión.</span>
+      </div>
+    </div>
+
     <div style="display:flex;gap:10px;">
       <button onclick="App.closeFotoLoop()" style="flex:1;padding:16px;border-radius:14px;border:1.5px solid var(--bd);background:var(--lt);font-size:16px;font-weight:600;color:var(--md);cursor:pointer;">Cancelar</button>
-      <button id="fl-publish-btn" onclick="App.publishFotoLoop()" style="flex:2;padding:16px;border-radius:14px;border:none;background:var(--or);color:white;font-size:16px;font-weight:700;cursor:pointer;">🌐 Publicar parada</button>
+      <button id="fl-publish-btn" onclick="App.publishFotoLoop()" disabled style="flex:2;padding:16px;border-radius:14px;border:none;background:var(--bd);color:white;font-size:16px;font-weight:700;cursor:not-allowed;transition:all .2s;">🌐 Publicar parada</button>
     </div>
   </div>
 </div>
@@ -8222,6 +8246,54 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     }
   },
 
+  // ── Detección de rostros (alerta, no bloqueo) — corre en el navegador, no manda la foto a ningún servidor ──
+  async _ensureFaceApi() {
+    if (this._faceApiReady) return true;
+    if (this._faceApiLoading) return this._faceApiLoading;
+    this._faceApiLoading = (async () => {
+      try {
+        if (!window.faceapi) {
+          await new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js';
+            s.onload = resolve; s.onerror = () => reject(new Error('no se pudo cargar face-api.js'));
+            document.head.appendChild(s);
+          });
+        }
+        const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
+        await window.faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+        this._faceApiReady = true;
+        return true;
+      } catch(e) {
+        console.warn('[faceapi] no se pudo cargar, se omite la detección:', e.message);
+        this._faceApiReady = false;
+        return false;
+      }
+    })();
+    return this._faceApiLoading;
+  },
+
+  // Devuelve la cantidad de rostros detectados, o null si no se pudo analizar (nunca bloquea el flujo)
+  async _detectFacesInImg(base64) {
+    try {
+      const ok = await this._ensureFaceApi();
+      if (!ok || !window.faceapi) return null;
+      const img = await new Promise((resolve, reject) => {
+        const im = new Image();
+        im.onload = () => resolve(im);
+        im.onerror = reject;
+        im.src = base64;
+      });
+      const dets = await window.faceapi.detectAllFaces(
+        img, new window.faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })
+      );
+      return dets.length;
+    } catch(e) {
+      console.warn('[faceapi] error detectando rostros:', e.message);
+      return null;
+    }
+  },
+
   openFotoStop() {
     if (this.grabState !== 'recording' && this.grabState !== 'paused') {
       return this.toast('⚠️ Iniciá la grabación primero');
@@ -8240,6 +8312,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const ov = document.getElementById('foto-stop-overlay');
     if (ov) { ov.style.display = 'flex'; }
     document.getElementById('fs-desc').value = '';
+    const fsNoPersonas = document.getElementById('fs-no-personas');
+    if (fsNoPersonas) fsNoPersonas.checked = false;
     this._clearFotoStop();
   },
 
@@ -8248,34 +8322,64 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if (ov) ov.style.display = 'none';
   },
 
+  // Habilita "Guardar parada": si hay foto, exige el check de "sin personas"; si es solo texto, no hace falta
+  _toggleFSPublishBtn() {
+    const chk = document.getElementById('fs-no-personas');
+    const btn = document.getElementById('fs-save-btn');
+    if (!btn) return;
+    const needsCheck = !!this._fotoStopImg;
+    const ok = !needsCheck || (chk && chk.checked);
+    if (ok) {
+      btn.disabled = false; btn.style.background = 'var(--or)'; btn.style.cursor = 'pointer';
+    } else {
+      btn.disabled = true; btn.style.background = 'var(--bd)'; btn.style.cursor = 'not-allowed';
+    }
+  },
+
   _clearFotoStop() {
     this._fotoStopImg = null;
+    this._fotoStopHasFaces = null;
     const prev  = document.getElementById('fs-preview');
     const thumb = document.getElementById('fs-thumb');
     const label = document.getElementById('fs-cam-label');
     const input = document.getElementById('fs-input');
+    const warn  = document.getElementById('fs-face-warning');
     if (prev)  prev.style.display  = 'none';
     if (label) label.style.display = 'flex';
     if (thumb) thumb.src = '';
     if (input) input.value = '';
+    if (warn)  warn.style.display  = 'none';
+    this._toggleFSPublishBtn();
   },
 
   _handleFotoStopImg(input) {
     const file = input.files[0]; if (!file) return;
     this._compressImg(file, (b64, kb) => {
       this._fotoStopImg = b64;
+      this._fotoStopHasFaces = null;
       const prev  = document.getElementById('fs-preview');
       const thumb = document.getElementById('fs-thumb');
       const label = document.getElementById('fs-cam-label');
+      const warn  = document.getElementById('fs-face-warning');
       if (prev)  prev.style.display  = 'block';
       if (label) label.style.display = 'none';
       if (thumb) thumb.src = b64;
+      if (warn)  warn.style.display  = 'none';
+      this._toggleFSPublishBtn();
+      // Detección de rostros en segundo plano (no bloquea, solo alerta)
+      this._detectFacesInImg(b64).then(count => {
+        this._fotoStopHasFaces = count != null && count > 0;
+        if (warn) warn.style.display = this._fotoStopHasFaces ? 'flex' : 'none';
+      });
     });
   },
 
   saveFotoStop() {
     const desc = document.getElementById('fs-desc')?.value?.trim();
     if (!this._fotoStopImg && !desc) return this.toast('⚠️ Agregá una foto o descripción');
+    if (this._fotoStopImg && !document.getElementById('fs-no-personas')?.checked) {
+      return this.toast('🚫 Confirmá que la foto no tiene personas antes de guardar');
+    }
     if (!this._grabStopPois) this._grabStopPois = [];
 
     // ── Coordenadas del momento exacto en que se saca la foto ──
@@ -8288,7 +8392,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       img:  this._fotoStopImg || '',
       lat,
       lng,
-      ts: Date.now()
+      ts: Date.now(),
+      facesDetected: !!this._fotoStopHasFaces
     };
     this._grabStopPois.push(poi);
 
@@ -8319,6 +8424,22 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   _fotoLoopImg: null,
   _fotoLoopCat: 'lugar',
 
+  // Habilita el botón "Publicar parada" solo cuando confirmó que no hay personas en la foto
+  _toggleFLPublishBtn() {
+    const chk = document.getElementById('fl-no-personas');
+    const btn = document.getElementById('fl-publish-btn');
+    if (!chk || !btn) return;
+    if (chk.checked) {
+      btn.disabled = false;
+      btn.style.background = 'var(--or)';
+      btn.style.cursor = 'pointer';
+    } else {
+      btn.disabled = true;
+      btn.style.background = 'var(--bd)';
+      btn.style.cursor = 'not-allowed';
+    }
+  },
+
   openFotoLoop() {
     if (!this._user || this._uid === 'public') {
       this._showAuthGate('Subir un FotoLoop', () => this.openFotoLoop());
@@ -8335,6 +8456,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     document.getElementById('fl-make-loop').checked = false;
     const flMuni = document.getElementById('fl-municipio');
     if (flMuni) flMuni.checked = false;
+    const flNoPersonas = document.getElementById('fl-no-personas');
+    if (flNoPersonas) flNoPersonas.checked = false;
+    this._toggleFLPublishBtn();
     this._fotoLoopCat = 'lugar';
     this._flLat = null; this._flLng = null;
     const flCatSel = document.getElementById('fl-cat-select');
@@ -8354,16 +8478,19 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
   _clearFotoLoop() {
     this._fotoLoopImg = null;
+    this._fotoLoopHasFaces = null;
     const prev  = document.getElementById('fl-preview');
     const thumb = document.getElementById('fl-thumb');
     const label = document.getElementById('fl-cam-label');
     const inputCam = document.getElementById('fl-input-cam');
     const inputGal = document.getElementById('fl-input');
+    const warn  = document.getElementById('fl-face-warning');
     if (prev)  prev.style.display  = 'none';
     if (label) label.style.display = 'flex';
     if (thumb) thumb.src = '';
     if (inputCam) inputCam.value = '';
     if (inputGal) inputGal.value = '';
+    if (warn)  warn.style.display  = 'none';
   },
 
   _handleFotoLoopImg(input) {
@@ -8371,13 +8498,21 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     this.toast('⏳ Comprimiendo...');
     this._compressImg(file, (b64, kb, w, h) => {
       this._fotoLoopImg = b64;
+      this._fotoLoopHasFaces = null;
       const prev  = document.getElementById('fl-preview');
       const thumb = document.getElementById('fl-thumb');
       const label = document.getElementById('fl-cam-label');
+      const warn  = document.getElementById('fl-face-warning');
       if (prev)  prev.style.display  = 'block';
       if (label) label.style.display = 'none';
       if (thumb) thumb.src = b64;
+      if (warn)  warn.style.display  = 'none';
       this.toast(`✅ Foto lista · ${kb} KB`);
+      // Detección de rostros en segundo plano (no bloquea, solo alerta)
+      this._detectFacesInImg(b64).then(count => {
+        this._fotoLoopHasFaces = count != null && count > 0;
+        if (warn) warn.style.display = this._fotoLoopHasFaces ? 'flex' : 'none';
+      });
     });
   },
 
@@ -8455,6 +8590,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
   async publishFotoLoop() {
     if (!this._checkVerified()) return;
+    if (!document.getElementById('fl-no-personas')?.checked) {
+      return this.toast('🚫 Confirmá que la foto no tiene personas antes de publicar');
+    }
     const name = document.getElementById('fl-name')?.value?.trim();
     const desc = document.getElementById('fl-desc')?.value?.trim();
     if (!name) return this.toast('⚠️ Poné un nombre al lugar');
@@ -8520,6 +8658,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       ts: Date.now(),
       createdAt: Date.now(),
       likes: 0,
+      facesDetected: !!this._fotoLoopHasFaces,
       status: this._isAdmin() ? 'approved' : 'pending' // ── Moderación previa: espera aprobación de un mod/admin ──
     };
 
@@ -14818,6 +14957,11 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       (!city || norm(r.cityId) === norm(city) || norm(r.ciudad) === norm(city)) &&
       (statusFilter === 'all' || (r.status||'approved') === statusFilter)
     );
+    list.sort((a,b) => {
+      const fa = (a.pois||[]).some(p=>p.facesDetected) ? 1 : 0;
+      const fb = (b.pois||[]).some(p=>p.facesDetected) ? 1 : 0;
+      return fb - fa;
+    });
     const cntEl = document.getElementById('adm-loops-count');
     if (cntEl) cntEl.textContent = `${list.length} loop${list.length!==1?'s':''}`;
     const el = document.getElementById('adm-loops-list');
@@ -14845,14 +14989,16 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       const st = r.status || 'approved';
       const stColor = {approved:'#D1FAE5',rejected:'#FEE2E2',pending:'#FEF3C7'}[st]||'#D1FAE5';
       const stTxt   = {approved:'✅ Aprobado',rejected:'❌ Rechazado',pending:'⏳ Pendiente'}[st]||st;
+      const facesInPois = (r.pois||[]).filter(p=>p.facesDetected).length;
+      const faceBadge = facesInPois>0 ? `<span style="font-size:9px;background:#FFE4B5;color:#92400E;border-radius:6px;padding:1px 6px;font-weight:700;margin-left:4px;">👤 ${facesInPois} PARADA${facesInPois!==1?'S':''} CON POSIBLE PERSONA</span>` : '';
       const alreadySentMuni = r._sentToMuni || (r.likes||0) >= MUNI_THR;
-      return `<div class="adm-item">
+      return `<div class="adm-item" style="${facesInPois>0 ? 'border:1.5px solid #F59E0B;' : ''}">
         <div class="adm-item-row">
           ${hasImg
             ? App._imgTag(r.img, 'width:52px;height:52px;border-radius:10px;object-fit:cover;flex-shrink:0;')
             : `<div class="adm-item-thumb" style="display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--bg2);">${r.emoji||'🔄'}</div>`}
           <div class="adm-item-info">
-            <div class="adm-item-name">${noImgBadge}${App._esc(r.name)}${hotBadge}</div>
+            <div class="adm-item-name">${noImgBadge}${App._esc(r.name)}${hotBadge}${faceBadge}</div>
             <div class="adm-item-meta">${r.ciudad||r.cityId||'—'} · ${r.type} · ${r.dist||'—'} · ❤️${r.likes||0}</div>
             <div class="adm-item-meta">Por: ${App._esc(r.authorName)||'Anónimo'}</div>
             <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:${stColor};display:inline-block;margin-top:2px;">${stTxt}</span>
@@ -15224,7 +15370,12 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
     if (city) list = list.filter(p => norm(p.ciudad||p.cityId||'') === norm(city));
     const filtered = filter === 'all' ? list : list.filter(p=>(p.status||'pending')===filter);
-    if(cntEl) cntEl.textContent = `${filtered.length} foto${filtered.length!==1?'s':''}`;
+    // Priorizar en la revisión las que tienen posible persona detectada
+    filtered.sort((a,b) => (b.facesDetected?1:0) - (a.facesDetected?1:0));
+    if(cntEl) {
+      const faceCount = filtered.filter(p=>p.facesDetected).length;
+      cntEl.textContent = `${filtered.length} foto${filtered.length!==1?'s':''}` + (faceCount>0 ? ` · ⚠️ ${faceCount} con posible persona` : '');
+    }
 
     if (filtered.length === 0) {
       const total = (this._fotoPosts||[]).length;
@@ -15242,11 +15393,12 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       const st = p.status||'pending';
       const stColor = {approved:'#D1FAE5',rejected:'#FEE2E2',pending:'#FEF3C7'}[st]||'#FEF3C7';
       const stTxt   = {approved:'✅ Aprobado',rejected:'❌ Rechazado',pending:'⏳ Pendiente'}[st]||st;
-      return `<div class="adm-item">
+      const faceBadge = p.facesDetected ? `<span style="font-size:9px;background:#FFE4B5;color:#92400E;border-radius:6px;padding:1px 6px;font-weight:700;margin-left:4px;">👤 POSIBLE PERSONA</span>` : '';
+      return `<div class="adm-item" style="${p.facesDetected ? 'border:1.5px solid #F59E0B;' : ''}">
         <div class="adm-item-row">
           ${p.img ? App._imgTag(p.img,'width:52px;height:52px;border-radius:10px;object-fit:cover;flex-shrink:0;','adm-item-thumb') : `<div class="adm-item-thumb" style="display:flex;align-items:center;justify-content:center;font-size:22px;">${p.emoji||'📸'}</div>`}
           <div class="adm-item-info">
-            <div class="adm-item-name">${p.name||'Foto Loop'}</div>
+            <div class="adm-item-name">${p.name||'Foto Loop'}${faceBadge}</div>
             <div class="adm-item-meta">${p.cat||''} · ${App._esc(p.authorName)||'Anónimo'} · ${p.ciudad||p.cityId||'—'}</div>
             <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:${stColor};display:inline-block;margin-top:2px;">${stTxt}</span>
           </div>
