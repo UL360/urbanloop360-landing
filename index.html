@@ -8262,6 +8262,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         }
         const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
         await window.faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+        console.log('[faceapi] modelo cargado correctamente ✅');
         this._faceApiReady = true;
         return true;
       } catch(e) {
@@ -8285,8 +8286,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         im.src = base64;
       });
       const dets = await window.faceapi.detectAllFaces(
-        img, new window.faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 })
+        img, new window.faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.35 })
       );
+      console.log('[faceapi] rostros detectados:', dets.length);
       return dets.length;
     } catch(e) {
       console.warn('[faceapi] error detectando rostros:', e.message);
