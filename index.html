@@ -6081,13 +6081,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       this._fotoClusterHandler = null;
     }
 
-    // Mostrar fotoloops aprobados + los del propio usuario
+    // Mostrar solo fotoloops aprobados por un mod/admin (ni el propio autor ve su pendiente)
     const visible = (this._fotoPosts || []).filter(p => {
       if (!p.lat || !p.lng) return false;
-      const isApproved = p.status === 'approved';
-      const isOwn = p.authorId && this._uid && p.authorId === this._uid;
-      const isPending = !p.status || p.status === 'pending';
-      return isApproved || (isOwn && isPending);
+      return p.status === 'approved' || this._isMod();
     });
 
     const FL_CATS = {lugar:'📍',gastro:'🍽️',bar:'🍸',cafe:'☕',nocturno:'🌙',cultura:'🎭',arte:'🎨',patrimonio:'🏛️',musica:'🎵',naturaleza:'🌿',playa:'🏖️',parque:'🌳',pesca:'🎣',aventura:'🧗',deporte:'⚽',bienestar:'🧘',eventos:'📅',perro:'🐕'};
@@ -10040,8 +10037,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     // FotoLoops
     (this._fotoPosts || []).forEach(p => {
       const st = p.status || 'pending';
-      const isOwn = p.authorId === this._uid || p.uid === this._uid;
-      if (st !== 'approved' && !isOwn && !this._isMod()) return;
+      if (st !== 'approved' && !this._isMod()) return;
       const pCity = p.ciudad || p.cityId || '';
       if (!pCity || normCity(pCity) === normCity(userCity)) return;
       if (!cityMap[pCity]) {
@@ -10264,10 +10260,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const otherProvPosts = {};
 
     (this._fotoPosts || []).forEach(p => {
-      // Ocultar pendientes/rechazados salvo que sean del propio usuario o seas mod/admin
+      // Ocultar pendientes/rechazados a TODOS (ni siquiera el autor los ve) hasta que un mod/admin apruebe
       const st = p.status || 'pending';
-      const isOwn = p.authorId === this._uid || p.uid === this._uid;
-      if (st !== 'approved' && !isOwn && !this._isMod()) return;
+      if (st !== 'approved' && !this._isMod()) return;
 
       const pCity = normCity(p.cityId || p.ciudad || '');
       const pProv = normCity(p.provincia || '');
@@ -11217,13 +11212,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   // ─── Tab: FOTO LOOPS de la ciudad ───
   _renderComFoto(body, city) {
     const FL_CATS = {lugar:'📍',gastro:'🍽️',bar:'🍸',cafe:'☕',nocturno:'🌙',cultura:'🎭',arte:'🎨',patrimonio:'🏛️',musica:'🎵',naturaleza:'🌿',playa:'🏖️',parque:'🌳',pesca:'🎣',aventura:'🧗',deporte:'⚽',bienestar:'🧘',eventos:'📅',perro:'🐕'};
-    // FotoLoops: mostrar TODOS los aprobados (red social, no filtro local)
-    // + los del usuario actual aunque estén pendientes (preview inmediato)
-    const myUid = this._auth && this._auth.currentUser ? this._auth.currentUser.uid : null;
+    // FotoLoops: mostrar solo los aprobados por un mod/admin (nadie ve su propio pendiente, ni siquiera el autor)
     const posts = (this._fotoPosts||[]).filter(p => {
-      const isApproved = p.status === 'approved';
-      const isMine = myUid && p.uid === myUid;
-      return isApproved || isMine;
+      return p.status === 'approved' || this._isMod();
     }).sort((a,b) => (b.ts||0) - (a.ts||0));
     if (posts.length === 0) {
       body.innerHTML = `<div style="text-align:center;padding:48px 20px;color:var(--gr);">
