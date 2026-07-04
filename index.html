@@ -1958,17 +1958,6 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
   <!-- Full-screen map canvas -->
   <div id="main-map" role="application" aria-label="Mapa de loops urbanos" style="position:absolute;inset:0;width:100%;height:100%;"></div>
 
-  <!-- ── Banner de Novedades (últimos aprobados) — se desliza de arriba hacia abajo ── -->
-  <div id="novedades-banner" style="position:absolute;top:0;left:0;right:0;z-index:40;transform:translateY(-110%);transition:transform .45s cubic-bezier(.22,1,.36,1);background:linear-gradient(180deg,#14141c 0%,#1C1C1E 100%);border-bottom:1px solid #2C2C2E;box-shadow:0 8px 24px rgba(0,0,0,.5);padding:12px 0 14px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 14px 8px;">
-      <div style="font-family:var(--fH);font-size:13px;font-weight:800;color:#fff;display:flex;align-items:center;gap:6px;">
-        ✨ Novedades en <span id="novedades-city" style="color:var(--or);">tu ciudad</span>
-      </div>
-      <button onclick="App._closeNovedades()" aria-label="Cerrar novedades" style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
-    </div>
-    <div id="novedades-list" style="display:flex;gap:10px;overflow-x:auto;padding:0 14px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;"></div>
-  </div>
-
   <!-- ── TOP LEFT: Hamburger ── -->
   <button id="menu-btn" class="hidden-splash" onclick="App.toggleSidebar()" aria-label="Abrir menú" aria-expanded="false" aria-controls="side-panel" style="position:absolute;top:14px;left:14px;z-index:10;width:46px;height:46px;background:#FF5F00;border:none;border-radius:14px;box-shadow:0 4px 16px rgba(255,95,0,.45);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;">
     <span style="width:18px;height:2px;background:white;border-radius:2px;display:block;"></span>
@@ -1988,9 +1977,9 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
   </div>
 
   <!-- ── Panel desplegable: Últimos Loops (mezcla Loops + FotoLoop, formato Loops Urbanos) ── -->
-  <div id="ultimos-loops-panel" style="position:absolute;top:68px;left:10px;right:10px;z-index:39;max-height:0;overflow:hidden;transition:max-height .35s ease;background:transparent;">
-    <div style="max-height:min(60vh,520px);overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:4px 2px 10px;">
-      <div id="ultimos-loops-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+  <div id="ultimos-loops-panel" style="position:absolute;top:60px;left:10px;right:10px;z-index:39;max-height:0;overflow:hidden;transition:max-height .35s ease;background:#14141c;border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.5);">
+    <div style="max-height:min(62vh,540px);overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:10px;">
+      <div id="ultimos-loops-list" style="display:flex;flex-direction:column;gap:8px;"></div>
     </div>
   </div>
 
@@ -5351,7 +5340,7 @@ const App = {
       // this._initCityNotif();  // ← popup "Novedad" desactivado por ahora
       this._startGPSTracking();
       this._maybeShowFirstVisitHint();   // ← onboarding: pulso + tooltip, solo 1ra vez
-      setTimeout(() => this._checkNovedades(), 3500); // ← banner de últimos aprobados
+      setTimeout(() => this._autoShowUltimosLoops(), 3500); // ← se despliega solo si hay algo nuevo
     });
     this.mainMap.on('dragstart', () => App._hideNav());
     this.mainMap.on('moveend',   () => App._showNavDelay());
@@ -6451,11 +6440,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if (!panel) return;
     const isOpen = panel.style.maxHeight && panel.style.maxHeight !== '0px';
     if (isOpen) {
-      panel.style.maxHeight = '0px';
-      if (chev) chev.style.transform = 'rotate(0deg)';
+      this._closeUltimosLoops();
     } else {
       this._renderUltimosLoopsList();
-      panel.style.maxHeight = 'min(60vh, 520px)';
+      panel.style.maxHeight = 'min(62vh, 540px)';
       if (chev) chev.style.transform = 'rotate(180deg)';
     }
   },
@@ -6476,6 +6464,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       .map(p => ({ kind:'foto', ts: p.approvedAt || p.createdAt || p.ts || 0, data: p }));
 
     const items = [...loopItems, ...fotoItems].sort((a,b) => b.ts - a.ts).slice(0, 8);
+    if (items.length) this._ultimosLoopsNewestTs = Math.max(this._ultimosLoopsNewestTs||0, items[0].ts);
 
     if (items.length === 0) {
       list.innerHTML = `<div style="text-align:center;padding:24px;color:#9898B8;font-size:12px;background:#1C1C1E;border-radius:14px;">Todavía no hay Loops ni FotoLoop aprobados.</div>`;
@@ -6489,28 +6478,19 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         const liked  = (this.likes||[]).includes(r.id);
         const hasImg = r.img&&(r.img.startsWith('data:')||r.img.startsWith('http')||r.img.startsWith('blob:')||r.img.startsWith('firestore:'));
         const typePill = (TYPE_LBL[r.type]||r.emoji||'🔄')+' Loop';
-        return `<div style="padding:0;overflow:hidden;border-radius:14px;border:0.5px solid #2C2C2E;background:#1C1C1E;box-shadow:0 4px 14px rgba(0,0,0,.4);">
-          <div style="display:flex;height:120px;">
-            <div style="width:38%;flex-shrink:0;position:relative;overflow:hidden;background:linear-gradient(135deg,${color}28,${color}55);cursor:pointer;" onclick="App._closeUltimosLoops();App.showDetail('${r.id}')">
-              ${hasImg ? App._imgTag(r.img,'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;') : `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:38px;">${r.emoji||'🔄'}</div>`}
-              <div style="position:absolute;bottom:5px;left:5px;right:5px;background:rgba(0,0,0,.6);border-radius:20px;padding:2px 7px;font-size:9px;font-weight:700;color:white;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${typePill}</div>
+        return `<div style="padding:0;overflow:hidden;border-radius:12px;background:#1E1E26;">
+          <div style="display:flex;height:78px;">
+            <div style="width:78px;flex-shrink:0;position:relative;overflow:hidden;background:linear-gradient(135deg,${color}28,${color}55);cursor:pointer;" onclick="App._closeUltimosLoops();App.showDetail('${r.id}')">
+              ${hasImg ? App._imgTag(r.img,'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;') : `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px;">${r.emoji||'🔄'}</div>`}
             </div>
-            <div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;padding:10px 11px 9px;min-width:0;">
+            <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:8px 10px;min-width:0;gap:3px;">
               <div style="cursor:pointer;" onclick="App._closeUltimosLoops();App.showDetail('${r.id}')">
-                <div style="font-family:var(--fH);font-size:13px;font-weight:800;color:#F5F5F5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${App._esc(r.name)||'Loop'}</div>
-                ${r.desc?`<div style="font-size:11px;color:#9898B8;margin-top:2px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${App._esc(r.desc)}</div>`:''}
+                <div style="font-family:var(--fH);font-size:12px;font-weight:800;color:#F5F5F5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${typePill} ${App._esc(r.name)||'Loop'}</div>
+                <div style="font-size:10px;color:#9898B8;margin-top:1px;">${r.dist||'—'} · ${r.dur||'—'} · ❤️ ${r.likes||0}</div>
               </div>
-              <div>
-                <div style="display:flex;gap:6px;align-items:center;margin-bottom:7px;flex-wrap:wrap;">
-                  <span style="font-size:10px;color:#9898B8;">${r.dist||'—'}</span>
-                  <span style="font-size:10px;color:#9898B8;">·</span>
-                  <span style="font-size:10px;color:#9898B8;">${r.dur||'—'}</span>
-                  <span style="font-size:10px;color:${liked?color:'#9898B8'};margin-left:auto;">❤️ ${r.likes||0}</span>
-                </div>
-                <div style="display:flex;gap:5px;">
-                  <button onclick="event.stopPropagation();App.likeLoop('${r.id}');App._renderUltimosLoopsList()" style="flex:1;height:28px;border-radius:7px;border:0.5px solid ${liked?color:'#3A3A44'};background:${liked?color+'22':'#26262E'};color:${liked?color:'#B0B0C8'};font-size:11px;font-weight:600;cursor:pointer;">${liked?'❤️ Liked':'🤍 Like'}</button>
-                  <button onclick="event.stopPropagation();App._closeUltimosLoops();App.selectRoute('${r.id}')" style="flex:1;height:28px;border-radius:7px;border:0.5px solid #3A3A44;background:#26262E;color:#B0B0C8;font-size:11px;font-weight:600;cursor:pointer;">🗺️ Mapa</button>
-                </div>
+              <div style="display:flex;gap:5px;">
+                <button onclick="event.stopPropagation();App.likeLoop('${r.id}');App._renderUltimosLoopsList()" style="flex:1;height:22px;border-radius:6px;border:0.5px solid ${liked?color:'#3A3A44'};background:${liked?color+'22':'#26262E'};color:${liked?color:'#B0B0C8'};font-size:10px;font-weight:600;cursor:pointer;">${liked?'❤️':'🤍'} Like</button>
+                <button onclick="event.stopPropagation();App._closeUltimosLoops();App.selectRoute('${r.id}')" style="flex:1;height:22px;border-radius:6px;border:0.5px solid #3A3A44;background:#26262E;color:#B0B0C8;font-size:10px;font-weight:600;cursor:pointer;">🗺️ Mapa</button>
               </div>
             </div>
           </div>
@@ -6519,26 +6499,19 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         const p = it.data;
         const liked = (App._likedFotos||new Set()).has(p.id);
         const hasImg = p.img && (p.img.startsWith('data:')||p.img.startsWith('http')||p.img.startsWith('firestore:'));
-        return `<div style="padding:0;overflow:hidden;border-radius:14px;border:0.5px solid #2C2C2E;background:#1C1C1E;box-shadow:0 4px 14px rgba(0,0,0,.4);">
-          <div style="display:flex;height:120px;">
-            <div style="width:38%;flex-shrink:0;position:relative;overflow:hidden;background:linear-gradient(135deg,#FF5F0028,#FF5F0055);cursor:pointer;" onclick="App._closeUltimosLoops();App._openImgViewer('${p.id}','foto')">
-              ${hasImg ? App._imgTag(p.img,'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;') : `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:38px;">📸</div>`}
-              <div style="position:absolute;bottom:5px;left:5px;right:5px;background:rgba(0,0,0,.6);border-radius:20px;padding:2px 7px;font-size:9px;font-weight:700;color:white;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📸 FotoLoop</div>
+        return `<div style="padding:0;overflow:hidden;border-radius:12px;background:#1E1E26;">
+          <div style="display:flex;height:78px;">
+            <div style="width:78px;flex-shrink:0;position:relative;overflow:hidden;background:linear-gradient(135deg,#FF5F0028,#FF5F0055);cursor:pointer;" onclick="App._closeUltimosLoops();App._openImgViewer('${p.id}','foto')">
+              ${hasImg ? App._imgTag(p.img,'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;') : `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px;">📸</div>`}
             </div>
-            <div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;padding:10px 11px 9px;min-width:0;">
+            <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:8px 10px;min-width:0;gap:3px;">
               <div style="cursor:pointer;" onclick="App._closeUltimosLoops();App._openImgViewer('${p.id}','foto')">
-                <div style="font-family:var(--fH);font-size:13px;font-weight:800;color:#F5F5F5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${App._esc(p.name)||'Foto Loop'}</div>
-                ${p.desc?`<div style="font-size:11px;color:#9898B8;margin-top:2px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${App._esc(p.desc)}</div>`:''}
+                <div style="font-family:var(--fH);font-size:12px;font-weight:800;color:#F5F5F5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📸 ${App._esc(p.name)||'Foto Loop'}</div>
+                <div style="font-size:10px;color:#9898B8;margin-top:1px;">${p.cat||'lugar'} · ❤️ ${p.likes||0}</div>
               </div>
-              <div>
-                <div style="display:flex;gap:6px;align-items:center;margin-bottom:7px;flex-wrap:wrap;">
-                  <span style="font-size:10px;color:#9898B8;">${p.cat||'lugar'}</span>
-                  <span style="font-size:10px;color:${liked?'#FF5F00':'#9898B8'};margin-left:auto;">❤️ ${p.likes||0}</span>
-                </div>
-                <div style="display:flex;gap:5px;">
-                  <button onclick="event.stopPropagation();App.likeFotoLoop('${p.id}');App._renderUltimosLoopsList()" style="flex:1;height:28px;border-radius:7px;border:0.5px solid ${liked?'#FF5F00':'#3A3A44'};background:${liked?'#FF5F0022':'#26262E'};color:${liked?'#FF5F00':'#B0B0C8'};font-size:11px;font-weight:600;cursor:pointer;">${liked?'❤️ Liked':'🤍 Like'}</button>
-                  <button onclick="event.stopPropagation();App._closeUltimosLoops();App._goToNovedad('foto','${p.id}')" style="flex:1;height:28px;border-radius:7px;border:0.5px solid #3A3A44;background:#26262E;color:#B0B0C8;font-size:11px;font-weight:600;cursor:pointer;">🗺️ Mapa</button>
-                </div>
+              <div style="display:flex;gap:5px;">
+                <button onclick="event.stopPropagation();App.likeFotoLoop('${p.id}');App._renderUltimosLoopsList()" style="flex:1;height:22px;border-radius:6px;border:0.5px solid ${liked?'#FF5F00':'#3A3A44'};background:${liked?'#FF5F0022':'#26262E'};color:${liked?'#FF5F00':'#B0B0C8'};font-size:10px;font-weight:600;cursor:pointer;">${liked?'❤️':'🤍'} Like</button>
+                <button onclick="event.stopPropagation();App._closeUltimosLoops();App._goToNovedad('foto','${p.id}')" style="flex:1;height:22px;border-radius:6px;border:0.5px solid #3A3A44;background:#26262E;color:#B0B0C8;font-size:10px;font-weight:600;cursor:pointer;">🗺️ Mapa</button>
               </div>
             </div>
           </div>
@@ -6554,88 +6527,31 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const chev  = document.getElementById('ultimos-loops-chevron');
     if (panel) panel.style.maxHeight = '0px';
     if (chev) chev.style.transform = 'rotate(0deg)';
-  },
-
-  // ── NOVEDADES: banner con los últimos Loops/FotoLoop aprobados, se desliza de arriba hacia abajo ──
-  _checkNovedades() {
-    if (this._novedadesShown) return; // solo una vez por sesión de mapa
-    const city = this._luCity || this._comCity || 'La Paz';
-    const normCity = c => (c||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
-    const uCity = normCity(city);
-
-    const loopItems = (this.routes||[])
-      .filter(r => r.type !== 'fotostop' && (r.status||'approved') === 'approved' && normCity(r.ciudad||r.cityId) === uCity)
-      .map(r => ({
-        kind: 'loop', id: r.id, name: r.name, img: r.img, emoji: r.emoji||'🔄',
-        sub: r.dist ? `${r.dist} · ${r.dur||''}` : 'Loop',
-        ts: r.approvedAt || r.createdAt || 0,
-        lat: r.pts && r.pts[0] ? (Array.isArray(r.pts[0])?r.pts[0][0]:r.pts[0].lat) : null,
-        lng: r.pts && r.pts[0] ? (Array.isArray(r.pts[0])?r.pts[0][1]:r.pts[0].lng) : null
-      }));
-
-    const fotoItems = (this._fotoPosts||[])
-      .filter(p => p.status === 'approved' && normCity(p.ciudad||p.cityId) === uCity)
-      .map(p => ({
-        kind: 'foto', id: p.id, name: p.name||'Foto Loop', img: p.img, emoji: '📸',
-        sub: p.cat || 'FotoLoop',
-        ts: p.approvedAt || p.createdAt || p.ts || 0,
-        lat: p.lat, lng: p.lng
-      }));
-
-    const items = [...loopItems, ...fotoItems]
-      .sort((a,b) => b.ts - a.ts)
-      .slice(0, 5);
-
-    if (items.length === 0) return;
-
-    // No repetir si ya vio estos mismos (comparamos el timestamp del más nuevo)
-    const newestTs = items[0].ts;
-    const lastSeenTs = Number(this._ls('get', 'ul360_novedades_last_' + uCity) || 0);
-    if (newestTs <= lastSeenTs) return;
-
-    this._novedadesShown = true;
-    this._novedadesNewestTs = newestTs;
-    this._novedadesCity = uCity;
-    this._showNovedadesBanner(city, items);
-  },
-
-  _showNovedadesBanner(city, items) {
-    const banner   = document.getElementById('novedades-banner');
-    const cityLbl  = document.getElementById('novedades-city');
-    const list     = document.getElementById('novedades-list');
-    if (!banner || !list) return;
-    if (cityLbl) cityLbl.textContent = city;
-
-    list.innerHTML = items.map(it => `
-      <div onclick="App._goToNovedad('${it.kind}','${it.id}')" style="scroll-snap-align:start;flex-shrink:0;width:150px;border-radius:14px;overflow:hidden;background:#26262E;cursor:pointer;">
-        <div style="width:100%;height:90px;background:#1A1A20;display:flex;align-items:center;justify-content:center;overflow:hidden;">
-          ${it.img ? this._imgTag(it.img,'width:100%;height:100%;object-fit:cover;display:block;') : `<span style="font-size:30px;">${it.emoji}</span>`}
-        </div>
-        <div style="padding:8px 9px;">
-          <div style="font-size:11px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${it.emoji} ${this._esc(it.name)}</div>
-          <div style="font-size:10px;color:#9898B8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${this._esc(it.sub)}</div>
-        </div>
-      </div>`).join('');
-
-    setTimeout(() => this._lazyLoadFsImgs(list), 50);
-
-    // Deslizar hacia abajo
-    banner.style.transform = 'translateY(0)';
-    clearTimeout(this._novedadesTimer);
-    this._novedadesTimer = setTimeout(() => this._closeNovedades(), 8000);
-  },
-
-  _closeNovedades() {
-    const banner = document.getElementById('novedades-banner');
-    if (banner) banner.style.transform = 'translateY(-110%)';
-    clearTimeout(this._novedadesTimer);
-    if (this._novedadesCity && this._novedadesNewestTs) {
-      this._ls('set', 'ul360_novedades_last_' + this._novedadesCity, String(this._novedadesNewestTs));
+    if (this._ultimosLoopsNewestTs) {
+      this._ls('set', 'ul360_ultimos_loops_last', String(this._ultimosLoopsNewestTs));
     }
   },
 
+  // ── Auto-abrir "Últimos Loops" al iniciar, si hay algo nuevo que el usuario no vio todavía ──
+  _autoShowUltimosLoops() {
+    const loopItems = (this.routes||[])
+      .filter(r => r.type !== 'fotostop' && (r.status||'approved') === 'approved')
+      .map(r => r.approvedAt || r.createdAt || 0);
+    const fotoItems = (this._fotoPosts||[])
+      .filter(p => p.status === 'approved')
+      .map(p => p.approvedAt || p.createdAt || p.ts || 0);
+    const allTs = [...loopItems, ...fotoItems];
+    if (allTs.length === 0) return;
+
+    const newestTs = Math.max(...allTs);
+    const lastSeenTs = Number(this._ls('get', 'ul360_ultimos_loops_last') || 0);
+    if (newestTs <= lastSeenTs) return;
+
+    this._ultimosLoopsNewestTs = newestTs;
+    this._toggleUltimosLoops(); // abre el panel (ya arma la lista de últimos 8)
+  },
+
   _goToNovedad(kind, id) {
-    this._closeNovedades();
     if (kind === 'loop') {
       this.selectRoute(id);
     } else {
