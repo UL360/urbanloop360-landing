@@ -1979,7 +1979,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
   <div style="position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:41;display:flex;flex-direction:column;align-items:center;gap:6px;">
     <div style="background:#1C1C1E;border:0.5px solid #2C2C2E;border-radius:30px;box-shadow:0 4px 20px rgba(0,0,0,.5);padding:8px 16px;display:flex;align-items:center;gap:6px;pointer-events:none;">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-      <span style="font-family:var(--fH);font-size:13px;font-weight:700;color:#F5F5F5;">La Paz, Entre Ríos</span>
+      <span id="map-city-label" style="font-family:var(--fH);font-size:13px;font-weight:700;color:#F5F5F5;">La Paz, Entre Ríos</span>
     </div>
     <button id="ultimos-loops-btn" onclick="App._toggleUltimosLoops()" style="background:var(--or);border:none;border-radius:22px;box-shadow:0 4px 14px rgba(255,95,0,.4);padding:10px 20px;display:flex;align-items:center;gap:7px;cursor:pointer;font-family:var(--fH);font-size:13px;font-weight:800;color:white;animation:ulPulse 2.2s ease-in-out infinite;">
       🔥 <span style="animation:ulShimmer 2.2s ease-in-out infinite;">Últimos Loops</span> <span id="ultimos-loops-chevron" style="transition:transform .25s;">▾</span>
@@ -6466,19 +6466,25 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const list = document.getElementById('ultimos-loops-list');
     if (!list) return;
 
+    const normCity = c => (c||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+    const uCity = normCity(this._luCity || 'La Paz');
+    const mapCityLbl = document.getElementById('map-city-label');
+    if (mapCityLbl) mapCityLbl.textContent = (this._luCity||'La Paz') + (this._luProv ? ', '+this._luProv : '');
+
     const TC = { running:'#EF4444',mtb:'#16A34A',ciclismo:'#2563EB',caminata:'#D97706',perro:'#DB2777',paseo:'#0891B2',pesca:'#0E7490',atardecer:'#7C3AED',gastro:'#B45309',trad:'#92400E',relax:'#6B7280' };
     const TYPE_LBL  = {trad:'☕',pesca:'🎣',gastro:'🍽️',atardecer:'🌅',running:'🏃',mtb:'🚵',ciclismo:'🚴',caminata:'🥾',paseo:'🌳',relax:'🧘',trabajo:'💼',vacaciones:'🏖️',salidas:'🎉',otra:'🗺️'};
 
     const loopItems = (this.routes||[])
-      .filter(r => r.type !== 'fotostop' && (r.status||'approved') === 'approved')
+      .filter(r => r.type !== 'fotostop' && (r.status||'approved') === 'approved' && normCity(r.ciudad||r.cityId) === uCity)
       .map(r => ({ kind:'loop', ts: r.approvedAt || r.createdAt || 0, data: r }));
 
     const fotoItems = (this._fotoPosts||[])
-      .filter(p => p.status === 'approved')
+      .filter(p => p.status === 'approved' && normCity(p.ciudad||p.cityId) === uCity)
       .map(p => ({ kind:'foto', ts: p.approvedAt || p.createdAt || p.ts || 0, data: p }));
 
     const items = [...loopItems, ...fotoItems].sort((a,b) => b.ts - a.ts).slice(0, 8);
     if (items.length) this._ultimosLoopsNewestTs = Math.max(this._ultimosLoopsNewestTs||0, items[0].ts);
+    this._ultimosLoopsCity = uCity;
 
     if (items.length === 0) {
       list.innerHTML = `<div style="text-align:center;padding:24px;color:#9898B8;font-size:12px;background:#1C1C1E;border-radius:14px;">Todavía no hay Loops ni FotoLoop aprobados.</div>`;
@@ -6492,19 +6498,19 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         const liked  = (this.likes||[]).includes(r.id);
         const hasImg = r.img&&(r.img.startsWith('data:')||r.img.startsWith('http')||r.img.startsWith('blob:')||r.img.startsWith('firestore:'));
         const typePill = (TYPE_LBL[r.type]||r.emoji||'🔄')+' Loop';
-        return `<div style="padding:0;overflow:hidden;border-radius:12px;background:var(--orL);border:0.5px solid rgba(255,95,0,.25);">
+        return `<div style="padding:0;overflow:hidden;border-radius:12px;background:#1E1E26;border:1px solid #34343E;">
           <div style="display:flex;height:78px;">
             <div style="width:78px;flex-shrink:0;position:relative;overflow:hidden;background:linear-gradient(135deg,${color}28,${color}55);cursor:pointer;" onclick="App._closeUltimosLoops();App.showDetail('${r.id}')">
               ${hasImg ? App._imgTag(r.img,'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;') : `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px;">${r.emoji||'🔄'}</div>`}
             </div>
             <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:8px 10px;min-width:0;gap:3px;">
               <div style="cursor:pointer;" onclick="App._closeUltimosLoops();App.showDetail('${r.id}')">
-                <div style="font-family:var(--fH);font-size:12px;font-weight:800;color:var(--dk);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${typePill} ${App._esc(r.name)||'Loop'}</div>
-                <div style="font-size:10px;color:var(--md);margin-top:1px;">${r.dist||'—'} · ${r.dur||'—'} · ❤️ ${r.likes||0}</div>
+                <div style="font-family:var(--fH);font-size:12px;font-weight:800;color:#F5F5F5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${typePill} ${App._esc(r.name)||'Loop'}</div>
+                <div style="font-size:10px;color:#9898B8;margin-top:1px;">${r.dist||'—'} · ${r.dur||'—'} · ❤️ ${r.likes||0}</div>
               </div>
               <div style="display:flex;gap:5px;">
-                <button onclick="event.stopPropagation();App.likeLoop('${r.id}');App._renderUltimosLoopsList()" style="flex:1;height:22px;border-radius:6px;border:0.5px solid ${liked?color:'var(--bd)'};background:${liked?color+'22':'var(--wh)'};color:${liked?color:'var(--md)'};font-size:10px;font-weight:600;cursor:pointer;">${liked?'❤️':'🤍'} Like</button>
-                <button onclick="event.stopPropagation();App._closeUltimosLoops();App.selectRoute('${r.id}')" style="flex:1;height:22px;border-radius:6px;border:0.5px solid var(--bd);background:var(--wh);color:var(--md);font-size:10px;font-weight:600;cursor:pointer;">🗺️ Mapa</button>
+                <button onclick="event.stopPropagation();App.likeLoop('${r.id}');App._renderUltimosLoopsList()" style="flex:1;height:22px;border-radius:6px;border:0.5px solid ${liked?color:'#3A3A44'};background:${liked?color+'22':'#26262E'};color:${liked?color:'#B0B0C8'};font-size:10px;font-weight:600;cursor:pointer;">${liked?'❤️':'🤍'} Like</button>
+                <button onclick="event.stopPropagation();App._closeUltimosLoops();App.selectRoute('${r.id}')" style="flex:1;height:22px;border-radius:6px;border:0.5px solid #3A3A44;background:#26262E;color:#B0B0C8;font-size:10px;font-weight:600;cursor:pointer;">🗺️ Mapa</button>
               </div>
             </div>
           </div>
@@ -6513,19 +6519,19 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         const p = it.data;
         const liked = (App._likedFotos||new Set()).has(p.id);
         const hasImg = p.img && (p.img.startsWith('data:')||p.img.startsWith('http')||p.img.startsWith('firestore:'));
-        return `<div style="padding:0;overflow:hidden;border-radius:12px;background:var(--orL);border:0.5px solid rgba(255,95,0,.25);">
+        return `<div style="padding:0;overflow:hidden;border-radius:12px;background:#1E1E26;border:1px solid #34343E;">
           <div style="display:flex;height:78px;">
             <div style="width:78px;flex-shrink:0;position:relative;overflow:hidden;background:linear-gradient(135deg,#FF5F0028,#FF5F0055);cursor:pointer;" onclick="App._closeUltimosLoops();App._openImgViewer('${p.id}','foto')">
               ${hasImg ? App._imgTag(p.img,'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;') : `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px;">📸</div>`}
             </div>
             <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:8px 10px;min-width:0;gap:3px;">
               <div style="cursor:pointer;" onclick="App._closeUltimosLoops();App._openImgViewer('${p.id}','foto')">
-                <div style="font-family:var(--fH);font-size:12px;font-weight:800;color:var(--dk);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📸 ${App._esc(p.name)||'Foto Loop'}</div>
-                <div style="font-size:10px;color:var(--md);margin-top:1px;">${p.cat||'lugar'} · ❤️ ${p.likes||0}</div>
+                <div style="font-family:var(--fH);font-size:12px;font-weight:800;color:#F5F5F5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📸 ${App._esc(p.name)||'Foto Loop'}</div>
+                <div style="font-size:10px;color:#9898B8;margin-top:1px;">${p.cat||'lugar'} · ❤️ ${p.likes||0}</div>
               </div>
               <div style="display:flex;gap:5px;">
-                <button onclick="event.stopPropagation();App.likeFotoLoop('${p.id}');App._renderUltimosLoopsList()" style="flex:1;height:22px;border-radius:6px;border:0.5px solid ${liked?'#FF5F00':'var(--bd)'};background:${liked?'#FF5F0022':'var(--wh)'};color:${liked?'#FF5F00':'var(--md)'};font-size:10px;font-weight:600;cursor:pointer;">${liked?'❤️':'🤍'} Like</button>
-                <button onclick="event.stopPropagation();App._closeUltimosLoops();App._goToNovedad('foto','${p.id}')" style="flex:1;height:22px;border-radius:6px;border:0.5px solid var(--bd);background:var(--wh);color:var(--md);font-size:10px;font-weight:600;cursor:pointer;">🗺️ Mapa</button>
+                <button onclick="event.stopPropagation();App.likeFotoLoop('${p.id}');App._renderUltimosLoopsList()" style="flex:1;height:22px;border-radius:6px;border:0.5px solid ${liked?'#FF5F00':'#3A3A44'};background:${liked?'#FF5F0022':'#26262E'};color:${liked?'#FF5F00':'#B0B0C8'};font-size:10px;font-weight:600;cursor:pointer;">${liked?'❤️':'🤍'} Like</button>
+                <button onclick="event.stopPropagation();App._closeUltimosLoops();App._goToNovedad('foto','${p.id}')" style="flex:1;height:22px;border-radius:6px;border:0.5px solid #3A3A44;background:#26262E;color:#B0B0C8;font-size:10px;font-weight:600;cursor:pointer;">🗺️ Mapa</button>
               </div>
             </div>
           </div>
@@ -6542,26 +6548,32 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if (panel) panel.style.maxHeight = '0px';
     if (chev) chev.style.transform = 'rotate(0deg)';
     if (this._ultimosLoopsNewestTs) {
-      this._ls('set', 'ul360_ultimos_loops_last', String(this._ultimosLoopsNewestTs));
+      const normCity = c => (c||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+      const uCity = this._ultimosLoopsCity || normCity(this._luCity || 'La Paz');
+      this._ls('set', 'ul360_ultimos_loops_last_' + uCity, String(this._ultimosLoopsNewestTs));
     }
   },
 
   // ── Auto-abrir "Últimos Loops" al iniciar, si hay algo nuevo que el usuario no vio todavía ──
   _autoShowUltimosLoops() {
+    const normCity = c => (c||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+    const uCity = normCity(this._luCity || 'La Paz');
+
     const loopItems = (this.routes||[])
-      .filter(r => r.type !== 'fotostop' && (r.status||'approved') === 'approved')
+      .filter(r => r.type !== 'fotostop' && (r.status||'approved') === 'approved' && normCity(r.ciudad||r.cityId) === uCity)
       .map(r => r.approvedAt || r.createdAt || 0);
     const fotoItems = (this._fotoPosts||[])
-      .filter(p => p.status === 'approved')
+      .filter(p => p.status === 'approved' && normCity(p.ciudad||p.cityId) === uCity)
       .map(p => p.approvedAt || p.createdAt || p.ts || 0);
     const allTs = [...loopItems, ...fotoItems];
     if (allTs.length === 0) return;
 
     const newestTs = Math.max(...allTs);
-    const lastSeenTs = Number(this._ls('get', 'ul360_ultimos_loops_last') || 0);
+    const lastSeenTs = Number(this._ls('get', 'ul360_ultimos_loops_last_' + uCity) || 0);
     if (newestTs <= lastSeenTs) return;
 
     this._ultimosLoopsNewestTs = newestTs;
+    this._ultimosLoopsCity = uCity;
     this._toggleUltimosLoops(); // abre el panel (ya arma la lista de últimos 8)
   },
 
