@@ -1958,6 +1958,17 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
   <!-- Full-screen map canvas -->
   <div id="main-map" role="application" aria-label="Mapa de loops urbanos" style="position:absolute;inset:0;width:100%;height:100%;"></div>
 
+  <!-- ── Banner de Novedades (últimos aprobados) — se desliza de arriba hacia abajo ── -->
+  <div id="novedades-banner" style="position:absolute;top:0;left:0;right:0;z-index:40;transform:translateY(-110%);transition:transform .45s cubic-bezier(.22,1,.36,1);background:linear-gradient(180deg,#14141c 0%,#1C1C1E 100%);border-bottom:1px solid #2C2C2E;box-shadow:0 8px 24px rgba(0,0,0,.5);padding:12px 0 14px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 14px 8px;">
+      <div style="font-family:var(--fH);font-size:13px;font-weight:800;color:#fff;display:flex;align-items:center;gap:6px;">
+        ✨ Novedades en <span id="novedades-city" style="color:var(--or);">tu ciudad</span>
+      </div>
+      <button onclick="App._closeNovedades()" aria-label="Cerrar novedades" style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+    </div>
+    <div id="novedades-list" style="display:flex;gap:10px;overflow-x:auto;padding:0 14px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;"></div>
+  </div>
+
   <!-- ── TOP LEFT: Hamburger ── -->
   <button id="menu-btn" class="hidden-splash" onclick="App.toggleSidebar()" aria-label="Abrir menú" aria-expanded="false" aria-controls="side-panel" style="position:absolute;top:14px;left:14px;z-index:10;width:46px;height:46px;background:#FF5F00;border:none;border-radius:14px;box-shadow:0 4px 16px rgba(255,95,0,.45);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;">
     <span style="width:18px;height:2px;background:white;border-radius:2px;display:block;"></span>
@@ -5328,6 +5339,7 @@ const App = {
       // this._initCityNotif();  // ← popup "Novedad" desactivado por ahora
       this._startGPSTracking();
       this._maybeShowFirstVisitHint();   // ← onboarding: pulso + tooltip, solo 1ra vez
+      setTimeout(() => this._checkNovedades(), 3500); // ← banner de últimos aprobados
     });
     this.mainMap.on('dragstart', () => App._hideNav());
     this.mainMap.on('moveend',   () => App._showNavDelay());
@@ -6417,6 +6429,97 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         }
       }
       this._wirePopupCloseBtn(this._fotoPopup);
+    }
+  },
+
+  // ── NOVEDADES: banner con los últimos Loops/FotoLoop aprobados, se desliza de arriba hacia abajo ──
+  _checkNovedades() {
+    if (this._novedadesShown) return; // solo una vez por sesión de mapa
+    const city = this._luCity || this._comCity || 'La Paz';
+    const normCity = c => (c||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+    const uCity = normCity(city);
+
+    const loopItems = (this.routes||[])
+      .filter(r => r.type !== 'fotostop' && (r.status||'approved') === 'approved' && normCity(r.ciudad||r.cityId) === uCity)
+      .map(r => ({
+        kind: 'loop', id: r.id, name: r.name, img: r.img, emoji: r.emoji||'🔄',
+        sub: r.dist ? `${r.dist} · ${r.dur||''}` : 'Loop',
+        ts: r.approvedAt || r.createdAt || 0,
+        lat: r.pts && r.pts[0] ? (Array.isArray(r.pts[0])?r.pts[0][0]:r.pts[0].lat) : null,
+        lng: r.pts && r.pts[0] ? (Array.isArray(r.pts[0])?r.pts[0][1]:r.pts[0].lng) : null
+      }));
+
+    const fotoItems = (this._fotoPosts||[])
+      .filter(p => p.status === 'approved' && normCity(p.ciudad||p.cityId) === uCity)
+      .map(p => ({
+        kind: 'foto', id: p.id, name: p.name||'Foto Loop', img: p.img, emoji: '📸',
+        sub: p.cat || 'FotoLoop',
+        ts: p.approvedAt || p.createdAt || p.ts || 0,
+        lat: p.lat, lng: p.lng
+      }));
+
+    const items = [...loopItems, ...fotoItems]
+      .sort((a,b) => b.ts - a.ts)
+      .slice(0, 5);
+
+    if (items.length === 0) return;
+
+    // No repetir si ya vio estos mismos (comparamos el timestamp del más nuevo)
+    const newestTs = items[0].ts;
+    const lastSeenTs = Number(this._ls('get', 'ul360_novedades_last_' + uCity) || 0);
+    if (newestTs <= lastSeenTs) return;
+
+    this._novedadesShown = true;
+    this._novedadesNewestTs = newestTs;
+    this._novedadesCity = uCity;
+    this._showNovedadesBanner(city, items);
+  },
+
+  _showNovedadesBanner(city, items) {
+    const banner   = document.getElementById('novedades-banner');
+    const cityLbl  = document.getElementById('novedades-city');
+    const list     = document.getElementById('novedades-list');
+    if (!banner || !list) return;
+    if (cityLbl) cityLbl.textContent = city;
+
+    list.innerHTML = items.map(it => `
+      <div onclick="App._goToNovedad('${it.kind}','${it.id}')" style="scroll-snap-align:start;flex-shrink:0;width:150px;border-radius:14px;overflow:hidden;background:#26262E;cursor:pointer;">
+        <div style="width:100%;height:90px;background:#1A1A20;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+          ${it.img ? this._imgTag(it.img,'width:100%;height:100%;object-fit:cover;display:block;') : `<span style="font-size:30px;">${it.emoji}</span>`}
+        </div>
+        <div style="padding:8px 9px;">
+          <div style="font-size:11px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${it.emoji} ${this._esc(it.name)}</div>
+          <div style="font-size:10px;color:#9898B8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${this._esc(it.sub)}</div>
+        </div>
+      </div>`).join('');
+
+    setTimeout(() => this._lazyLoadFsImgs(list), 50);
+
+    // Deslizar hacia abajo
+    banner.style.transform = 'translateY(0)';
+    clearTimeout(this._novedadesTimer);
+    this._novedadesTimer = setTimeout(() => this._closeNovedades(), 8000);
+  },
+
+  _closeNovedades() {
+    const banner = document.getElementById('novedades-banner');
+    if (banner) banner.style.transform = 'translateY(-110%)';
+    clearTimeout(this._novedadesTimer);
+    if (this._novedadesCity && this._novedadesNewestTs) {
+      this._ls('set', 'ul360_novedades_last_' + this._novedadesCity, String(this._novedadesNewestTs));
+    }
+  },
+
+  _goToNovedad(kind, id) {
+    this._closeNovedades();
+    if (kind === 'loop') {
+      this.selectRoute(id);
+    } else {
+      const p = (this._fotoPosts||[]).find(x => x.id === id);
+      if (p && p.lat && p.lng && this.mainMap) {
+        this.mainMap.flyTo({ center: [p.lng, p.lat], zoom: 16, duration: 800 });
+        setTimeout(() => this._showFotoPopup(p), 850);
+      }
     }
   },
 
@@ -15035,9 +15138,11 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   // ── Aprobar / rechazar un loop pendiente de moderación ──
   async _admLoopStatus(id, status) {
     const r = this.routes.find(x => x.id === id);
-    if (r) r.status = status;
+    const patch = { status };
+    if (status === 'approved') patch.approvedAt = Date.now();
+    if (r) Object.assign(r, patch);
     if (this._db) {
-      try { await this._db.collection('loops').doc(id).update({ status }); } catch(e) {}
+      try { await this._db.collection('loops').doc(id).update(patch); } catch(e) {}
     }
     if (this.mainMap) this._refreshMain();
     this._admRenderLoops();
@@ -15052,8 +15157,9 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     let ok = 0;
     for (const r of pendientes) {
       r.status = 'approved';
+      r.approvedAt = Date.now();
       if (this._db) {
-        try { await this._db.collection('loops').doc(r.id).update({ status: 'approved' }); ok++; } catch(e) {}
+        try { await this._db.collection('loops').doc(r.id).update({ status: 'approved', approvedAt: r.approvedAt }); ok++; } catch(e) {}
       }
     }
     if (this.mainMap) this._refreshMain();
@@ -15468,12 +15574,14 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   },
 
   async _admFLStatus(id, status) {
+    const patch = { status };
+    if (status === 'approved') patch.approvedAt = Date.now();
     if (this._fotoPosts) {
       const p = this._fotoPosts.find(x=>x.id===id);
-      if(p) p.status = status;
+      if(p) Object.assign(p, patch);
     }
     if (this._db) {
-      try { await this._db.collection('fotoloops').doc(id).update({status}); } catch(e){}
+      try { await this._db.collection('fotoloops').doc(id).update(patch); } catch(e){}
     }
     // Refrescar marcadores del mapa (siempre: aprobar agrega, rechazar remueve)
     if (this.mainMap) { this._drawFotoStopsOnMap(); this._drawNegociosOnMap(); }
@@ -15489,8 +15597,9 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     let ok = 0;
     for (const p of pendientes) {
       p.status = 'approved';
+      p.approvedAt = Date.now();
       if (this._db) {
-        try { await this._db.collection('fotoloops').doc(p.id).update({status:'approved'}); ok++; } catch(e){}
+        try { await this._db.collection('fotoloops').doc(p.id).update({status:'approved', approvedAt: p.approvedAt}); ok++; } catch(e){}
       }
     }
     if (this.mainMap) { this._drawFotoStopsOnMap(); this._drawNegociosOnMap(); }
