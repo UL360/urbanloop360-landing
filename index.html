@@ -202,28 +202,18 @@
   --c-viola:  #1E1A2E;  --c-viola-b:  #3A2A6A;  --c-viola-t:  #B794F4;
   --c-rojo:   #2E1A1A;  --c-rojo-b:   #6A2A2A;  --c-rojo-t:   #FC8181;
 }
-/* ── DAY MODE ── */
+/* ── DAY MODE — paleta pastel cálida (crema/hueso) aplicada a toda la app ── */
 body.day {
-  --dk: #1A1A2E;  --md: #44445A;   --gr: #888899;
-  --lt: #EFEFF5;  --bd: #DCDCEC;   --wh: #FFFFFF;
-  --bg0: #F2F2FA; --bg1: #FFFFFF;  --bg2: #EFEFF5;  --bg3: #E5E5F0;
-  --sh: 0 2px 16px rgba(0,0,0,.09); --shL: 0 8px 40px rgba(0,0,0,.16);
+  --dk: #3A2E1F;  --md: #5A4630;   --gr: #8A7A60;
+  --lt: #FBEFDC;  --bd: #D8C49E;   --wh: #F3E9D8;
+  --bg0: #FBEFDC; --bg1: #F3E9D8;  --bg2: #E8D9BD;  --bg3: #DFCBA0;
+  --sh: 0 2px 16px rgba(58,46,31,.10); --shL: 0 8px 40px rgba(58,46,31,.18);
   /* Colores secciones modo claro */
   --c-verde:  #EAF7EE;  --c-verde-b:  #4CAF78;  --c-verde-t:  #1E6B3A;
   --c-azul:   #E8F2FC;  --c-azul-b:   #3B82C4;  --c-azul-t:   #1A4F8A;
   --c-naranja:#FFF1E8;  --c-naranja-b:#FF7A35;  --c-naranja-t:#8B3A00;
   --c-viola:  #F0EAFA;  --c-viola-b:  #8B5CF6;  --c-viola-t:  #4C1D95;
   --c-rojo:   #FEE8E8;  --c-rojo-b:   #EF4444;  --c-rojo-t:   #7F1D1D;
-}
-
-/* ── DAY MODE: paleta pastel cálida para FotoLoop / Grabar / Crear Manual / +Loop ── */
-body.day #foto-loop-overlay,
-body.day #grabar,
-body.day #crear-manual,
-body.day #loop-modal {
-  --bg0: #FBEFDC; --bg1: #F3E9D8; --bg2: #E8D9BD; --bg3: #DFCBA0;
-  --lt:  #FBEFDC; --bd:  #D8C49E; --wh:  #F3E9D8;
-  --dk:  #3A2E1F; --md:  #5A4630; --gr:  #8A7A60;
 }
 body.day #grabar [style*="background:#1C1C1E"],
 body.day #grabar .grab-type-row { background:var(--bg2) !important; border-color:var(--bd) !important; }
@@ -240,14 +230,14 @@ body.day #grabar .grab-sl { color:var(--gr) !important; }
 .badge-viola  { background:var(--c-viola)!important;  border-color:var(--c-viola-b)!important;  color:var(--c-viola-t)!important; }
 .badge-rojo   { background:var(--c-rojo)!important;   border-color:var(--c-rojo-b)!important;   color:var(--c-rojo-t)!important; }
 /* Day mode: force inline dark backgrounds to light */
-body.day .chip { background:#FFFFFF; border-color:#DCDCEC; color:#44445A; }
+body.day .chip { background:var(--wh); border-color:var(--bd); color:var(--md); }
 body.day .chip:hover, body.day .chip.on { background:var(--or); border-color:var(--or); color:#fff; }
-body.day #side-panel { background:#F8F8FC !important; border-color:#DCDCEC !important; }
-body.day #rt-badge, body.day #btm-panel > div { background:#FFFFFF !important; border-color:#DCDCEC !important; }
-body.day #city-notif { background:#FFFFFF !important; }
-body.day .cn-sym-bubble { background:#F0F0F8 !important; border-color:#DCDCEC !important; }
-body.day .qr-sheet { background:#FFFFFF !important; }
-body.day .qr-close-btn { background:#EFEFF5 !important; color:#44445A !important; }
+body.day #side-panel { background:var(--wh) !important; border-color:var(--bd) !important; }
+body.day #rt-badge, body.day #btm-panel > div { background:var(--wh) !important; border-color:var(--bd) !important; }
+body.day #city-notif { background:var(--wh) !important; }
+body.day .cn-sym-bubble { background:var(--lt) !important; border-color:var(--bd) !important; }
+body.day .qr-sheet { background:var(--wh) !important; }
+body.day .qr-close-btn { background:var(--lt) !important; color:var(--md) !important; }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); color:var(--dk); background:var(--lt); -webkit-tap-highlight-color:transparent; }
@@ -1767,7 +1757,7 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
 .layer-chip.com      { border-color:#534AB7; color:#534AB7; background:#EEEDFE; }
 .layer-chip.all      { border-color:var(--or); color:var(--or); background:var(--orL); }
 .layer-chip.foto     { border-color:#DB2777; color:#DB2777; background:#FCE7F3; }
-body.day .layer-chip { background:#FFFFFF; border-color:#DCDCEC; color:#44445A; }
+body.day .layer-chip { background:var(--wh); border-color:var(--bd); color:var(--md); }
 body.day .layer-chip.muni { background:#E1F5EE; border-color:#0F6E56; color:#0F6E56; }
 body.day .layer-chip.com  { background:#EEEDFE; border-color:#534AB7; color:#534AB7; }
 body.day .layer-chip.all  { background:var(--orL); border-color:var(--or); color:var(--or); }
@@ -6498,19 +6488,19 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         const liked  = (this.likes||[]).includes(r.id);
         const hasImg = r.img&&(r.img.startsWith('data:')||r.img.startsWith('http')||r.img.startsWith('blob:')||r.img.startsWith('firestore:'));
         const typePill = (TYPE_LBL[r.type]||r.emoji||'🔄')+' Loop';
-        return `<div style="padding:0;overflow:hidden;border-radius:12px;background:#1E1E26;border:1px solid #34343E;">
+        return `<div style="padding:0;overflow:hidden;border-radius:12px;background:var(--wh);border:1px solid var(--bd);">
           <div style="display:flex;height:78px;">
             <div style="width:78px;flex-shrink:0;position:relative;overflow:hidden;background:linear-gradient(135deg,${color}28,${color}55);cursor:pointer;" onclick="App._closeUltimosLoops();App.showDetail('${r.id}')">
               ${hasImg ? App._imgTag(r.img,'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;') : `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px;">${r.emoji||'🔄'}</div>`}
             </div>
             <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:8px 10px;min-width:0;gap:3px;">
               <div style="cursor:pointer;" onclick="App._closeUltimosLoops();App.showDetail('${r.id}')">
-                <div style="font-family:var(--fH);font-size:12px;font-weight:800;color:#F5F5F5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${typePill} ${App._esc(r.name)||'Loop'}</div>
-                <div style="font-size:10px;color:#9898B8;margin-top:1px;">${r.dist||'—'} · ${r.dur||'—'} · ❤️ ${r.likes||0}</div>
+                <div style="font-family:var(--fH);font-size:12px;font-weight:800;color:var(--dk);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${typePill} ${App._esc(r.name)||'Loop'}</div>
+                <div style="font-size:10px;color:var(--md);margin-top:1px;">${r.dist||'—'} · ${r.dur||'—'} · ❤️ ${r.likes||0}</div>
               </div>
               <div style="display:flex;gap:5px;">
-                <button onclick="event.stopPropagation();App.likeLoop('${r.id}');App._renderUltimosLoopsList()" style="flex:1;height:22px;border-radius:6px;border:0.5px solid ${liked?color:'#3A3A44'};background:${liked?color+'22':'#26262E'};color:${liked?color:'#B0B0C8'};font-size:10px;font-weight:600;cursor:pointer;">${liked?'❤️':'🤍'} Like</button>
-                <button onclick="event.stopPropagation();App._closeUltimosLoops();App.selectRoute('${r.id}')" style="flex:1;height:22px;border-radius:6px;border:0.5px solid #3A3A44;background:#26262E;color:#B0B0C8;font-size:10px;font-weight:600;cursor:pointer;">🗺️ Mapa</button>
+                <button onclick="event.stopPropagation();App.likeLoop('${r.id}');App._renderUltimosLoopsList()" style="flex:1;height:22px;border-radius:6px;border:0.5px solid ${liked?color:'var(--bd)'};background:${liked?color+'22':'var(--lt)'};color:${liked?color:'var(--md)'};font-size:10px;font-weight:600;cursor:pointer;">${liked?'❤️':'🤍'} Like</button>
+                <button onclick="event.stopPropagation();App._closeUltimosLoops();App.selectRoute('${r.id}')" style="flex:1;height:22px;border-radius:6px;border:0.5px solid var(--bd);background:var(--lt);color:var(--md);font-size:10px;font-weight:600;cursor:pointer;">🗺️ Mapa</button>
               </div>
             </div>
           </div>
@@ -6519,19 +6509,19 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         const p = it.data;
         const liked = (App._likedFotos||new Set()).has(p.id);
         const hasImg = p.img && (p.img.startsWith('data:')||p.img.startsWith('http')||p.img.startsWith('firestore:'));
-        return `<div style="padding:0;overflow:hidden;border-radius:12px;background:#1E1E26;border:1px solid #34343E;">
+        return `<div style="padding:0;overflow:hidden;border-radius:12px;background:var(--wh);border:1px solid var(--bd);">
           <div style="display:flex;height:78px;">
             <div style="width:78px;flex-shrink:0;position:relative;overflow:hidden;background:linear-gradient(135deg,#FF5F0028,#FF5F0055);cursor:pointer;" onclick="App._closeUltimosLoops();App._openImgViewer('${p.id}','foto')">
               ${hasImg ? App._imgTag(p.img,'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;') : `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px;">📸</div>`}
             </div>
             <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:8px 10px;min-width:0;gap:3px;">
               <div style="cursor:pointer;" onclick="App._closeUltimosLoops();App._openImgViewer('${p.id}','foto')">
-                <div style="font-family:var(--fH);font-size:12px;font-weight:800;color:#F5F5F5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📸 ${App._esc(p.name)||'Foto Loop'}</div>
-                <div style="font-size:10px;color:#9898B8;margin-top:1px;">${p.cat||'lugar'} · ❤️ ${p.likes||0}</div>
+                <div style="font-family:var(--fH);font-size:12px;font-weight:800;color:var(--dk);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📸 ${App._esc(p.name)||'Foto Loop'}</div>
+                <div style="font-size:10px;color:var(--md);margin-top:1px;">${p.cat||'lugar'} · ❤️ ${p.likes||0}</div>
               </div>
               <div style="display:flex;gap:5px;">
-                <button onclick="event.stopPropagation();App.likeFotoLoop('${p.id}');App._renderUltimosLoopsList()" style="flex:1;height:22px;border-radius:6px;border:0.5px solid ${liked?'#FF5F00':'#3A3A44'};background:${liked?'#FF5F0022':'#26262E'};color:${liked?'#FF5F00':'#B0B0C8'};font-size:10px;font-weight:600;cursor:pointer;">${liked?'❤️':'🤍'} Like</button>
-                <button onclick="event.stopPropagation();App._closeUltimosLoops();App._goToNovedad('foto','${p.id}')" style="flex:1;height:22px;border-radius:6px;border:0.5px solid #3A3A44;background:#26262E;color:#B0B0C8;font-size:10px;font-weight:600;cursor:pointer;">🗺️ Mapa</button>
+                <button onclick="event.stopPropagation();App.likeFotoLoop('${p.id}');App._renderUltimosLoopsList()" style="flex:1;height:22px;border-radius:6px;border:0.5px solid ${liked?'#FF5F00':'var(--bd)'};background:${liked?'#FF5F0022':'var(--lt)'};color:${liked?'#FF5F00':'var(--md)'};font-size:10px;font-weight:600;cursor:pointer;">${liked?'❤️':'🤍'} Like</button>
+                <button onclick="event.stopPropagation();App._closeUltimosLoops();App._goToNovedad('foto','${p.id}')" style="flex:1;height:22px;border-radius:6px;border:0.5px solid var(--bd);background:var(--lt);color:var(--md);font-size:10px;font-weight:600;cursor:pointer;">🗺️ Mapa</button>
               </div>
             </div>
           </div>
