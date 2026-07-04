@@ -1966,7 +1966,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
   </button>
 
   <!-- ── TOP CENTER: City badge ── -->
-  <div style="position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:10;display:flex;flex-direction:column;align-items:center;gap:6px;">
+  <div style="position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:41;display:flex;flex-direction:column;align-items:center;gap:6px;">
     <div style="background:#1C1C1E;border:0.5px solid #2C2C2E;border-radius:30px;box-shadow:0 4px 20px rgba(0,0,0,.5);padding:8px 16px;display:flex;align-items:center;gap:6px;pointer-events:none;">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
       <span style="font-family:var(--fH);font-size:13px;font-weight:700;color:#F5F5F5;">La Paz, Entre Ríos</span>
@@ -1977,8 +1977,12 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
   </div>
 
   <!-- ── Panel desplegable: Últimos Loops (mezcla Loops + FotoLoop, formato Loops Urbanos) ── -->
-  <div id="ultimos-loops-panel" style="position:absolute;top:60px;left:10px;right:10px;z-index:39;max-height:0;overflow:hidden;transition:max-height .35s ease;background:#14141c;border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.5);">
-    <div style="max-height:min(62vh,540px);overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:10px;">
+  <div id="ultimos-loops-panel" style="position:absolute;top:66px;left:50%;transform:translateX(-50%);width:min(88vw,320px);z-index:39;max-height:0;overflow:hidden;transition:max-height .35s ease;background:#14141c;border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.5);">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px 6px;">
+      <span style="font-family:var(--fH);font-size:12px;font-weight:800;color:#F5F5F5;">🔥 Últimos Loops</span>
+      <button onclick="App._closeUltimosLoops()" aria-label="Cerrar" style="width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+    </div>
+    <div style="max-height:min(58vh,520px);overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:0 10px 10px;">
       <div id="ultimos-loops-list" style="display:flex;flex-direction:column;gap:8px;"></div>
     </div>
   </div>
