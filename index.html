@@ -10039,6 +10039,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     // FotoLoops
     (this._fotoPosts || []).forEach(p => {
+      const st = p.status || 'pending';
+      const isOwn = p.authorId === this._uid || p.uid === this._uid;
+      if (st !== 'approved' && !isOwn && !this._isMod()) return;
       const pCity = p.ciudad || p.cityId || '';
       if (!pCity || normCity(pCity) === normCity(userCity)) return;
       if (!cityMap[pCity]) {
@@ -10261,6 +10264,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const otherProvPosts = {};
 
     (this._fotoPosts || []).forEach(p => {
+      // Ocultar pendientes/rechazados salvo que sean del propio usuario o seas mod/admin
+      const st = p.status || 'pending';
+      const isOwn = p.authorId === this._uid || p.uid === this._uid;
+      if (st !== 'approved' && !isOwn && !this._isMod()) return;
+
       const pCity = normCity(p.cityId || p.ciudad || '');
       const pProv = normCity(p.provincia || '');
       const pDept = p.departamento || '';
@@ -10282,7 +10290,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       }
     });
 
-    const totalAll = (this._fotoPosts || []).length;
+    const totalAll = localPosts.length +
+      Object.values(deptPosts).reduce((a,arr)=>a+arr.length,0) +
+      Object.values(otherProvPosts).reduce((a,arr)=>a+arr.length,0);
 
     if (totalAll === 0) {
       list.innerHTML = `<div style="text-align:center;padding:48px 20px;">
