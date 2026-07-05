@@ -219,7 +219,7 @@ body.day #grabar [style*="background:#1C1C1E"],
 body.day #grabar .grab-type-row { background:var(--bg2) !important; border-color:var(--bd) !important; }
 body.day #grabar .grab-type-chip { background:var(--bg2) !important; border-color:var(--bd) !important; color:var(--md) !important; }
 body.day #grabar .grab-hdr h2 { color:var(--dk) !important; }
-body.day #grabar .grab-back { color:var(--gr) !important; }
+body.day #grabar .grab-back { color:var(--or) !important; }
 body.day #grabar .grab-sl { color:var(--gr) !important; }
 
 
@@ -1292,7 +1292,8 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
 #grabar{overflow:hidden;}
 .grab-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg1);border-bottom:0.5px solid var(--bd);flex-shrink:0;}
 .grab-hdr h2{font-family:var(--fH);font-size:17px;font-weight:700;color:#F5F5F5;}
-.grab-back{background:none;border:none;cursor:pointer;color:#8A8A98;font-size:14px;display:flex;align-items:center;gap:5px;font-family:var(--fB);}
+.grab-back{background:none;border:none;cursor:pointer;color:var(--or);font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px;font-family:var(--fB);padding:8px 4px;}
+.grab-back svg{width:22px;height:22px;stroke-width:2.5;}
 .grab-type-row{display:flex;gap:8px;overflow-x:auto;padding:10px 16px;flex-shrink:0;background:#1C1C1E;border-bottom:0.5px solid #2C2C2E;scrollbar-width:none;}
 .grab-type-row::-webkit-scrollbar{display:none;}
 .grab-type-chip{flex-shrink:0;height:30px;padding:0 12px;border-radius:20px;border:0.5px solid #2C2C2E;background:#1C1C1E;font-size:12px;font-weight:500;color:#8A8A98;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .2s;white-space:nowrap;}
@@ -1980,7 +1981,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
   <div id="ultimos-loops-panel" style="position:absolute;top:96px;left:50%;transform:translateX(-50%);width:min(88vw,320px);z-index:39;max-height:0;overflow:hidden;transition:max-height .35s ease;background:var(--wh);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.5);">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px 6px;">
       <span style="font-family:var(--fH);font-size:12px;font-weight:800;color:var(--dk);">🔥 Últimos Loops</span>
-      <button onclick="App._closeUltimosLoops()" aria-label="Cerrar" style="width:24px;height:24px;border-radius:50%;background:var(--lt);border:none;color:var(--md);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+      <button onclick="App._closeUltimosLoops()" aria-label="Cerrar" style="width:24px;height:24px;border-radius:50%;background:var(--orL);border:none;color:var(--or);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
     </div>
     <div style="max-height:min(48vh,420px);overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:0 10px 10px;">
       <div id="ultimos-loops-list" style="display:flex;flex-direction:column;gap:8px;"></div>
@@ -2049,7 +2050,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
   <div id="rt-badge" style="display:none;position:absolute;top:70px;left:14px;z-index:10;background:#1C1C1E;border:0.5px solid #2C2C2E;border-radius:var(--rs);padding:7px 12px;font-size:12px;font-weight:600;align-items:center;gap:7px;max-width:calc(100% - 80px);">
     <div id="rt-dot" style="width:9px;height:9px;border-radius:50%;background:var(--or);flex-shrink:0;"></div>
     <span id="rt-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</span>
-    <button onclick="App._clearSelection()" style="background:none;border:none;color:#9CA3AF;cursor:pointer;padding:0 0 0 4px;font-size:18px;line-height:1;display:flex;align-items:center;flex-shrink:0;" aria-label="Cerrar">✕</button>
+    <button onclick="App._clearSelection()" style="background:none;border:none;color:var(--or);cursor:pointer;padding:0 0 0 4px;font-size:20px;font-weight:700;line-height:1;display:flex;align-items:center;flex-shrink:0;" aria-label="Cerrar">✕</button>
   </div>
 
 
@@ -3219,7 +3220,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <div style="width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 16px;"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
       <h2 style="font-family:var(--fH);font-size:18px;font-weight:800;color:var(--dk);">Crear Evento</h2>
-      <button onclick="App.closeCrearEvento()" style="background:var(--bg2);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:18px;color:var(--gr);display:flex;align-items:center;justify-content:center;">×</button>
+      <button onclick="App.closeCrearEvento()" style="background:var(--orL);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:18px;color:var(--or);display:flex;align-items:center;justify-content:center;">×</button>
     </div>
     <!-- Tipo de evento -->
     <div style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.6px;margin-bottom:8px;">TIPO DE EVENTO</div>
@@ -3314,7 +3315,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
   <div style="background:var(--wh);border-radius:20px 20px 0 0;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;padding:20px 18px 32px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <h2 style="font-family:var(--fH);font-size:18px;font-weight:800;color:var(--dk);">Publicar en el feed</h2>
-      <button onclick="App.closeNuevoPost()" style="background:var(--bg2);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:18px;color:var(--gr);display:flex;align-items:center;justify-content:center;">×</button>
+      <button onclick="App.closeNuevoPost()" style="background:var(--orL);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:18px;color:var(--or);display:flex;align-items:center;justify-content:center;">×</button>
     </div>
     <!-- Tipo de post -->
     <div style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.6px;margin-bottom:8px;">¿QUÉ QUERÉS PUBLICAR?</div>
@@ -6244,7 +6245,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           style="width:26px;height:26px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,.08);border:none;color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;">🚩</button>
         <div style="flex:1;text-align:center;font-size:12px;font-weight:800;color:#F0F0F8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${this._esc(title)}</div>
         <button type="button" class="popup-close-btn" onpointerup="event.stopPropagation();${closeOnclick}" title="Cerrar"
-          style="width:26px;height:26px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,.08);border:none;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+          style="width:26px;height:26px;flex-shrink:0;border-radius:50%;background:rgba(255,95,0,.18);border:none;color:var(--or);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
       </div>`;
   },
 
@@ -6996,7 +6997,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
           <div style="font-family:var(--fH);font-size:16px;font-weight:800;color:var(--dk);">${r.catEmoji||'📋'} ${r.catLabel||r.cat||'Reporte'}</div>
-          <button onclick="document.getElementById('urep-detail-overlay').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gr);">✕</button>
+          <button onclick="document.getElementById('urep-detail-overlay').style.display='none'" style="background:var(--orL);border:none;border-radius:50%;width:28px;height:28px;font-size:18px;cursor:pointer;color:var(--or);display:flex;align-items:center;justify-content:center;">✕</button>
         </div>
         ${imgResolved ? `<img src="${imgResolved}" style="width:100%;border-radius:12px;max-height:220px;object-fit:cover;margin-bottom:14px;">` : ''}
         <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--md);">
@@ -17584,7 +17585,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
         <div style="display:flex;gap:8px;">
           <button onclick="App._resendVerification()" style="flex:1;padding:8px;border-radius:9px;border:1.5px solid var(--or);background:transparent;color:var(--or);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--fB);">Reenviar email</button>
           <button onclick="App._checkVerifiedRefresh()" style="flex:1;padding:8px;border-radius:9px;border:none;background:var(--or);color:white;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--fB);">Ya verifiqué ✓</button>
-          <button onclick="document.getElementById('verify-email-banner')?.remove()" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--bg3);color:var(--gr);font-size:14px;cursor:pointer;flex-shrink:0;">✕</button>
+          <button onclick="document.getElementById('verify-email-banner')?.remove()" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--orL);color:var(--or);font-size:14px;cursor:pointer;flex-shrink:0;">✕</button>
         </div>
       </div>
     `;
@@ -17747,7 +17748,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         <div style="font-family:var(--fH);font-size:17px;font-weight:700;color:var(--dk);">Crear cuenta</div>
         <div style="font-size:12px;color:var(--gr);margin-top:3px;">Completá tus datos para unirte a Urban Loop</div>
       </div>
-      <button onclick="App.closeRegisterModal()" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--bg3);color:var(--gr);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">✕</button>
+      <button onclick="App.closeRegisterModal()" style="width:32px;height:32px;border-radius:50%;border:none;background:var(--orL);color:var(--or);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">✕</button>
     </div>
     <!-- Form -->
     <div style="padding:20px 22px;display:flex;flex-direction:column;gap:14px;">
