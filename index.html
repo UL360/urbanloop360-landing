@@ -1977,13 +1977,16 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
   </div>
 
   <!-- ── Panel desplegable: Últimos Loops (mezcla Loops + FotoLoop, formato Loops Urbanos) ── -->
-  <div id="ultimos-loops-panel" style="position:absolute;top:70px;left:50%;transform:translateX(-50%);width:min(88vw,320px);z-index:39;max-height:0;overflow:hidden;transition:max-height .35s ease;background:var(--wh);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.5);">
+  <div id="ultimos-loops-panel" style="position:absolute;top:96px;left:50%;transform:translateX(-50%);width:min(88vw,320px);z-index:39;max-height:0;overflow:hidden;transition:max-height .35s ease;background:var(--wh);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.5);">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px 6px;">
       <span style="font-family:var(--fH);font-size:12px;font-weight:800;color:var(--dk);">🔥 Últimos Loops</span>
       <button onclick="App._closeUltimosLoops()" aria-label="Cerrar" style="width:24px;height:24px;border-radius:50%;background:var(--lt);border:none;color:var(--md);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
     </div>
-    <div style="max-height:min(58vh,520px);overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:0 10px 10px;">
+    <div style="max-height:min(48vh,420px);overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:0 10px 10px;">
       <div id="ultimos-loops-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+    <div onclick="App._closeUltimosLoops();App.sideNav('loops-urbanos')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 12px;cursor:pointer;">
+      <span style="font-family:var(--fH);font-size:12px;font-weight:800;color:var(--or);">🧡 Sumate a la comunidad</span>
     </div>
   </div>
 
@@ -6447,7 +6450,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       this._closeUltimosLoops();
     } else {
       this._renderUltimosLoopsList();
-      panel.style.maxHeight = 'min(62vh, 540px)';
+      panel.style.maxHeight = 'min(78vh, 640px)';
       if (chev) chev.style.transform = 'rotate(180deg)';
     }
   },
