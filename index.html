@@ -1088,11 +1088,24 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
 /* ── Botón "Atrás" genérico para headers de secciones ── */
 .scr-back-btn {
   width: 36px; height: 36px; border-radius: var(--rs);
-  border: 1.5px solid var(--bd); background: var(--wh);
+  border: 1.5px solid var(--orL); background: var(--orL);
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; flex-shrink: 0; transition: border-color .2s;
+  cursor: pointer; flex-shrink: 0; transition: all .2s;
+  color: var(--or);
 }
-.scr-back-btn:hover { border-color: var(--or); }
+.scr-back-btn svg { stroke: var(--or) !important; }
+.scr-back-btn:hover { border-color: var(--or); background: var(--or); }
+.scr-back-btn:hover svg { stroke: #fff !important; }
+
+/* ── Botón "Atrás/Cerrar" de headers de modales (Foto Loop, Crear Manual, etc.) ── */
+.modal-back-btn {
+  border: 0.5px solid var(--orL); background: var(--orL);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--or); transition: all .2s;
+}
+.modal-back-btn svg { stroke: var(--or) !important; }
+.modal-back-btn:hover { border-color: var(--or); background: var(--or); }
+.modal-back-btn:hover svg { stroke: #fff !important; }
 
 /* ═══════════════════════
    VUELTAS SCREEN
@@ -2987,7 +3000,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 
   <!-- Header -->
   <div style="position:sticky;top:0;z-index:10;background:var(--wh);border-bottom:0.5px solid var(--bd);display:flex;align-items:center;gap:12px;padding:14px 16px;">
-    <button onclick="App.go(App._prevScreen||'explore')" style="width:36px;height:36px;border-radius:10px;border:0.5px solid var(--bd);background:var(--lt);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+    <button onclick="App.go(App._prevScreen||'explore')" class="modal-back-btn" style="width:36px;height:36px;border-radius:10px;flex-shrink:0;">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5m0 0l7-7m-7 7l7 7"/></svg>
     </button>
     <div>
@@ -3766,7 +3779,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
   <div style="background:var(--wh);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:20px 20px 36px;animation:slideUp .3s ease;max-height:92vh;overflow-y:auto;">
     <div style="width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 14px;"></div>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-      <button onclick="App.closeFotoLoop()" style="width:34px;height:34px;border-radius:10px;border:0.5px solid var(--bd);background:var(--lt);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-label="Volver">
+      <button onclick="App.closeFotoLoop()" class="modal-back-btn" style="width:34px;height:34px;border-radius:10px;flex-shrink:0;" aria-label="Volver">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5m0 0l7-7m-7 7l7 7"/></svg>
       </button>
       <div>
@@ -16621,7 +16634,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       modalBody.innerHTML = `
         <div style="width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 14px;"></div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
-          <button onclick="App.closeLoopModal()" style="width:34px;height:34px;border-radius:10px;border:0.5px solid var(--bd);background:var(--lt);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;" aria-label="Cerrar">
+          <button onclick="App.closeLoopModal()" class="modal-back-btn" style="width:34px;height:34px;border-radius:10px;flex-shrink:0;" aria-label="Cerrar">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5m0 0l7-7m-7 7l7 7"/></svg>
           </button>
           <div>
