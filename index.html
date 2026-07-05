@@ -13298,12 +13298,13 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           </button>
         </div>
         <div class="hw-actions">
+          ${this._hwCat !== 'amigos' ? `
           <button class="hw-action-btn primary" onclick="App._hwSumarPuntosAccion('grabar',60,'📹 +60 pts por grabar un Loop!');App.openLoopModal();">
             <span class="hw-a-ico">📹</span>Grabar Loop
           </button>
           <button class="hw-action-btn primary" onclick="App._hwSumarPuntosAccion('fotoloop',40,'📷 +40 pts por subir un FotoLoop!');App.openFotoLoop();">
             <span class="hw-a-ico">📷</span>Fotoloop
-          </button>
+          </button>` : ''}
           <button class="hw-action-btn" onclick="App._hwInvitar('${act.full.replace(/'/g,"\\'")}')">
             <span class="hw-a-ico">👥</span>Invitar amigos
           </button>
@@ -13323,13 +13324,15 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         title: 'Urban Loop 360°',
         text: `¡Te invito a: ${nombre}! Armemos un loop 🚀`,
         url: 'https://www.urbanloop360.com.ar'
-      });
+      }).then(() => {
+        // Solo se suman los puntos si realmente eligió a dónde compartir (no si canceló)
+        this._hwSumarPuntosAccion('invitar', 80, '👥 +80 pts por invitar amigos!');
+      }).catch(() => { /* canceló el share — no se suman puntos */ });
     } else {
       navigator.clipboard?.writeText(`¡Hagamos: ${nombre} con Urban Loop 360! 🚀 urbanloop360.com.ar`);
       this.toast('👥 Invitación copiada al portapapeles');
+      this._hwSumarPuntosAccion('invitar', 80, '👥 +80 pts por invitar amigos!');
     }
-    // Sumar puntos por invitar
-    this._hwSumarPuntosAccion('invitar', 80, '👥 +80 pts por invitar amigos!');
   },
 
   _hwCompartir(nombre) {
@@ -13338,12 +13341,14 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         title: 'Urban Loop 360°',
         text: `Hoy en Urban Loop 360°: ${nombre} 🎯`,
         url: 'https://www.urbanloop360.com.ar'
-      });
+      }).then(() => {
+        // Solo se suman los puntos si realmente eligió a dónde compartir (no si canceló)
+        this._hwSumarPuntosAccion('compartir', 15, '📤 +15 pts por compartir!');
+      }).catch(() => { /* canceló el share — no se suman puntos */ });
     } else {
       this.toast('📤 ¡Compartido: '+nombre+'!');
+      this._hwSumarPuntosAccion('compartir', 15, '📤 +15 pts por compartir!');
     }
-    // Sumar puntos por compartir
-    this._hwSumarPuntosAccion('compartir', 15, '📤 +15 pts por compartir!');
   },
 
   async _hwSumarPuntosAccion(tipo, pts, msg) {
@@ -17710,9 +17715,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     <!-- Header con botón volver -->
     <div style="display:flex;align-items:center;justify-content:space-between;">
       <div style="display:flex;align-items:center;gap:10px;">
-        <button onclick="App.go(App._prevScreen||'explore')"
-          style="width:36px;height:36px;border-radius:50%;border:0.5px solid var(--orL);background:var(--orL);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--or);font-size:18px;flex-shrink:0;">
-          ←
+        <button onclick="App.go(App._prevScreen||'explore')" class="scr-back-btn" title="Volver">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5m0 0l7-7m-7 7l7 7"/></svg>
         </button>
         <div>
           <div style="font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--or);margin-bottom:2px;">Urban Loop 360°</div>
