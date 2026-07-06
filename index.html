@@ -7493,7 +7493,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       const data = await resp.json();
 
       // Quitar provisional
-      try { this.mainMap.removeLayer('nav-dashed'); this.mainMap.removeSource('nav-src-dashed'); } catch(_){}
+      try { if (this.mainMap.getLayer('nav-dashed')) this.mainMap.removeLayer('nav-dashed'); } catch(_){}
+      try { if (this.mainMap.getSource('nav-src-dashed')) this.mainMap.removeSource('nav-src-dashed'); } catch(_){}
       this._navLine = [];
 
       if (data.code === 'Ok' && data.routes && data.routes.length) {
@@ -7544,7 +7545,14 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         throw new Error('No route');
       }
     } catch(e) {
-      try { this.mainMap.removeLayer('nav-dashed'); this.mainMap.removeSource('nav-src-dashed'); } catch(_){}
+      // Loguear el error real: antes se tragaba en silencio y solo se veía
+      // el error secundario de "Cannot remove non-existing layer".
+      console.error('[_calcAndDrawNav] Falló el cálculo/dibujo de la ruta:', e);
+      this.toast('⚠️ No se pudo calcular la ruta, mostrando línea directa');
+      // Blindado: solo remover si la capa/fuente todavía existe (evita el error
+      // "Cannot remove non-existing layer" cuando el éxito ya la había borrado).
+      try { if (this.mainMap.getLayer('nav-dashed')) this.mainMap.removeLayer('nav-dashed'); } catch(_){}
+      try { if (this.mainMap.getSource('nav-src-dashed')) this.mainMap.removeSource('nav-src-dashed'); } catch(_){}
       this.mainMap.addSource('nav-src-dashed', {
         type:'geojson',
         data:{ type:'Feature', geometry:{ type:'LineString', coordinates:[[uLL.lng,uLL.lat],loopStartCoord] } }
