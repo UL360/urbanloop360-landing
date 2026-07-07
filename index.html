@@ -3492,7 +3492,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <div style="display:flex;border-top:0.5px solid var(--bd);">
       <button id="lu-tab-loops"   onclick="App.luSetTab('loops',this)"   class="com-tab on">🔄 Loops</button>
       <button id="lu-tab-negocios" onclick="App.luSetTab('negocios',this)" class="com-tab">🏪 Comercios</button>
-      <button id="lu-tab-foto"    onclick="App.luSetTab('foto',this)"    class="com-tab">📸 FotoLoop</button>
+      <button id="lu-tab-foto"    onclick="App.luSetTab('foto',this)"    class="com-tab" style="position:relative;">📸 FotoLoop<span id="lu-tab-foto-badge" style="display:none;position:absolute;top:2px;right:6px;background:#DC2626;color:white;font-size:10px;font-weight:800;min-width:16px;height:16px;border-radius:8px;line-height:16px;text-align:center;padding:0 3px;"></span></button>
       <button id="lu-tab-explorar" onclick="App.luSetTab('explorar',this)" class="com-tab">🌍 Otras Ciudades</button>
     </div>
   </div>
@@ -4652,6 +4652,22 @@ const App = {
     }
   },
 
+  // ── Numerito rojo en el tab "FotoLoop": cantidad de publicaciones propias pendientes ──
+  _updateFotoLoopPendingBadge() {
+    const badge = document.getElementById('lu-tab-foto-badge');
+    if (!badge) return;
+    if (!this._uid) { badge.style.display = 'none'; return; }
+    const n = (this._fotoPosts || []).filter(p =>
+      p.authorId === this._uid && (p.status || 'pending') === 'pending'
+    ).length;
+    if (n > 0) {
+      badge.textContent = n > 9 ? '9+' : String(n);
+      badge.style.display = 'block';
+    } else {
+      badge.style.display = 'none';
+    }
+  },
+
   // ── Historial de publicaciones del usuario: Foto Loops + Loops propios, con su estado ──
   _renderMyPublications() {
     const box = document.getElementById('pf-mypubs-list');
@@ -4810,6 +4826,7 @@ const App = {
             }
           }));
         } catch(e) { console.warn('FotoLoops load:', e); this._fotoPosts = this._fotoPosts || []; }
+        this._updateFotoLoopPendingBadge();
 
         // Cargar feed posts
         try {
@@ -9004,6 +9021,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       const localPost = { ...stopData, img: stopData.imgData || stopData.img };
       delete localPost.imgData;
       this._fotoPosts.unshift(localPost);
+      this._updateFotoLoopPendingBadge();
       this._drawFotoStopsOnMap();   // ← actualizar mapa
       this._drawNegociosOnMap();
       this._addPts(30, 'Parada publicada');
