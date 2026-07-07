@@ -10490,9 +10490,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const otherProvPosts = {};
 
     (this._fotoPosts || []).forEach(p => {
-      // Ocultar pendientes/rechazados a TODOS (ni siquiera el autor los ve) hasta que un mod/admin apruebe
+      // Pendientes/rechazados: solo los ve un mod/admin, o el propio autor (con indicador de "en revisión")
       const st = p.status || 'pending';
-      if (st !== 'approved' && !this._isMod()) return;
+      const isOwn = p.authorId && p.authorId === this._uid;
+      if (st !== 'approved' && !this._isMod() && !isOwn) return;
 
       const pCity = normCity(p.cityId || p.ciudad || '');
       const pProv = normCity(p.provincia || '');
@@ -10530,11 +10531,17 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     }
 
     const renderGrid = posts => `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:8px 14px 12px;">
-      ${posts.map(p => `
+      ${posts.map(p => {
+        const stP = p.status || 'pending';
+        const pendingBadge = stP !== 'approved'
+          ? `<div style="position:absolute;top:6px;left:6px;background:${stP==='rejected'?'#DC2626':'#D97706'};color:white;font-size:9px;font-weight:800;padding:3px 7px;border-radius:7px;box-shadow:0 2px 6px rgba(0,0,0,.3);z-index:2;">${stP==='rejected'?'🚫 Rechazado':'⏳ En revisión'}</div>`
+          : '';
+        return `
         <div onclick="App._openImgViewer('${p.id}','foto')"
-          style="border-radius:13px;overflow:hidden;background:var(--wh);border:0.5px solid var(--bd);cursor:pointer;transition:transform .12s;box-shadow:var(--sh);"
+          style="position:relative;border-radius:13px;overflow:hidden;background:var(--wh);border:0.5px solid var(--bd);cursor:pointer;transition:transform .12s;box-shadow:var(--sh);${stP!=='approved'?'opacity:.85;':''}"
           onmousedown="this.style.transform='scale(.97)'" onmouseup="this.style.transform=''"
           ontouchstart="this.style.transform='scale(.97)'" ontouchend="this.style.transform=''">
+          ${pendingBadge}
           ${p.img && (p.img.startsWith('data:') || p.img.startsWith('http') || p.img.startsWith('firestore:'))
             ? `<div style="aspect-ratio:4/3;overflow:hidden;">${App._imgTag(p.img,'width:100%;height:100%;object-fit:cover;display:block;')}</div>`
             : `<div style="aspect-ratio:4/3;background:linear-gradient(135deg,var(--orL),var(--bg2));display:flex;align-items:center;justify-content:center;font-size:36px;">${FL_CATS[p.cat]||'📍'}</div>`
@@ -10544,7 +10551,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
             <div style="font-size:10px;color:var(--or);font-weight:600;margin-top:2px;">${FL_CATS[p.cat]||'📍'} ${p.cat||'lugar'}</div>
             ${p.authorName ? `<div style="font-size:10px;color:var(--gr);margin-top:3px;">por ${p.authorName.split(' ')[0]}</div>` : ''}
           </div>
-        </div>`).join('')}
+        </div>`;
+      }).join('')}
     </div>`;
 
     const renderSection = (icon, label, count) => `
