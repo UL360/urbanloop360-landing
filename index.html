@@ -8764,6 +8764,38 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     }, () => this.toast('⚠️ No se pudo obtener la ubicación'));
   },
 
+  // ── Aviso suave cuando ya hay muchos Foto Loops en el mismo punto ──
+  _showSpotSaturatedModal(nearbyCount) {
+    let m = document.getElementById('spot-saturated-modal');
+    if (m) m.remove();
+    m = document.createElement('div');
+    m.id = 'spot-saturated-modal';
+    m.style.cssText = 'position:fixed;inset:0;z-index:10050;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeUp .2s ease;';
+    m.innerHTML = `
+      <div style="background:var(--bg2,#1c1c26);border:0.5px solid var(--bd,#333);border-radius:18px;padding:24px;max-width:340px;width:100%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.5);">
+        <div style="font-size:34px;margin-bottom:8px;">🧭</div>
+        <div style="font-size:16px;font-weight:800;color:var(--dk,#F0F0F8);margin-bottom:8px;">¡Ya hay ${nearbyCount} Foto Loops acá cerca!</div>
+        <div style="font-size:13px;color:var(--gr,#9CA3AF);line-height:1.5;margin-bottom:20px;">
+          Este lugar ya está bien representado. ¿Seguís explorando y buscás otro rincón para descubrir,
+          o publicás igual porque tenés una toma que vale la pena?
+        </div>
+        <button onclick="App._flGoExploreInstead()" style="width:100%;padding:14px;border-radius:12px;border:none;background:#FF5F00;color:white;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px;">🔎 Explorar otro lugar</button>
+        <button onclick="App._flForcePublishNow()" style="width:100%;padding:12px;border-radius:12px;border:0.5px solid var(--bd,#333);background:transparent;color:var(--gr,#9CA3AF);font-size:13px;font-weight:600;cursor:pointer;">Publicar igual</button>
+      </div>`;
+    document.body.appendChild(m);
+  },
+  _flGoExploreInstead() {
+    document.getElementById('spot-saturated-modal')?.remove();
+    this.closeFotoLoop();
+    this.toast('🔎 ¡Dale, buscá un rincón nuevo para tu próximo Foto Loop!');
+    this.go('explore');
+  },
+  _flForcePublishNow() {
+    document.getElementById('spot-saturated-modal')?.remove();
+    this._flForcePublish = true;
+    this.publishFotoLoop();
+  },
+
   async publishFotoLoop() {
     if (!this._checkVerified()) return;
     if (!document.getElementById('fl-no-personas')?.checked) {
@@ -8792,6 +8824,19 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     }
 
     if (!lat || !lng) return this.toast('⚠️ Marcá la ubicación en el mapa');
+
+    // ── Aviso suave: ¿el lugar ya está "saturado" de Foto Loops? ──
+    // (50m de radio, 5 o más publicaciones) — no bloquea, solo invita a explorar otro lugar.
+    if (!this._flForcePublish) {
+      const nearby = (this._fotoPosts || []).filter(p =>
+        this._haversineKm(lat, lng, p.lat, p.lng) <= 0.05
+      ).length;
+      if (nearby >= 5) {
+        this._showSpotSaturatedModal(nearby);
+        return;
+      }
+    }
+    this._flForcePublish = false;
 
     // ── Detectar Pais/Provincia/Ciudad/Departamento por las coords del punto marcado ──
     this.toast('📍 Detectando ubicación...');
@@ -8919,6 +8964,14 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       this._drawNegociosOnMap();
       this._addPts(30, 'Parada publicada');
       if (toMuni) this._addPts(15, 'Propuesta al municipio');
+      // ── Gamificación: bonus por explorar una zona nueva (sin Foto Loops en 150m) ──
+      const zoneIsNew = (this._fotoPosts || []).filter(p =>
+        p.id !== stopId && this._haversineKm(lat, lng, p.lat, p.lng) <= 0.15
+      ).length === 0;
+      if (zoneIsNew) {
+        this._addPts(15, '🗺️ Descubridor de zona nueva');
+        setTimeout(() => this.toast('🗺️ +15 pts extra por descubrir una zona nueva'), 400);
+      }
       this._showSaveSuccess(name, stopData.status==='pending' ? '⏳ Enviado a revisión — se publicará apenas un moderador lo apruebe' : (toMuni ? `🏛 Propuesto al municipio · publicado en ${cityId}` : `🌐 Publicado en ${cityId}`));
       // FX
       this._fxBurst(document.getElementById('foto-loop-overlay'), 12);
