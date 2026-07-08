@@ -2088,7 +2088,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 
     <!-- Botón 2: FotoLoop -->
     <div id="pill-foto" onclick="App._pillAction('foto')"
-      style="display:flex;align-items:center;gap:10px;border-radius:26px;cursor:pointer;
+      style="position:relative;display:flex;align-items:center;gap:10px;border-radius:26px;cursor:pointer;
              background:#22262E;padding:8px 18px 8px 8px;overflow:hidden;
              box-shadow:0 3px 12px rgba(0,0,0,.35);transition:transform .15s;">
       <div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;
@@ -2096,6 +2096,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="6" width="13" height="10" rx="2"/><circle cx="8.5" cy="11" r="2.2"/><path d="M5.5 6V4.5C5.5 4 5.9 3.5 6.5 3.5H10.5C11.1 3.5 11.5 4 11.5 4.5V6"/><path d="M19 8c-1.7 0-3 1.3-3 3 0 2.5 3 7 3 7s3-4.5 3-7c0-1.7-1.3-3-3-3z" fill="rgba(255,255,255,.85)" stroke="none"/><circle cx="19" cy="10.8" r="1.5" fill="#22262E" stroke="none"/></svg>
       </div>
       <span id="pill-lbl-foto" style="font-size:14px;font-weight:700;color:rgba(255,255,255,.85);white-space:nowrap;">FotoLoop</span>
+      <span id="pill-foto-badge" style="display:none;position:absolute;top:2px;left:30px;background:#DC2626;color:white;font-size:10px;font-weight:800;min-width:16px;height:16px;border-radius:8px;line-height:16px;text-align:center;padding:0 3px;box-shadow:0 1px 4px rgba(0,0,0,.4);"></span>
     </div>
 
     <!-- Botón 3: Vistas -->
@@ -4652,20 +4653,19 @@ const App = {
     }
   },
 
-  // ── Numerito rojo en el tab "FotoLoop": cantidad de publicaciones propias pendientes ──
+  // ── Numerito rojo en el tab "FotoLoop" y en el pill del mapa: pendientes propias ──
   _updateFotoLoopPendingBadge() {
     const badge = document.getElementById('lu-tab-foto-badge');
-    if (!badge) return;
-    if (!this._uid) { badge.style.display = 'none'; return; }
-    const n = (this._fotoPosts || []).filter(p =>
+    const pillBadge = document.getElementById('pill-foto-badge');
+    if (!badge && !pillBadge) return;
+    const n = this._uid ? (this._fotoPosts || []).filter(p =>
       p.authorId === this._uid && (p.status || 'pending') === 'pending'
-    ).length;
-    if (n > 0) {
-      badge.textContent = n > 9 ? '9+' : String(n);
-      badge.style.display = 'block';
-    } else {
-      badge.style.display = 'none';
-    }
+    ).length : 0;
+    [badge, pillBadge].forEach(el => {
+      if (!el) return;
+      if (n > 0) { el.textContent = n > 9 ? '9+' : String(n); el.style.display = 'block'; }
+      else { el.style.display = 'none'; }
+    });
   },
 
   // ── Historial de publicaciones del usuario: Foto Loops + Loops propios, con su estado ──
