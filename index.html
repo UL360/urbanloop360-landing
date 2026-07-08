@@ -4869,15 +4869,53 @@ const App = {
       const st = STATUS_UI[item.status] || STATUS_UI.pending;
       const fecha = item.ts ? new Date(item.ts).toLocaleDateString('es-AR', { day:'2-digit', month:'short' }) : '';
       return `
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--wh);border:0.5px solid var(--bd);border-radius:12px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--wh);border:0.5px solid var(--bd);border-radius:12px;margin-bottom:8px;flex-wrap:wrap;">
           <div style="font-size:20px;flex-shrink:0;">${item.emoji}</div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:13px;font-weight:700;color:var(--dk);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${App._esc(item.name)}</div>
             <div style="font-size:10px;color:var(--gr);margin-top:2px;">${item.kind}${fecha ? ' · '+fecha : ''}</div>
           </div>
           <div style="flex-shrink:0;font-size:10px;font-weight:800;color:${st.color};background:${st.bg};padding:4px 9px;border-radius:8px;white-space:nowrap;">${st.label}</div>
+          <div style="width:100%;display:flex;gap:6px;justify-content:flex-end;">
+            <button class="adm-btn adm-btn-blue" onclick="App._pfEditItem('${item.kind}','${item.id}')">✏️ Editar</button>
+            <button class="adm-btn adm-btn-red" onclick="App._pfDeleteItem('${item.kind}','${item.id}')">🗑️ Eliminar</button>
+          </div>
         </div>`;
     }).join('');
+  },
+
+  // ── Editar/Eliminar mi propia publicación desde el perfil (Loop o Foto Loop) ──
+  _pfEditItem(kind, id) {
+    if (kind === 'Loop') return this.editRoute(id);
+    // Foto Loop: edición simple de nombre/descripción
+    const p = (this._fotoPosts||[]).find(x => x.id === id);
+    if (!p) return this.toast('❌ No se encontró la publicación');
+    const newName = prompt('Nombre de la foto:', p.name || '');
+    if (newName === null) return;
+    const newDesc = prompt('Descripción:', p.desc || '');
+    if (newDesc === null) return;
+    p.name = newName.trim() || p.name;
+    p.desc = newDesc.trim();
+    if (this._db) {
+      this._db.collection('fotoloops').doc(id).update({ name: p.name, desc: p.desc })
+        .then(() => this.toast('✅ Foto Loop actualizada'))
+        .catch(e => this.toast('❌ ' + e.message));
+    }
+    this._renderMyPublications();
+  },
+
+  async _pfDeleteItem(kind, id) {
+    if (kind === 'Loop') return this.deleteRoute(id);
+    // Foto Loop
+    const p = (this._fotoPosts||[]).find(x => x.id === id);
+    if (!confirm(`¿Eliminar "${App._esc(p?.name||'esta foto')}"? Esta acción no se puede deshacer.`)) return;
+    if (this._db) {
+      try { await this._db.collection('fotoloops').doc(id).delete(); }
+      catch(e) { this.toast('❌ ' + e.message); return; }
+    }
+    this._fotoPosts = (this._fotoPosts||[]).filter(x => x.id !== id);
+    this.toast('🗑️ Foto Loop eliminada');
+    this._renderMyPublications();
   },
 
   async _loadData() {
