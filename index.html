@@ -1249,6 +1249,32 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
   .adm-muni-bar{ flex-direction:column; }
 }
 
+/* ── FotoLoops: cards tipo galería (imagen arriba) ── */
+.adm-fl-card{
+  background:var(--wh);border-radius:12px;border:0.5px solid var(--bd);
+  overflow:hidden;display:flex;flex-direction:column;
+}
+.adm-fl-thumb-wrap{ position:relative;width:100%;aspect-ratio:4/3;background:var(--bg2); }
+.adm-fl-thumb{ width:100%;height:100%;object-fit:cover;display:block; }
+.adm-fl-status{
+  position:absolute;top:8px;right:8px;font-size:10px;font-weight:700;
+  padding:3px 9px;border-radius:10px;
+}
+.adm-fl-body{ padding:10px 12px;display:flex;flex-direction:column;gap:6px; }
+.adm-fl-desc{ font-size:12px;color:var(--md);line-height:1.4; }
+
+@media (min-width:769px){
+  .adm-fl-grid{
+    display:grid !important;
+    grid-template-columns:repeat(auto-fill, minmax(220px,1fr));
+    gap:14px;
+    align-content:start;
+  }
+}
+@media (max-width:768px){
+  .adm-fl-grid{ display:flex !important; flex-direction:column; gap:8px; }
+}
+
 /* ── Barra de filtros de usuarios (admin) ── */
 .adm-users-filterbar{
   display:flex;
@@ -2846,7 +2872,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
         <button onclick="App._admFLAprobarTodos()" class="adm-btn adm-btn-green" style="white-space:nowrap;">✅ Aprobar pendientes</button>
         <span id="adm-fl-count" style="font-size:12px;color:var(--gr);margin-left:auto;"></span>
       </div>
-      <div id="adm-fl-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+      <div id="adm-fl-list" class="adm-fl-grid" style="display:flex;flex-direction:column;gap:8px;"></div>
     </div>
 
     <!-- ── EVENTOS ── -->
@@ -15803,21 +15829,21 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       const stColor = {approved:'#D1FAE5',rejected:'#FEE2E2',pending:'#FEF3C7'}[st]||'#FEF3C7';
       const stTxt   = {approved:'✅ Aprobado',rejected:'❌ Rechazado',pending:'⏳ Pendiente'}[st]||st;
       const faceBadge = p.facesDetected ? `<span style="font-size:9px;background:#FFE4B5;color:#92400E;border-radius:6px;padding:1px 6px;font-weight:700;margin-left:4px;">👤 POSIBLE PERSONA</span>` : '';
-      return `<div class="adm-item" style="${p.facesDetected ? 'border:1.5px solid #F59E0B;' : ''}">
-        <div class="adm-item-row">
-          ${p.img ? App._imgTag(p.img,'width:52px;height:52px;border-radius:10px;object-fit:cover;flex-shrink:0;','adm-item-thumb') : `<div class="adm-item-thumb" style="display:flex;align-items:center;justify-content:center;font-size:22px;">${p.emoji||'📸'}</div>`}
-          <div class="adm-item-info">
-            <div class="adm-item-name">${p.name||'Foto Loop'}${faceBadge}</div>
-            <div class="adm-item-meta">${p.cat||''} · ${App._esc(p.authorName)||'Anónimo'} · ${p.ciudad||p.cityId||'—'}</div>
-            <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:${stColor};display:inline-block;margin-top:2px;">${stTxt}</span>
-          </div>
+      return `<div class="adm-fl-card" style="${p.facesDetected ? 'border:1.5px solid #F59E0B;' : ''}">
+        <div class="adm-fl-thumb-wrap">
+          ${p.img ? App._imgTag(p.img,'width:100%;height:100%;object-fit:cover;','adm-fl-thumb') : `<div class="adm-fl-thumb" style="display:flex;align-items:center;justify-content:center;font-size:32px;">${p.emoji||'📸'}</div>`}
+          <span class="adm-fl-status" style="background:${stColor};">${stTxt}</span>
         </div>
-        ${p.desc ? `<div style="font-size:12px;color:var(--md);line-height:1.4;">${p.desc}</div>` : ''}
-        <div class="adm-item-actions">
-          ${st!=='approved'  ? `<button class="adm-btn adm-btn-green" onclick="App._admFLStatus('${p.id}','approved')">✅ Aprobar</button>` : ''}
-          ${st!=='rejected'  ? `<button class="adm-btn adm-btn-red"   onclick="App._admFLStatus('${p.id}','rejected')">❌ Rechazar</button>` : ''}
-          <button class="adm-btn" style="background:#EEF2FF;color:#4F46E5;border-color:#4F46E5;" onclick="App._admRetagFotoloop('${p.id}')">🏷️ Re-etiquetar ciudad</button>
-          <button class="adm-btn adm-btn-red" onclick="App._admDeleteFL('${p.id}')">🗑️ Eliminar</button>
+        <div class="adm-fl-body">
+          <div class="adm-item-name">${p.name||'Foto Loop'}${faceBadge}</div>
+          <div class="adm-item-meta">${p.cat||''} · ${App._esc(p.authorName)||'Anónimo'} · ${p.ciudad||p.cityId||'—'}</div>
+          ${p.desc ? `<div class="adm-fl-desc">${p.desc}</div>` : ''}
+          <div class="adm-item-actions">
+            ${st!=='approved'  ? `<button class="adm-btn adm-btn-green" onclick="App._admFLStatus('${p.id}','approved')">✅ Aprobar</button>` : ''}
+            ${st!=='rejected'  ? `<button class="adm-btn adm-btn-red"   onclick="App._admFLStatus('${p.id}','rejected')">❌ Rechazar</button>` : ''}
+            <button class="adm-btn" style="background:#EEF2FF;color:#4F46E5;border-color:#4F46E5;" onclick="App._admRetagFotoloop('${p.id}')">🏷️ Re-etiquetar ciudad</button>
+            <button class="adm-btn adm-btn-red" onclick="App._admDeleteFL('${p.id}')">🗑️ Eliminar</button>
+          </div>
         </div>
       </div>`;
     }).join('');
