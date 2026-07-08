@@ -1192,6 +1192,47 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
 .adm-activity-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
 .adm-notif-item { background:var(--bg2);border-radius:10px;padding:10px 12px; }
 #admin { background:var(--lt); overflow-y:auto; }
+
+/* ── Barra de filtros de usuarios (admin) ── */
+.adm-users-filterbar{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:12px;
+  flex-wrap:wrap;
+}
+.adm-uf-search{ flex:1 1 220px; min-width:180px; font-size:13px; padding:9px 12px; }
+.adm-uf-select{ font-size:12px; padding:9px 10px; flex:0 0 auto; }
+.adm-uf-count{ font-size:11px; color:var(--gr); white-space:nowrap; margin-left:auto; }
+
+@media (min-width:769px){
+  /* Desktop: todo en una sola fila horizontal, sin wrap raro */
+  .adm-users-filterbar{
+    flex-wrap:nowrap;
+    background:var(--wh);
+    padding:10px 12px;
+    border-radius:var(--rs);
+    border:1.5px solid var(--bd);
+  }
+  .adm-uf-search{ flex:1 1 auto; min-width:220px; }
+  .adm-uf-select{ min-width:150px; }
+  .adm-uf-count{ flex:0 0 auto; padding-left:8px; }
+
+  /* La lista de usuarios (tabla) siempre ocupa el ancho completo debajo */
+  #adm-users-table-wrap{
+    width:100%;
+    background:var(--wh);
+    border-radius:var(--rs);
+    border:1.5px solid var(--bd);
+  }
+  #adm-users-table thead tr{ position:sticky; top:0; background:var(--wh); z-index:1; }
+}
+
+@media (max-width:768px){
+  .adm-users-filterbar{ flex-direction:column; align-items:stretch; }
+  .adm-uf-select{ width:100%; }
+  .adm-uf-count{ margin-left:0; text-align:right; }
+}
 .adm-hdr {
   background:var(--wh); padding:14px 16px;
   display:flex; align-items:center; gap:12px;
@@ -2760,24 +2801,24 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <div id="adm-tab-usuarios" class="adm-panel" style="display:none;">
 
       <!-- Barra de búsqueda y filtros -->
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
+      <div class="adm-users-filterbar">
         <input id="adm-users-search" type="search" placeholder="🔍 Buscar por nombre o email..."
-          class="fi" style="flex:1;min-width:180px;font-size:13px;padding:9px 12px;"
+          class="fi adm-uf-search"
           oninput="App._admFilterUsers()">
-        <select id="adm-users-role-filter" class="fi" style="font-size:12px;padding:9px 10px;" onchange="App._admFilterUsers()">
+        <select id="adm-users-role-filter" class="fi adm-uf-select" onchange="App._admFilterUsers()">
           <option value="">Todos los roles</option>
           <option value="user">👤 Usuario</option>
           <option value="moderador">🛡️ Moderador</option>
           <option value="admin">👑 Admin</option>
         </select>
-        <select id="adm-users-sort" class="fi" style="font-size:12px;padding:9px 10px;" onchange="App._admFilterUsers()">
+        <select id="adm-users-sort" class="fi adm-uf-select" onchange="App._admFilterUsers()">
           <option value="newest">Más nuevos</option>
           <option value="oldest">Más antiguos</option>
           <option value="name">Nombre A-Z</option>
           <option value="loops">Más loops</option>
           <option value="pts">Más puntos</option>
         </select>
-        <span id="adm-users-count" style="font-size:11px;color:var(--gr);white-space:nowrap;"></span>
+        <span id="adm-users-count" class="adm-uf-count"></span>
       </div>
 
       <!-- Tabla desktop / cards mobile -->
