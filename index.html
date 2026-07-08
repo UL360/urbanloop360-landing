@@ -1192,29 +1192,33 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
 .adm-activity-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
 .adm-notif-item { background:var(--bg2);border-radius:10px;padding:10px 12px; }
 @media (min-width:769px){
-  /* Layout general del admin: tabs a la izquierda (fijo),
+  /* Layout general del admin: tabs a la izquierda (fijo, ancho fijo),
      a la derecha arriba la barra de municipio horizontal,
-     y debajo el contenido a todo el ancho */
+     y debajo el contenido a todo el ancho, con su propio scroll */
   #adm-content{
-    display:grid;
-    grid-template-columns: 220px 1fr;
-    grid-template-rows: auto 1fr;
-    grid-template-areas:
-      "tabs muni"
-      "tabs body";
+    display:flex;
+    flex-direction:row;
+    align-items:stretch;
     height:100%;
-    min-height:0;
   }
   #adm-tabs{
-    grid-area:tabs;
+    flex:0 0 220px;
     border-bottom:none;
     border-right:0.5px solid var(--bd);
+    overflow-y:auto;
+  }
+  #adm-right-col{
+    flex:1 1 auto;
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+    min-height:0;
   }
   #adm-municipio-selector{
-    grid-area:muni;
+    flex:0 0 auto;
     border-bottom:1.5px solid var(--or);
   }
-  .adm-panel{ grid-area:body; overflow-y:auto; min-height:0; }
+  .adm-panel{ flex:1 1 auto; overflow-y:auto; min-height:0; }
 
   /* Barra de municipio: todo en una sola fila horizontal */
   .adm-muni-bar{
@@ -1246,6 +1250,20 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
   /* Mobile: la barra de municipio se mantiene apilada como está */
   .adm-muni-bar{ flex-direction:column; }
 }
+
+/* ── Loops: tabla tipo excel ── */
+.adm-loops-wrap{ background:var(--wh);border:0.5px solid var(--bd);border-radius:12px; }
+.adm-loops-table{ min-width:900px; }
+.adm-loops-table th{
+  text-align:left;font-size:10px;font-weight:700;color:var(--gr);
+  text-transform:uppercase;letter-spacing:.4px;
+  padding:8px 10px;border-bottom:1px solid var(--bd);background:var(--lt);
+  position:sticky;top:0;
+}
+.adm-loops-table td{
+  padding:8px 10px;border-bottom:0.5px solid var(--bd);vertical-align:middle;
+}
+.adm-loops-table tr:hover td{ background:var(--bg2); }
 
 /* ── FotoLoops: cards tipo galería (imagen arriba) ── */
 .adm-fl-card{
@@ -2658,6 +2676,8 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     </div>
 
     <!-- ══ SELECTOR GLOBAL DE MUNICIPIO ══ -->
+    <!-- ══ COLUMNA DERECHA: filtros + contenido (para desktop grid) ══ -->
+    <div id="adm-right-col">
     <div id="adm-municipio-selector" class="adm-muni-bar" style="padding:10px 12px;background:var(--orL);border-bottom:1.5px solid var(--or);display:flex;flex-direction:column;gap:8px;">
       <div class="adm-muni-title-row" style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
         <span style="font-size:14px;">🏛️</span>
@@ -2855,7 +2875,23 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
           🔄 Probar onboarding ahora
         </button>
       </div>
-      <div id="adm-loops-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+      <div id="adm-loops-wrap" class="adm-loops-wrap" style="overflow-x:auto;">
+        <table class="adm-loops-table" style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr>
+              <th>Foto</th>
+              <th>Nombre</th>
+              <th>Ciudad · Tipo</th>
+              <th>Dist</th>
+              <th>❤️</th>
+              <th>Estado</th>
+              <th>Autor</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="adm-loops-list"></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- ── FOTOLOOPS ── -->
@@ -3022,6 +3058,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       </div>
     </div>
 
+  </div><!-- /adm-right-col -->
   </div><!-- /adm-content -->
   <div class="adm-body" id="adm-body-old" style="display:none;"></div>
 </div>
@@ -15399,14 +15436,14 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (list.length === 0) {
       // Si no hay loops, mostrar cuántos hay en total como ayuda diagnóstica
       const total = this.routes.filter(r => r.type !== 'fotostop').length;
-      el.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">
+      el.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">
         Sin loops para "${city || 'todas las ciudades'}"<br>
         <span style="font-size:11px;margin-top:6px;display:block;">
           Hay ${total} loop${total!==1?'s':''} en total en memoria.
           ${total > 0 ? 'Puede que tengan ciudad incorrecta — usá 🏷️ Reetiquitar para corregirlos.' : ''}
         </span>
         ${total > 0 ? `<button class="adm-btn" style="margin-top:10px;" onclick="App._admRetagAllLoops('${city}')">🏷️ Re-etiquetar todos por coords</button>` : ''}
-      </div>`;
+      </td></tr>`;
       return;
     }
     el.innerHTML = list.map(r => {
@@ -15422,38 +15459,41 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       const facesInPois = (r.pois||[]).filter(p=>p.facesDetected).length;
       const faceBadge = facesInPois>0 ? `<span style="font-size:9px;background:#FFE4B5;color:#92400E;border-radius:6px;padding:1px 6px;font-weight:700;margin-left:4px;">👤 ${facesInPois} PARADA${facesInPois!==1?'S':''} CON POSIBLE PERSONA</span>` : '';
       const alreadySentMuni = r._sentToMuni || (r.likes||0) >= MUNI_THR;
-      return `<div class="adm-item" style="${facesInPois>0 ? 'border:1.5px solid #F59E0B;' : ''}">
-        <div class="adm-item-row">
-          ${hasImg
-            ? App._imgTag(r.img, 'width:52px;height:52px;border-radius:10px;object-fit:cover;flex-shrink:0;')
-            : `<div class="adm-item-thumb" style="display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--bg2);">${r.emoji||'🔄'}</div>`}
-          <div class="adm-item-info">
-            <div class="adm-item-name">${noImgBadge}${App._esc(r.name)}${hotBadge}${faceBadge}</div>
-            <div class="adm-item-meta">${r.ciudad||r.cityId||'—'} · ${r.type} · ${r.dist||'—'} · ❤️${r.likes||0}</div>
-            <div class="adm-item-meta">Por: ${App._esc(r.authorName)||'Anónimo'}</div>
-            <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:${stColor};display:inline-block;margin-top:2px;">${stTxt}</span>
+      return `<tr style="${facesInPois>0 ? 'background:#FFFBEB;' : ''}">
+        <td>${hasImg
+            ? App._imgTag(r.img, 'width:44px;height:44px;border-radius:8px;object-fit:cover;display:block;')
+            : `<div style="width:44px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--bg2);">${r.emoji||'🔄'}</div>`}
+        </td>
+        <td>
+          <div style="font-weight:700;font-family:var(--fH);">${noImgBadge}${App._esc(r.name)}${hotBadge}${faceBadge}</div>
+        </td>
+        <td style="white-space:nowrap;">${r.ciudad||r.cityId||'—'} · ${r.type}</td>
+        <td style="white-space:nowrap;">${r.dist||'—'}</td>
+        <td style="text-align:center;">${r.likes||0}</td>
+        <td><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:${stColor};display:inline-block;white-space:nowrap;">${stTxt}</span></td>
+        <td style="white-space:nowrap;">${App._esc(r.authorName)||'Anónimo'}</td>
+        <td>
+          <div class="adm-item-actions" style="flex-wrap:wrap;min-width:220px;">
+            ${st!=='approved' ? `<button class="adm-btn adm-btn-green" onclick="App._admLoopStatus('${r.id}','approved')">✅ Aprobar</button>` : ''}
+            ${st!=='rejected' ? `<button class="adm-btn adm-btn-red"   onclick="App._admLoopStatus('${r.id}','rejected')">❌ Rechazar</button>` : ''}
+            <button class="adm-btn adm-btn-blue" onclick="App._admEditLoop('${r.id}')">✏️ Editar</button>
+            <button class="adm-btn adm-btn-orange" onclick="App.selectRoute('${r.id}');App.go('explore')">🗺️ Ver mapa</button>
+            ${r.source !== 'municipio'
+              ? `<button class="adm-btn adm-btn-green" onclick="App._admSetCiudad('${r.id}','${r.name.replace(/'/g,'')}')">🏙️ Poner en Ciudad</button>`
+              : `<button class="adm-btn" style="opacity:.5;cursor:default;" disabled>🏙️ Ya es Ciudad</button>`
+            }
+            ${r.source !== 'municipio' && !alreadySentMuni
+              ? `<button class="adm-btn" style="background:#FFF3CD;color:#92400E;border:1px solid #F59E0B;" onclick="App._admProponerMunicipio('${r.id}')">📤 Proponer al Municipio</button>`
+              : r.source !== 'municipio' && alreadySentMuni
+                ? `<button class="adm-btn" style="opacity:.5;cursor:default;" disabled>📬 Ya en Municipio</button>`
+                : ''
+            }
+            <button class="adm-btn" style="${r.isDemoLoop ? 'background:#FF5F00;color:#fff;border:1px solid #FF5F00;' : 'background:var(--bg2);'}" onclick="App._admSetDemoLoop('${r.id}')">${r.isDemoLoop ? '⭐ Es la Demo' : '☆ Usar como Demo'}</button>
+            <button class="adm-btn" style="background:#EEF2FF;color:#4F46E5;border-color:#4F46E5;" onclick="App._admRetagLoop('${r.id}')">🏷️ Re-etiquetar ciudad</button>
+            <button class="adm-btn adm-btn-red" onclick="App._admDeleteLoop('${r.id}','${r.name.replace(/'/g,'')}')">🗑️ Eliminar</button>
           </div>
-        </div>
-        <div class="adm-item-actions">
-          ${st!=='approved' ? `<button class="adm-btn adm-btn-green" onclick="App._admLoopStatus('${r.id}','approved')">✅ Aprobar</button>` : ''}
-          ${st!=='rejected' ? `<button class="adm-btn adm-btn-red"   onclick="App._admLoopStatus('${r.id}','rejected')">❌ Rechazar</button>` : ''}
-          <button class="adm-btn adm-btn-blue" onclick="App._admEditLoop('${r.id}')">✏️ Editar</button>
-          <button class="adm-btn adm-btn-orange" onclick="App.selectRoute('${r.id}');App.go('explore')">🗺️ Ver mapa</button>
-          ${r.source !== 'municipio'
-            ? `<button class="adm-btn adm-btn-green" onclick="App._admSetCiudad('${r.id}','${r.name.replace(/'/g,'')}')">🏙️ Poner en Ciudad</button>`
-            : `<button class="adm-btn" style="opacity:.5;cursor:default;" disabled>🏙️ Ya es Ciudad</button>`
-          }
-          ${r.source !== 'municipio' && !alreadySentMuni
-            ? `<button class="adm-btn" style="background:#FFF3CD;color:#92400E;border:1px solid #F59E0B;" onclick="App._admProponerMunicipio('${r.id}')">📤 Proponer al Municipio</button>`
-            : r.source !== 'municipio' && alreadySentMuni
-              ? `<button class="adm-btn" style="opacity:.5;cursor:default;" disabled>📬 Ya en Municipio</button>`
-              : ''
-          }
-          <button class="adm-btn" style="${r.isDemoLoop ? 'background:#FF5F00;color:#fff;border:1px solid #FF5F00;' : 'background:var(--bg2);'}" onclick="App._admSetDemoLoop('${r.id}')">${r.isDemoLoop ? '⭐ Es la Demo' : '☆ Usar como Demo'}</button>
-          <button class="adm-btn" style="background:#EEF2FF;color:#4F46E5;border-color:#4F46E5;" onclick="App._admRetagLoop('${r.id}')">🏷️ Re-etiquetar ciudad</button>
-          <button class="adm-btn adm-btn-red" onclick="App._admDeleteLoop('${r.id}','${r.name.replace(/'/g,'')}')">🗑️ Eliminar</button>
-        </div>
-      </div>`;
+        </td>
+      </tr>`;
     }).join('');
     // Cargar imágenes firestore: en thumbnails
     setTimeout(() => this._lazyLoadFsImgs(document.getElementById('adm-tab-loops')), 50);
