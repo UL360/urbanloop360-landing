@@ -16100,8 +16100,11 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
 
     try {
       let snap;
-      try { snap = await this._db.collection('users').orderBy('createdAt','desc').limit(100).get(); }
-      catch(e) { snap = await this._db.collection('users').limit(100).get(); }
+      // Sin orderBy: Firestore excluye documentos que no tengan el campo por el que ordenás
+      // (así desaparecían cuentas viejas sin 'createdAt'). Ordenamos en el cliente en su lugar.
+      // Sin limit: traemos todos los usuarios, no solo los primeros 100.
+      try { snap = await this._db.collection('users').get({ source: 'server' }); }
+      catch(e) { snap = await this._db.collection('users').get(); }
 
       if (snap.empty) {
         el.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">Sin usuarios registrados aún.</div>`;
