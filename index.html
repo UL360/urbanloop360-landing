@@ -1800,6 +1800,7 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
 .ul-pin-start    { width: 34px; height: 44px; }
 .ul-pin-foto     { width: 34px; height: 44px; }
 .ul-pin-comercio { width: 34px; height: 44px; }
+.ul-pin-comunidad{ width: 34px; height: 44px; }
 
 /* ═══ MOBILE FIRST — EXPLORE ═══ */
 @media (max-width: 768px) {
@@ -1807,6 +1808,7 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
   .ul-pin-start    { width: 44px; height: 56px; }
   .ul-pin-foto     { width: 44px; height: 56px; }
   .ul-pin-comercio { width: 44px; height: 56px; }
+  .ul-pin-comunidad{ width: 44px; height: 56px; }
 
   /* Map controls — bigger tap targets */
   #locate-btn { width: 46px !important; height: 46px !important; border-radius: 14px !important; }
@@ -5546,6 +5548,10 @@ const App = {
   _PIN_INICIO_LOOP: 'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pin-inicio-loop.png',
   _PIN_FOTOLOOP:    'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pin-fotoloop.png',
   _PIN_COMERCIO:    'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pin-comercio.png',
+  // Pin para loops NO oficiales (comunidad): mismo formato que _PIN_INICIO_LOOP pero
+  // con color/arte distinto para diferenciarlo de los oficiales y de FotoLoop.
+  // TODO: reemplazar por el asset definitivo cuando esté listo.
+  _PIN_LOOP_COMUNIDAD: 'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pin-loop-comunidad.png',
   _isSatellite: false,
 
   toggleSatellite() {
@@ -6199,25 +6205,42 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     this.routes.forEach((r, i) => { r.color = pal[i % pal.length]; });
   },
 
-  _drawRoute(r) {
-    if (!this.mainMap || !r.pts || r.pts.length < 2) return;
-    if (!this._layers) this._layers = {};
+  // ── Dispatcher: decide si el loop se dibuja completo (oficial) o como ícono (comunidad) ──
+  // r.source === 'municipio'  → loop oficial: polilínea + glow + marcador de inicio + POIs, siempre visible.
+  // cualquier otro r.source   → loop no oficial: solo un ícono liviano; la polilínea se dibuja
+  //                             bajo demanda al hacer hover (ver _drawRouteIcon / _previewRouteOn / _previewRouteOff).
+  // opts.mode fuerza un modo puntual (por ej. al previsualizar en hover, o al crear/editar el propio loop).
+  _drawRoute(r, opts) {
+    opts = opts || {};
+    const mode = opts.mode || (r.source === 'municipio' ? 'full' : 'icon');
+    if (mode === 'icon') { this._drawRouteIcon(r); return; }
+    this._drawRouteFull(r);
+  },
 
-    // Quitar capas anteriores si existen
-    const prev = this._layers[r.id];
+  // ── Quita todas las capas/fuentes de la polilínea de un loop (usado por full y por el preview de icon) ──
+  _removeRouteLayers(id) {
+    if (!this.mainMap) return;
+    const prev = this._layers && this._layers[id];
     if (prev) {
       prev.forEach(lid => {
         try { if (this.mainMap.getLayer(lid)) this.mainMap.removeLayer(lid); } catch(e) {}
       });
-      try { if (this.mainMap.getSource('src-' + r.id)) this.mainMap.removeSource('src-' + r.id); } catch(e) {}
-      try { if (this.mainMap.getSource('dot-' + r.id)) this.mainMap.removeSource('dot-' + r.id); } catch(e) {}
     }
-    // Limpiar siempre por las dudas (puede quedar de una sesión anterior)
-    try { if (this.mainMap.getLayer('glow-' + r.id)) this.mainMap.removeLayer('glow-' + r.id); } catch(e) {}
-    try { if (this.mainMap.getLayer('line-' + r.id)) this.mainMap.removeLayer('line-' + r.id); } catch(e) {}
-    try { if (this.mainMap.getLayer('dot-'  + r.id)) this.mainMap.removeLayer('dot-'  + r.id); } catch(e) {}
-    try { if (this.mainMap.getSource('src-' + r.id)) this.mainMap.removeSource('src-' + r.id); } catch(e) {}
-    try { if (this.mainMap.getSource('dot-' + r.id)) this.mainMap.removeSource('dot-' + r.id); } catch(e) {}
+    try { if (this.mainMap.getLayer('glow-' + id)) this.mainMap.removeLayer('glow-' + id); } catch(e) {}
+    try { if (this.mainMap.getLayer('line-' + id)) this.mainMap.removeLayer('line-' + id); } catch(e) {}
+    try { if (this.mainMap.getLayer('dot-'  + id)) this.mainMap.removeLayer('dot-'  + id); } catch(e) {}
+    try { if (this.mainMap.getSource('src-' + id)) this.mainMap.removeSource('src-' + id); } catch(e) {}
+    try { if (this.mainMap.getSource('dot-' + id)) this.mainMap.removeSource('dot-' + id); } catch(e) {}
+    if (this._layers) delete this._layers[id];
+  },
+
+  // ── Loop OFICIAL (o preview de uno no oficial): polilínea completa + glow + marcador de inicio + POIs ──
+  _drawRouteFull(r) {
+    if (!this.mainMap || !r.pts || r.pts.length < 2) return;
+    if (!this._layers) this._layers = {};
+
+    // Quitar capas anteriores si existen (propias o de una sesión previa)
+    this._removeRouteLayers(r.id);
 
     const coords = r.pts.map(p => Array.isArray(p) ? [p[1], p[0]] : [p.lng, p.lat]);
     const layerIds = [];
@@ -6254,16 +6277,21 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     this.mainMap.on('mouseenter', 'line-' + r.id, () => {
       this.mainMap.getCanvas().style.cursor = 'pointer';
       App._hoverShowLoopCard(r);
+      // Si esta línea es un preview de loop no oficial, no dejar que se cierre mientras el mouse esté encima
+      if (this._previewRouteId === r.id) clearTimeout(this._previewTimer);
     });
     this.mainMap.on('mouseleave', 'line-' + r.id, () => {
       this.mainMap.getCanvas().style.cursor = '';
       App._hoverHideLoopCard();
+      if (this._previewRouteId === r.id) this._previewRouteOff(r.id);
     });
 
     // Punto de inicio — pin con el logo de Urban Loop (mascota)
     if (!this._startMarkers) this._startMarkers = {};
-    if (this._startMarkers[r.id]) { try { this._startMarkers[r.id].remove(); } catch(e) {} }
-    {
+    if (this._startMarkers[r.id]) { try { this._startMarkers[r.id].remove(); } catch(e) {} delete this._startMarkers[r.id]; }
+    // Si es el preview de un loop NO oficial, el ícono de _drawRouteIcon ya está puesto en ese
+    // mismo punto — no crear un segundo pin encima (se superponen y rompen los eventos de hover).
+    if (!(this._iconMarkers && this._iconMarkers[r.id])) {
       const elStart = document.createElement('div');
       elStart.className = 'ul-pin-wrap ul-pin-start';
       elStart.innerHTML = `<img src="${this._PIN_INICIO_LOOP}" style="filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));" alt="Inicio del Loop" draggable="false">`;
@@ -6331,6 +6359,86 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
 
     this._layers[r.id] = layerIds;
+  },
+
+  // ── Loop NO OFICIAL (comunidad): solo un ícono liviano en el punto de inicio.
+  //    Nada de source/layer de polilínea todavía → cero costo de render hasta que se necesite. ──
+  _iconMarkers: {},
+  _previewRouteId: null,
+  _previewTimer: null,
+
+  _drawRouteIcon(r) {
+    if (!this.mainMap || !r.pts || !r.pts.length) return;
+
+    // Sacar ícono anterior si ya existía (por ej. al refrescar this.routes)
+    if (this._iconMarkers[r.id]) { try { this._iconMarkers[r.id].remove(); } catch(e) {} }
+    // Por si quedó una polilínea o un pin de inicio "full" dibujado de una sesión previa
+    this._removeRouteLayers(r.id);
+    if (this._startMarkers && this._startMarkers[r.id]) {
+      try { this._startMarkers[r.id].remove(); } catch(e) {}
+      delete this._startMarkers[r.id];
+    }
+
+    const p0 = r.pts[0];
+    const lat = Array.isArray(p0) ? p0[0] : p0.lat;
+    const lng = Array.isArray(p0) ? p0[1] : p0.lng;
+    if (lat == null || lng == null) return;
+
+    const el = document.createElement('div');
+    el.className = 'ul-pin-wrap ul-pin-comunidad';
+    // Mismo ícono que el loop oficial (_PIN_INICIO_LOOP). Cuando esté el arte
+    // definitivo para distinguir "no oficial", solo cambiar esta línea.
+    el.innerHTML = `<img src="${this._PIN_INICIO_LOOP}" style="filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));" alt="Loop de la comunidad" draggable="false">`;
+    el.title = r.name || 'Loop de la comunidad';
+    const img = el.querySelector('img');
+
+    // Hover (desktop) → previsualiza el recorrido completo
+    el.addEventListener('mouseenter', () => {
+      img.style.transform = 'scale(1.12) translateY(-2px)';
+      this._previewRouteOn(r);
+    });
+    el.addEventListener('mouseleave', () => {
+      img.style.transform = 'scale(1) translateY(0)';
+      this._previewRouteOff(r.id);
+    });
+    // Tap (mobile) → togglear el preview, y segundo tap abre la card del loop
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (this._previewRouteId === r.id) {
+        App._bouncePin(img);
+        App.selectRoute(r.id);
+      } else {
+        this._previewRouteOn(r);
+      }
+    });
+
+    const mkr = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+      .setLngLat([lng, lat])
+      .addTo(this.mainMap);
+    this._iconMarkers[r.id] = mkr;
+  },
+
+  // ── Dibuja el recorrido de un loop no oficial "al vuelo" (hover/tap sobre su ícono) ──
+  _previewRouteOn(r) {
+    clearTimeout(this._previewTimer);
+    // Si había otro preview abierto (de otro loop), lo cerramos primero
+    if (this._previewRouteId && this._previewRouteId !== r.id) {
+      this._removeRouteLayers(this._previewRouteId);
+    }
+    this._previewRouteId = r.id;
+    this._drawRouteFull(r);
+  },
+
+  // ── Oculta el recorrido previsualizado. Pequeño delay para que no "parpadee"
+  //    si el mouse pasa por encima de la línea recién dibujada camino al ícono. ──
+  _previewRouteOff(id) {
+    clearTimeout(this._previewTimer);
+    this._previewTimer = setTimeout(() => {
+      if (this._previewRouteId !== id) return;
+      if (this._pinnedRouteId === id) return; // está seleccionado: se queda dibujado hasta deseleccionar
+      this._removeRouteLayers(id);
+      this._previewRouteId = null;
+    }, 250);
   },
 
   // ── FotoLoops aprobados → aparecen en el mapa como etiqueta/tag ──
@@ -6921,12 +7029,33 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   },
 
   // ── SELECT ROUTE ──
+  // ── Deja de "pinear" (mantener dibujado) el recorrido de un loop no oficial que estaba
+  //    seleccionado. Los oficiales no se tocan porque siempre están dibujados. ──
+  _unpinRoute() {
+    if (this._pinnedRouteId) {
+      const pr = this.routes.find(x => x.id === this._pinnedRouteId);
+      if (pr && pr.source !== 'municipio') this._removeRouteLayers(this._pinnedRouteId);
+      this._pinnedRouteId = null;
+    }
+  },
+
   selectRoute(id) {
     this.selId = id;
     this._refreshPoiMarkersVisibility();
     document.querySelectorAll('.rc').forEach(c => c.classList.toggle('sel', c.dataset.id===id));
     const r = this.routes.find(x => x.id===id);
     if (!r || !this.mainMap) return;
+
+    // Si había otro loop no oficial pineado por una selección anterior, lo recogemos
+    if (this._pinnedRouteId && this._pinnedRouteId !== id) this._unpinRoute();
+    // Si este loop no es oficial, dibujamos su recorrido y lo dejamos "pineado":
+    // así no se cierra al mover el mouse hacia la card/popup que se abre.
+    if (r.source !== 'municipio') {
+      clearTimeout(this._previewTimer);
+      this._previewRouteId = id;
+      this._drawRouteFull(r);
+      this._pinnedRouteId = id;
+    }
 
     // Limpiar nav anterior
     const oldPanel = document.getElementById('nav-panel'); if (oldPanel) oldPanel.remove();
@@ -6976,6 +7105,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   // Mostrar rutas filtradas por categoría, ocultar el resto
   _showFilteredRoutes(filter) {
     if (!this.mainMap || !this._layers) return;
+    this._unpinRoute();
     this._removeNavLine();
     if (this._loopPopup) { try { this._loopPopup.remove(); } catch(e){} this._loopPopup = null; }
     const panel = document.getElementById('nav-panel'); if (panel) panel.remove();
@@ -17290,6 +17420,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
 
   // ── LIMPIAR SELECCIÓN (X del badge) ──
   _clearSelection() {
+    this._unpinRoute();
     this.selId = null;
     const b = document.getElementById('rt-badge');
     if (b) b.style.display = 'none';
