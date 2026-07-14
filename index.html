@@ -15530,11 +15530,10 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     selProv.innerHTML = provs.length
       ? provs.map(p => `<option value="${p}">${p}</option>`).join('')
       : `<option value="">Sin datos</option>`;
-    // Auto-seleccionar provincia detectada en init
-    if (init) {
-      const myProv = this._luProv || 'Entre Ríos';
-      if (provs.includes(myProv)) selProv.value = myProv;
-    }
+    // Antes se auto-seleccionaba la provincia detectada del admin (this._luProv), lo que
+    // filtraba TODO el panel (loops, fotoloops, reportes, etc.) a esa provincia sin avisar
+    // claramente — y content de otras provincias/países quedaba invisible por defecto.
+    // Ahora arranca en "Todas" para no ocultar nada; el admin filtra manualmente si quiere.
     await this._admSelProvinciaChanged(init);
   },
 
@@ -15556,14 +15555,8 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
          sinDepto ? `<option value="(sin depto)">Sin departamento</option>` : ''
         ].join('')
       : `<option value="">Sin datos</option>`;
-    // Auto-seleccionar departamento detectado en init
-    if (init) {
-      const myCity = this._luCity || 'La Paz';
-      const geo = (this._GEO_KNOWN||[]).find(r => r.ciudad === myCity);
-      if (geo && [...selDepto.options].some(o => o.value === geo.departamento)) {
-        selDepto.value = geo.departamento;
-      }
-    }
+    // (Ídem arriba: ya no se auto-selecciona el departamento propio del admin al abrir —
+    //  se deja en "— Todos —" para no ocultar contenido de otros departamentos/ciudades.)
     this._admSelDeptoChanged(init);
   },
 
@@ -15591,11 +15584,8 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
          ...lista.map(c => `<option value="${c}">${c}</option>`)
         ].join('')
       : `<option value="">Sin ciudades</option>`;
-    // Auto-seleccionar ciudad detectada en init
-    if (init) {
-      const myCity = this._luCity || 'La Paz';
-      if (lista.includes(myCity)) selCiud.value = myCity;
-    }
+    // (Ídem: ya no se auto-selecciona la ciudad propia del admin al abrir — arranca en
+    //  "— Todas —" para que nunca se oculte contenido de otras ciudades por defecto.)
     this._admMunicipioChanged();
   },
 
