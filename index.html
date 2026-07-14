@@ -1801,6 +1801,9 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
 .ul-pin-foto     { width: 34px; height: 44px; }
 .ul-pin-comercio { width: 34px; height: 44px; }
 .ul-pin-comunidad{ width: 34px; height: 44px; }
+/* Pines oficiales: mismo ancho que el pin común para que el cuerpo se vea igual de grande;
+   el alto es mayor solo para darle lugar a la corona (imagen ya recortada a su bounding box). */
+.ul-pin-oficial  { width: 34px; height: 49px; }
 
 /* ═══ MOBILE FIRST — EXPLORE ═══ */
 @media (max-width: 768px) {
@@ -1809,6 +1812,7 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
   .ul-pin-foto     { width: 44px; height: 56px; }
   .ul-pin-comercio { width: 44px; height: 56px; }
   .ul-pin-comunidad{ width: 44px; height: 56px; }
+  .ul-pin-oficial  { width: 44px; height: 63px; }
 
   /* Map controls — bigger tap targets */
   #locate-btn { width: 46px !important; height: 46px !important; border-radius: 14px !important; }
@@ -3290,7 +3294,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
           <span class="vis-em">👥</span>Comunidad
         </button>
         <button class="vis-opt muni" id="vopt-pending" onclick="App._cmSetVis('pending',this)">
-          <span class="vis-em">🏛</span>Proponer al municipio
+          <span class="vis-em">👑</span>Proponer al municipio para que sea oficial
         </button>
       </div>
       <div id="vopt-hint" style="font-size:10px;color:var(--gr);margin-top:6px;">
@@ -4032,7 +4036,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <div style="background:var(--orL);border:2px solid var(--or);border-radius:14px;padding:14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:12px;">
       <input type="checkbox" id="fl-municipio" style="width:24px;height:24px;accent-color:var(--or);flex-shrink:0;margin-top:1px;">
       <div style="flex:1;">
-        <label for="fl-municipio" style="font-size:16px;color:var(--or);cursor:pointer;font-weight:700;display:block;">🏛 Proponer al municipio</label>
+        <label for="fl-municipio" style="font-size:16px;color:var(--or);cursor:pointer;font-weight:700;display:block;">👑 Proponer al municipio para que sea oficial</label>
         <span style="font-size:12px;color:var(--md);line-height:1.4;">Se comparte en la comunidad + revisión oficial</span>
       </div>
     </div>
@@ -5552,6 +5556,11 @@ const App = {
   // con color/arte distinto para diferenciarlo de los oficiales y de FotoLoop.
   // TODO: reemplazar por el asset definitivo cuando esté listo.
   _PIN_LOOP_COMUNIDAD: 'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pin-loop-comunidad.png',
+  // Pines OFICIALES (del municipio) — vienen con corona arriba. Recortados a su bounding box
+  // real (las imágenes originales traían mucho margen transparente) para que el "cuerpo" del
+  // pin se vea del mismo tamaño que el pin común; la corona ocupa el alto extra de la caja.
+  _PIN_INICIO_LOOP_OFICIAL: 'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pin-loop-oficial.PNG',
+  _PIN_FOTOLOOP_OFICIAL:    'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pin-fotoloop-oficial.PNG',
   _isSatellite: false,
 
   toggleSatellite() {
@@ -6293,8 +6302,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     // mismo punto — no crear un segundo pin encima (se superponen y rompen los eventos de hover).
     if (!(this._iconMarkers && this._iconMarkers[r.id])) {
       const elStart = document.createElement('div');
-      elStart.className = 'ul-pin-wrap ul-pin-start';
-      elStart.innerHTML = `<img src="${this._PIN_INICIO_LOOP}" style="filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));" alt="Inicio del Loop" draggable="false">`;
+      const esOficialInicio = (r.source === 'municipio');
+      elStart.className = 'ul-pin-wrap ul-pin-start' + (esOficialInicio ? ' ul-pin-oficial' : '');
+      const pinStartSrc = esOficialInicio ? this._PIN_INICIO_LOOP_OFICIAL : this._PIN_INICIO_LOOP;
+      elStart.innerHTML = `<img src="${pinStartSrc}" style="filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));" alt="Inicio del Loop" draggable="false">`;
       elStart.title = r.name || 'Inicio del Loop';
       const elStartImg = elStart.querySelector('img');
       elStart.addEventListener('mouseenter', () => { elStartImg.style.transform = 'scale(1.12) translateY(-2px)'; });
@@ -6500,8 +6511,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if (!window.Supercluster || visible.length < 10) {
       visible.forEach(p => {
         const el = document.createElement('div');
-        el.className = 'ul-pin-wrap ul-pin-foto';
-        el.innerHTML = `<img src="${this._PIN_FOTOLOOP}" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));" alt="FotoLoop" draggable="false">`;
+        el.className = 'ul-pin-wrap ul-pin-foto' + (p.source === 'municipio' ? ' ul-pin-oficial' : '');
+        const pinFotoSrc = (p.source === 'municipio') ? this._PIN_FOTOLOOP_OFICIAL : this._PIN_FOTOLOOP;
+        el.innerHTML = `<img src="${pinFotoSrc}" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));" alt="FotoLoop" draggable="false">`;
         el.title = p.name || 'Foto Loop';
         const elImg = el.querySelector('img');
         el.onclick = (e) => { e.stopPropagation(); App._bouncePin(elImg); App._showFotoPopup(p); };
@@ -6563,8 +6575,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         } else {
           // — Marker individual —
           const el = document.createElement('div');
-          el.className = 'ul-pin-wrap ul-pin-foto';
-          el.innerHTML = `<img src="${this._PIN_FOTOLOOP}" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));" alt="FotoLoop" draggable="false">`;
+          el.className = 'ul-pin-wrap ul-pin-foto' + (post.source === 'municipio' ? ' ul-pin-oficial' : '');
+          const pinFotoSrc = (post.source === 'municipio') ? this._PIN_FOTOLOOP_OFICIAL : this._PIN_FOTOLOOP;
+          el.innerHTML = `<img src="${pinFotoSrc}" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));" alt="FotoLoop" draggable="false">`;
           el.title = post.name || 'Foto Loop';
           const elImg = el.querySelector('img');
           el.onclick = (ev) => { ev.stopPropagation(); App._bouncePin(elImg); App._showFotoPopup(post); };
@@ -14807,7 +14820,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         <!-- Proponer al municipio — visible sin scrollear -->
         <div style="background:rgba(90,60,140,.15);border:1px solid rgba(183,148,244,.3);border-radius:12px;padding:10px 13px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
           <input type="checkbox" id="gsm-municipio" style="width:18px;height:18px;accent-color:#FF5F00;flex-shrink:0;">
-          <label for="gsm-municipio" style="font-size:13px;color:var(--dk);cursor:pointer;font-weight:600;flex:1;">🏛 Proponer al municipio</label>
+          <label for="gsm-municipio" style="font-size:13px;color:var(--dk);cursor:pointer;font-weight:600;flex:1;">👑 Proponer al municipio para que sea oficial</label>
           <span style="font-size:10px;color:var(--gr);text-align:right;line-height:1.3;">Se publica en la<br>comunidad + revisión oficial</span>
         </div>
         <!-- Descripción -->
