@@ -4475,6 +4475,10 @@ const App = {
               createdAt: _uData.createdAt || Date.now(),
               lastSeen: Date.now()
             }, { merge: true });
+            // Si todavía no tenemos la fecha de nacimiento guardada (nueva cuenta, o cuenta
+            // vieja de antes de pedir este dato), se la pedimos. Aplica a Google Y a email/pass,
+            // porque ninguno de los dos providers nos da esta info de forma confiable.
+            this._needsBirthdate = !_uData.birthdate;
           } catch(e) { /* silencioso */ }
         }
 
@@ -4494,9 +4498,12 @@ const App = {
             if (!isGoogle && !user.emailVerified) {
               setTimeout(() => this._showVerifyBanner(), 800);
             }
+            // Pedir fecha de nacimiento si no la tenemos (cuenta nueva o vieja sin este dato)
+            if (this._needsBirthdate) setTimeout(() => this._showBirthdateModal(), 600);
           } else if (user && !wasLoggedIn) {
             // Refresh de página con sesión existente: quedarse en explore
             this._initNotifications();
+            if (this._needsBirthdate) setTimeout(() => this._showBirthdateModal(), 900);
           }
         }
       });
@@ -18064,6 +18071,64 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     } catch(e) {
       if (e.code === 'auth/too-many-requests') this.toast('⚠️ Esperá unos minutos antes de reenviar');
       else this.toast('⚠️ No se pudo reenviar: ' + e.message);
+    }
+  },
+
+  // ── Modal obligatorio para pedir fecha de nacimiento (Google no la provee de forma
+  //    confiable, y el registro por email tampoco la pedía). Sin botón de cerrar ni click-afuera:
+  //    se guarda una vez y no vuelve a molestar. ──
+  _showBirthdateModal() {
+    if (document.getElementById('birthdate-modal')) return;
+    if (!this._uid || this._uid === 'public') return;
+    const todayISO = new Date().toISOString().slice(0,10);
+    const div = document.createElement('div');
+    div.id = 'birthdate-modal';
+    div.style.cssText = `
+      position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);
+      display:flex;align-items:center;justify-content:center;padding:20px;
+      animation:fadeUp .25s ease both;
+    `;
+    div.innerHTML = `
+      <div style="width:100%;max-width:380px;background:var(--bg1);border:1.5px solid var(--or);border-radius:18px;padding:22px 20px;box-shadow:0 12px 40px rgba(0,0,0,.5);">
+        <div style="font-size:30px;margin-bottom:8px;">🎂</div>
+        <div style="font-family:var(--fH);font-size:16px;font-weight:800;color:var(--dk);margin-bottom:6px;">¿Cuándo naciste?</div>
+        <div style="font-size:12.5px;color:var(--gr);line-height:1.55;margin-bottom:14px;">
+          Nos falta este dato para completar tu cuenta. Es solo para nosotros, no se muestra a otros usuarios.
+        </div>
+        <input id="bd-input" type="date" max="${todayISO}" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1.5px solid var(--bd);border-radius:11px;font-size:14px;font-family:var(--fB);font-weight:600;background:var(--bg0);color:var(--dk);margin-bottom:14px;">
+        <button onclick="App._saveBirthdate()" style="width:100%;padding:12px;border-radius:11px;border:none;background:var(--or);color:white;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--fB);">Guardar</button>
+      </div>
+    `;
+    document.body.appendChild(div);
+  },
+
+  async _saveBirthdate() {
+    const input = document.getElementById('bd-input');
+    const val = input?.value;
+    if (!val) return this.toast('⚠️ Elegí una fecha');
+
+    const bd = new Date(val + 'T00:00:00');
+    const today = new Date();
+    if (isNaN(bd.getTime()) || bd > today) return this.toast('⚠️ Fecha inválida');
+
+    let age = today.getFullYear() - bd.getFullYear();
+    const m = today.getMonth() - bd.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < bd.getDate())) age--;
+
+    if (age < 5 || age > 110) return this.toast('⚠️ Revisá la fecha ingresada');
+
+    const isMinor = age < 18;
+    try {
+      await this._db.collection('users').doc(this._uid).set({
+        birthdate: val,
+        age,
+        isMinor
+      }, { merge: true });
+      this._needsBirthdate = false;
+      document.getElementById('birthdate-modal')?.remove();
+      this.toast('✅ ¡Gracias!');
+    } catch(e) {
+      this.toast('⚠️ No se pudo guardar. Probá de nuevo.');
     }
   },
 
