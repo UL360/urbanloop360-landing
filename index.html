@@ -11624,6 +11624,24 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     };
   },
 
+  // ── Actualiza TODOS los carteles de ciudad de la app (antes cada uno se actualizaba
+  //    por separado y varios quedaban huérfanos con el texto fijo "La Paz, Entre Ríos"
+  //    puesto como placeholder, sin importar dónde estuviera el usuario realmente). ──
+  _refreshCityLabels() {
+    const city = this._luCity || 'La Paz';
+    const prov = this._luProv || '';
+    const dept = this._luDept || '';
+    const full = city + (prov ? `, ${prov}` : '');
+    const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+    set('map-city-label', full);
+    set('lu-city-label', full);
+    set('lu-dept-label', dept ? `· Dpto. ${dept}` : '');
+    set('com-city-label', full);
+    set('side-city-name', `📍 ${full}`);
+    set('com-prov-label', `📍 ${full}`);
+    set('ev-city-label', `📍 ${full}`);
+  },
+
   // ── Actualizar ciudad del usuario desde GPS (se llama al mover el marcador) ──
   async _updateCityFromGPS(lat, lng) {
     if (this._cityDetected) return;
@@ -11635,13 +11653,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       this._luPais  = loc.pais;
       this._luDept  = loc.departamento || '';
       this._comCity = loc.ciudad;
-      const suffix = loc.provincia ? `, ${loc.provincia}` : '';
-      const lbl = document.getElementById('lu-city-label');
-      if (lbl) lbl.textContent = loc.ciudad + suffix;
-      const deptLbl = document.getElementById('lu-dept-label');
-      if (deptLbl) deptLbl.textContent = loc.departamento ? `· Dpto. ${loc.departamento}` : '';
-      const comLbl = document.getElementById('com-city-label');
-      if (comLbl) comLbl.textContent = loc.ciudad + suffix;
+      this._refreshCityLabels();
       console.log(`[GPS] ${loc.ciudad}, Dpto. ${loc.departamento}, ${loc.provincia}, ${loc.pais}`);
     }
   },
