@@ -2057,7 +2057,6 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 
     <!-- IDs necesarios para el JS de home -->
     <div id="home-greeting" style="display:none;">Buenas, loopeador</div>
-    <div id="home-avatar"   style="display:none;"></div>
     <div id="home-activos-list" style="display:none;"></div>
   </div>
 </div>
@@ -3096,7 +3095,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
   </div>
   <div style="padding:10px 14px 10px;background:#1C1C1E;border-bottom:0.5px solid #2C2C2E;flex-shrink:0;">
     <div style="font-size:10px;font-weight:700;color:var(--gr);letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px;">Tipo de loop</div>
-    <select id="grab-type-select" class="fi" aria-label="Tipo de loop" style="width:100%;" onchange="App._setGrabType(this.value)">
+    <select id="grab-type-select" class="fi" aria-label="Tipo de loop" style="width:100%;">
       <option value="running">🏃 Running Loop</option>
       <option value="mtb">🚵 MTB Loop</option>
       <option value="ciclismo">🚴 Ciclismo Loop</option>
@@ -4775,6 +4774,10 @@ const App = {
     }
   },
 
+  openTyC() {
+    window.open('terminos-y-condiciones-urban-loop.html', '_blank');
+  },
+
   async logout() {
     if (!this._auth) return;
     try {
@@ -5562,7 +5565,6 @@ const App = {
   // Pin para loops NO oficiales (comunidad): mismo formato que _PIN_INICIO_LOOP pero
   // con color/arte distinto para diferenciarlo de los oficiales y de FotoLoop.
   // TODO: reemplazar por el asset definitivo cuando esté listo.
-  _PIN_LOOP_COMUNIDAD: 'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pin-loop-comunidad.png',
   // Pines OFICIALES (del municipio) — vienen con corona arriba. Recortados a su bounding box
   // real (las imágenes originales traían mucho margen transparente) para que el "cuerpo" del
   // pin se vea del mismo tamaño que el pin común; la corona ocupa el alto extra de la caja.
