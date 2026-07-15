@@ -18085,6 +18085,12 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   //    confiable, y el registro por email tampoco la pedía). Sin botón de cerrar ni click-afuera:
   //    se guarda una vez y no vuelve a molestar. ──
   _showBirthdateModal() {
+    // Interruptor para pausar el pedido obligatorio de fecha de nacimiento (por ahora
+    // desactivado: se decidió esperar y ver qué tipo de público se registra antes de
+    // pedir este dato en un modal que tapa el mapa). Para reactivarlo, poner en true.
+    const BIRTHDATE_ENABLED = false;
+    if (!BIRTHDATE_ENABLED) return;
+
     if (document.getElementById('birthdate-modal')) return;
     if (!this._uid || this._uid === 'public') return;
     const todayISO = new Date().toISOString().slice(0,10);
