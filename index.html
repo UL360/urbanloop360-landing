@@ -15855,7 +15855,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     this.routes     = this.routes.filter(r => r.id !== id);
     this.routesCom  = (this.routesCom  || []).filter(r => r.id !== id);
     this.routesMuni = (this.routesMuni || []).filter(r => r.id !== id);
-    // Limpiar capas MapLibre
+    // Limpiar capas MapLibre (la línea del recorrido)
     if (this.mainMap && this._layers && this._layers[id]) {
       this._layers[id].forEach(lid => {
         try { if (this.mainMap.getLayer(lid)) this.mainMap.removeLayer(lid); } catch(e) {}
@@ -15863,6 +15863,19 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       try { if (this.mainMap.getSource(id)) this.mainMap.removeSource(id); } catch(e) {}
       delete this._layers[id];
     }
+    // Sacar también el PIN del mapa (antes solo se limpiaba la línea del recorrido;
+    // el ícono se quedaba puesto hasta refrescar la página porque vive aparte, en
+    // _startMarkers/_iconMarkers, no en _layers).
+    if (this._startMarkers && this._startMarkers[id]) {
+      try { this._startMarkers[id].remove(); } catch(e) {}
+      delete this._startMarkers[id];
+    }
+    if (this._iconMarkers && this._iconMarkers[id]) {
+      try { this._iconMarkers[id].remove(); } catch(e) {}
+      delete this._iconMarkers[id];
+    }
+    if (this._pinnedRouteId === id) this._pinnedRouteId = null;
+    if (this._previewRouteId === id) this._previewRouteId = null;
     await this._deleteImg(`loops/${id}.jpg`);
     await this._saveData();
     this._admRenderLoops();
@@ -16204,6 +16217,10 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       }
     }
     if (this._fotoPosts) this._fotoPosts = this._fotoPosts.filter(p=>p.id!==id);
+    // Los pines de FotoLoop se dibujan con clusters a partir de _fotoPosts —
+    // hay que volver a dibujarlos para que el pin borrado desaparezca del mapa
+    // sin necesidad de refrescar la página.
+    this._drawFotoStopsOnMap();
     this._admRenderFotoloops();
     this.toast('🗑️ Foto loop eliminado');
     if (this._currentScreen === 'detail') this.go('explore');
