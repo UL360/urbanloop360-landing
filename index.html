@@ -15830,19 +15830,17 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
 
   async _admDeleteLoop(id, name) {
     if (!confirm(`¿Eliminar el loop "${name}"? Esta acción no se puede deshacer.`)) return;
-    this.routes     = this.routes.filter(r => r.id !== id);
-    this.routesCom  = (this.routesCom  || []).filter(r => r.id !== id);
-    this.routesMuni = (this.routesMuni || []).filter(r => r.id !== id);
-    // Limpiar capas MapLibre
-    if (this.mainMap && this._layers && this._layers[id]) {
-      this._layers[id].forEach(lid => {
-        try { if (this.mainMap.getLayer(lid)) this.mainMap.removeLayer(lid); } catch(e) {}
-      });
-      try { if (this.mainMap.getSource(id)) this.mainMap.removeSource(id); } catch(e) {}
-      delete this._layers[id];
-    }
     if (this._db) {
-      try { await this._db.collection('loops').doc(id).delete(); }          catch(e){}
+      // Antes: el error de este delete se ignoraba (catch vacío) y el toast de "eliminado"
+      // se mostraba SIEMPRE, aunque Firestore hubiera rechazado el borrado por permisos.
+      // Resultado: el loop desaparecía de la pantalla actual (estado local) pero seguía
+      // existiendo en la base — y volvía a aparecer en el próximo refresh. Ahora, si el
+      // borrado principal falla, se avisa y no se toca nada más.
+      try {
+        await this._db.collection('loops').doc(id).delete();
+      } catch(e) {
+        return this.toast(`❌ No se pudo eliminar (¿sin permisos?): ${e.message||e.code||''}`);
+      }
       try { await this._db.collection('loops_municipio').doc(id).delete(); } catch(e){}
       try { await this._db.collection('loops_municipio_pending').doc(id).delete(); } catch(e){}
       // ── Registrar ID eliminado para que no vuelva a aparecer ──
@@ -15854,6 +15852,17 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
         });
       } catch(e) { console.warn('No se pudo registrar eliminación:', e); }
     }
+    this.routes     = this.routes.filter(r => r.id !== id);
+    this.routesCom  = (this.routesCom  || []).filter(r => r.id !== id);
+    this.routesMuni = (this.routesMuni || []).filter(r => r.id !== id);
+    // Limpiar capas MapLibre
+    if (this.mainMap && this._layers && this._layers[id]) {
+      this._layers[id].forEach(lid => {
+        try { if (this.mainMap.getLayer(lid)) this.mainMap.removeLayer(lid); } catch(e) {}
+      });
+      try { if (this.mainMap.getSource(id)) this.mainMap.removeSource(id); } catch(e) {}
+      delete this._layers[id];
+    }
     await this._deleteImg(`loops/${id}.jpg`);
     await this._saveData();
     this._admRenderLoops();
@@ -15861,6 +15870,10 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const statEl = document.getElementById('aStat-loops');
     if (statEl) statEl.textContent = this.routes.filter(r=>r.type!=='fotostop').length;
     this.toast(`🗑️ Loop "${name}" eliminado`);
+    // Si lo borraste desde la pantalla de Detalle (mapa), volver a Explorar —
+    // si no, la pantalla se queda mostrando el detalle de un loop que ya no existe,
+    // dando la sensación de que el botón "no hizo nada".
+    if (this._currentScreen === 'detail') this.go('explore');
   },
 
 
@@ -16183,10 +16196,17 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
 
   async _admDeleteFL(id) {
     if (!confirm('¿Eliminar esta foto loop?')) return;
+    if (this._db) {
+      try {
+        await this._db.collection('fotoloops').doc(id).delete();
+      } catch(e) {
+        return this.toast(`❌ No se pudo eliminar (¿sin permisos?): ${e.message||e.code||''}`);
+      }
+    }
     if (this._fotoPosts) this._fotoPosts = this._fotoPosts.filter(p=>p.id!==id);
-    if (this._db) { try { await this._db.collection('fotoloops').doc(id).delete(); } catch(e){} }
     this._admRenderFotoloops();
     this.toast('🗑️ Foto loop eliminado');
+    if (this._currentScreen === 'detail') this.go('explore');
   },
 
   // ── Eventos ──
@@ -17587,8 +17607,10 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
         this._negociosCache = lista; // BUG FIX: guardar en cache para _negocioFiltrar
       } catch(e) { console.warn('negocios:', e); lista = []; }
     }
-    // Filtrar por ciudad global
-    if (ciudad) lista = lista.filter(n => (n.ciudad||'') === ciudad);
+    // Filtrar por ciudad global — normalizado (antes era comparación exacta: "La Paz" vs
+    // "la paz" o "La Paz " con espacio ya no matcheaban y el negocio quedaba invisible).
+    const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+    if (ciudad) lista = lista.filter(n => norm(n.ciudad) === norm(ciudad));
     const RUBROS = ['Restaurante / Parrilla','Vinoteca / Vinería','Almacén / Proveeduría','Panadería / Confitería','Heladería','Farmacia','Bar / Cervecería','Café','Hospedaje / Camping','Guía de pesca','Alquiler de botes / Kayaks','Servicio náutico','Turismo aventura','Dietética / Naturista','Kiosco','Carnicería','Verdulería','Ferretería','Indumentaria','Peluquería / Estética','Veterinaria','Otro'];
     const PLANES = ['Básico (gratis)','Destacado','Premium'];
     el.innerHTML = `
