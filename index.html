@@ -748,6 +748,7 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
 .post-card {
   background: var(--wh); border-radius: 14px; border: 0.5px solid var(--bd);
   overflow: hidden; box-shadow: var(--sh); touch-action: pan-y;
+  flex-shrink: 0; /* nunca se achica para "entrar" — si no entra, el padre scrollea */
 }
 .post-card-header { padding: 11px 13px 8px; display: flex; align-items: center; gap: 9px; }
 .post-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--orL); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: var(--or); flex-shrink: 0; font-family: var(--fH); }
@@ -11794,9 +11795,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
             Compartir
           </button>
-          ${p.authorId === this._uid ? `<button class="post-action" onclick="App._deletePost('${p.id}')" style="color:var(--err);">
+          ${(p.authorId === this._uid || this._isAdmin()) ? `<button class="post-action" onclick="App._deletePost('${p.id}')" style="color:var(--err);">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
-            Borrar
+            ${p.authorId === this._uid ? 'Borrar' : '🛡️ Borrar (admin)'}
           </button>` : ''}
         </div>
       </div>`;
@@ -12112,10 +12113,16 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
   async _deletePost(postId) {
     if (!confirm('¿Borrar esta publicación?')) return;
+    if (this._db) {
+      try {
+        await this._db.collection('feed_posts').doc(postId).delete();
+      } catch(e) {
+        return this.toast(`❌ No se pudo eliminar (¿sin permisos?): ${e.message||e.code||''}`);
+      }
+    }
     this._feedPosts = (this._feedPosts||[]).filter(p=>p.id!==postId);
-    if (this._db) await this._db.collection('feed_posts').doc(postId).delete().catch(()=>{});
     this._renderComunidad();
-    this.toast('Publicación eliminada');
+    this.toast('🗑️ Publicación eliminada');
   },
 
   async _sendReply(postId) {
