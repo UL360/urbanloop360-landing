@@ -16046,9 +16046,26 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
         <div class="adm-item-actions">
           <button class="adm-btn adm-btn-green" onclick="App._admApprovePropuesta('${r.id}')">✅ Aprobar → ${esFotoLoop ? 'FotoLoop Oficial' : 'Loop Oficial'}</button>
           <button class="adm-btn adm-btn-red"   onclick="App._admRejectPropuesta('${r.id}','${(r.authorId||'')}')">❌ Rechazar</button>
+          <button class="adm-btn" style="background:var(--bg2);color:var(--gr);" onclick="App._admDeletePropuestaDirecta('${r.id}')" title="Borra la propuesta directamente, sin tocar el Loop/FotoLoop original ni pasar por la papelera">🗑️ Eliminar de la lista</button>
         </div>
       </div>`;
       }).join('') + `</div>`;
+  },
+
+  // ── Borrado directo de una propuesta pendiente (sin resetear estado ni archivar).
+  //    Sirve como opción manual de "por las dudas" si algo quedó trabado. ──
+  async _admDeletePropuestaDirecta(id) {
+    if (!confirm('¿Eliminar esta propuesta directamente de la lista de pendientes?\nNo se archiva en la papelera ni se toca el Loop/FotoLoop original.')) return;
+    this._propuestasCache = (this._propuestasCache||[]).filter(r => r.id !== id);
+    this._renderPropuestasList(this._propuestasCache);
+    if (!this._db) return;
+    try {
+      await this._db.collection('loops_municipio_pending').doc(id).delete();
+      this.toast('🗑️ Propuesta eliminada de la lista');
+    } catch(e) {
+      this.toast(`❌ No se pudo eliminar (¿sin permisos?): ${e.message||e.code||''}`);
+      this._admRenderPropuestas(); // refrescar de verdad para ver el estado real
+    }
   },
 
   async _admApprovePropuesta(id) {
@@ -16177,9 +16194,24 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
             <div class="adm-item-meta">${r.ciudad||'—'} · Por: ${App._esc(r.authorName)||'Anónimo'}</div>
             <div class="adm-item-meta">Rechazada: ${fecha}</div>
           </div>
+          <button class="adm-btn adm-btn-red" style="flex-shrink:0;" onclick="App._admPurgarRechazada('${r.id}')">🗑️ Purgar</button>
         </div>
       </div>`;
       }).join('') + `</div>`;
+  },
+
+  async _admPurgarRechazada(id) {
+    if (!confirm('¿Borrar definitivamente este registro de la papelera?')) return;
+    if (!this._db) return;
+    try {
+      await this._db.collection('loops_municipio_rechazadas').doc(id).delete();
+      this.toast('🗑️ Registro purgado de la papelera');
+      // Refrescar la vista de rechazadas directo (sin el hack de togglear 2 veces)
+      const snap = await this._db.collection('loops_municipio_rechazadas').limit(100).get();
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      list.sort((a,b) => (b.rejectedAt||0) - (a.rejectedAt||0));
+      this._renderRechazadasList(list);
+    } catch(e) { this.toast(`❌ No se pudo purgar: ${e.message||e.code||''}`); }
   },
 
   // ── FotoLoops ──
