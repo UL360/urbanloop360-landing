@@ -4035,10 +4035,10 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       <div id="fl-coords" style="font-size:12px;color:var(--gr);margin-top:4px;text-align:center;">Tocá el mapa para marcar el lugar</div>
     </div>
 
-    <div id="fl-option-loop" style="background:var(--bg0);border-radius:12px;padding:12px 13px;margin-bottom:12px;display:flex;align-items:center;gap:10px;">
-      <input type="checkbox" id="fl-make-loop" style="width:21px;height:21px;accent-color:var(--or);flex-shrink:0;">
-      <label for="fl-make-loop" style="font-size:13px;color:var(--dk);cursor:pointer;line-height:1.4;">Crear también un <b>mini-loop</b> para llegar a este lugar</label>
-    </div>
+    <!-- Se sacó la opción de "crear también un mini-loop": generaba un segundo pin
+         aparte que quedaba pegado al FotoLoop. Ahora el propio popup del FotoLoop ya
+         tiene su botón "🧭 Cómo llegar" (App._navToFotoLoop), que resuelve lo mismo
+         sin crear un objeto ni un pin extra. -->
 
     <!-- Proponer al municipio -->
     <div style="background:var(--orL);border:2px solid var(--or);border-radius:14px;padding:14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:12px;">
@@ -9062,7 +9062,6 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     }
     document.getElementById('fl-name').value = '';
     document.getElementById('fl-desc').value = '';
-    document.getElementById('fl-make-loop').checked = false;
     const flMuni = document.getElementById('fl-municipio');
     if (flMuni) flMuni.checked = false;
     const flNoPersonas = document.getElementById('fl-no-personas');
@@ -9293,7 +9292,6 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const cat = this._fotoLoopCat;
     const emoji = catEmojis[cat] || '📍';
     const color = catColors[cat] || '#FF5F00';
-    const makeLoop = document.getElementById('fl-make-loop')?.checked;
 
     const stopId = 'fotostop-' + Date.now();
     const stopData = {
@@ -9360,36 +9358,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         }
       }
 
-      // Mini-loop (sin arrays anidados)
-      if (makeLoop) {
-        // Pequeño offset (~15m) para que su pin no quede EXACTO arriba del pin del FotoLoop
-        // (mismo punto = los dos pines se superponen y se ve como "un pin fantasma").
-        const OFFSET = 0.00015;
-        const loopLat = lat + OFFSET;
-        const loopLng = lng + OFFSET;
-        const loopData = {
-          id: stopId + '-loop',
-          name, type: 'fotostop',
-          desc: desc || `Punto de interés: ${name}`,
-          emoji, color, badge: 'ba',
-          dist: '0 km', dur: '—',
-          img: stopData.img,   // misma URL del Storage
-          pts: [{ lat: loopLat, lng: loopLng }],
-          pois: [{ name, lat: loopLat, lng: loopLng }],
-          cityId,
-          ciudad:    cityId,
-          provincia: _flLoc.provincia || this._luProv || 'Entre Ríos',
-          pais:      _flLoc.pais      || this._luPais || 'Argentina',
-          authorId: this._uid,
-          authorName: this._user?.displayName || 'Anónimo',
-          createdAt: Date.now(),
-          status: 'pending'
-        };
-        const loopForMap = { ...loopData, pts: [[loopLat, loopLng]] };
-        this.routes.push(loopForMap);
-        if (this._db) await this._db.collection('loops').doc(loopData.id).set(loopData);
-        if (this.mainMap) this._drawRoute(loopForMap);
-      }
+      // Ya no se crea un "mini-loop" aparte: generaba un segundo pin pegado al
+      // FotoLoop. El propio popup del FotoLoop ya tiene "🧭 Cómo llegar"
+      // (App._navToFotoLoop), que resuelve la navegación sin crear ningún objeto.
 
       const toMuni = document.getElementById('fl-municipio')?.checked;
       this.closeFotoLoop();
