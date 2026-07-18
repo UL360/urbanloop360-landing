@@ -12731,8 +12731,12 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       this._fxCombo();
 
       // ── Auto-propuesta al municipio por likes destacados ──
+      // _autoProposeBlocked es DISTINTO de _sentToMuni: cuando un admin rechaza una
+      // propuesta, _sentToMuni se resetea (para que el CREADOR pueda volver a proponerla
+      // a mano desde su perfil), pero _autoProposeBlocked queda en true para SIEMPRE —
+      // así el sistema automático de likes nunca la vuelve a proponer solo.
       const LOOP_MUNI_THRESHOLD = 20;
-      if (r.likes >= LOOP_MUNI_THRESHOLD && !r._sentToMuni && r.source !== 'municipio') {
+      if (r.likes >= LOOP_MUNI_THRESHOLD && !r._sentToMuni && !r._autoProposeBlocked && r.source !== 'municipio') {
         r._sentToMuni = true;
         if (this._db) {
           const pendingData = {
@@ -16129,13 +16133,16 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       // creador puede volver a proponerlo cuando quiera, en vez de quedar con
       // un estado de "rechazado" permanente (no queremos que se sienta mal con
       // la plataforma, mejor darle la chance de reintentar).
+      // PERO _autoProposeBlocked sí queda en true para siempre — evita que el
+      // sistema automático (likes >= 20) lo vuelva a proponer solo apenas
+      // reciba un like más, sin que ningún humano haya tocado nada.
       const isFL = cached.type === 'fotoloop_municipio';
       const origId = isFL ? (id.startsWith('fl-') ? id.slice(3) : id) : id;
       const coll = isFL ? 'fotoloops' : 'loops';
-      try { await this._db.collection(coll).doc(origId).update({ _sentToMuni: false }); } catch(e) {}
+      try { await this._db.collection(coll).doc(origId).update({ _sentToMuni: false, _autoProposeBlocked: true }); } catch(e) {}
       const localArr = isFL ? this._fotoPosts : this.routes;
       const localObj = (localArr||[]).find(x => x.id === origId);
-      if (localObj) localObj._sentToMuni = false;
+      if (localObj) { localObj._sentToMuni = false; localObj._autoProposeBlocked = true; }
       // Guardar en la papelera es "best effort": si falla (ej: falta la regla de
       // Firestore para esta colección todavía), no debe impedir que el rechazo
       // en sí funcione — ya se borró de pendientes en el paso de arriba.
