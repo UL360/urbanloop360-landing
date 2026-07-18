@@ -4878,10 +4878,10 @@ const App = {
     };
 
     const myFotos = (this._fotoPosts || []).filter(p => p.authorId === this._uid)
-      .map(p => ({ id:p.id, name:p.name||'Foto Loop', emoji:p.emoji||'📍', ts:p.ts||p.createdAt||0, status:p.status||'pending', kind:'Foto Loop' }));
+      .map(p => ({ id:p.id, name:p.name||'Foto Loop', emoji:p.emoji||'📍', ts:p.ts||p.createdAt||0, status:p.status||'pending', kind:'Foto Loop', sentToMuni: !!p._sentToMuni, source: p.source }));
 
     const myLoops = (this.routes || []).filter(r => r.authorId === this._uid && !DEFAULTS.find(d=>d.id===r.id))
-      .map(r => ({ id:r.id, name:r.name||'Loop', emoji:r.emoji||'🔁', ts:r.createdAt||0, status:r.status||'approved', kind:'Loop' }));
+      .map(r => ({ id:r.id, name:r.name||'Loop', emoji:r.emoji||'🔁', ts:r.createdAt||0, status:r.status||'approved', kind:'Loop', sentToMuni: !!r._sentToMuni, source: r.source }));
 
     const all = [...myFotos, ...myLoops].sort((a,b) => b.ts - a.ts);
 
@@ -4893,6 +4893,14 @@ const App = {
     box.innerHTML = all.map(item => {
       const st = STATUS_UI[item.status] || STATUS_UI.pending;
       const fecha = item.ts ? new Date(item.ts).toLocaleDateString('es-AR', { day:'2-digit', month:'short' }) : '';
+      // Estado de la propuesta al municipio — independiente del estado de moderación
+      // (no se muestra "rechazado": si el municipio no la tomó, el botón simplemente
+      // vuelve a estar disponible para volver a intentarlo, sin marca negativa).
+      const muniBadge = item.source === 'municipio'
+        ? `<div style="flex-shrink:0;font-size:10px;font-weight:800;color:#5B21B6;background:#EDE9FE;padding:4px 9px;border-radius:8px;white-space:nowrap;">👑 Oficial</div>`
+        : item.sentToMuni
+          ? `<div style="flex-shrink:0;font-size:10px;font-weight:800;color:#92400E;background:#FFF3CD;padding:4px 9px;border-radius:8px;white-space:nowrap;">📤 Enviado al municipio</div>`
+          : '';
       return `
         <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--wh);border:0.5px solid var(--bd);border-radius:12px;margin-bottom:8px;flex-wrap:wrap;">
           <div style="font-size:20px;flex-shrink:0;">${item.emoji}</div>
@@ -4901,6 +4909,7 @@ const App = {
             <div style="font-size:10px;color:var(--gr);margin-top:2px;">${item.kind}${fecha ? ' · '+fecha : ''}</div>
           </div>
           <div style="flex-shrink:0;font-size:10px;font-weight:800;color:${st.color};background:${st.bg};padding:4px 9px;border-radius:8px;white-space:nowrap;">${st.label}</div>
+          ${muniBadge}
           <div style="width:100%;display:flex;gap:6px;justify-content:flex-end;">
             <button class="adm-btn adm-btn-blue" onclick="App._pfEditItem('${item.kind}','${item.id}')">✏️ Editar</button>
             <button class="adm-btn adm-btn-red" onclick="App._pfDeleteItem('${item.kind}','${item.id}')">🗑️ Eliminar</button>
@@ -16091,20 +16100,35 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     this._renderPropuestasList(this._propuestasCache);
     if (this._db) {
       try {
-        // Se guarda en un historial de rechazadas (papelera) en vez de borrarse
-        // para siempre — así queda registro de qué se rechazó y por qué.
-        await this._db.collection('loops_municipio_rechazadas').doc(id).set({
-          ...cached, rejectedAt: Date.now(), rejectedBy: this._uid
-        });
         await this._db.collection('loops_municipio_pending').doc(id).delete();
       } catch(e) {
+        // Esto sí es crítico: si esto falla, la propuesta sigue viva de verdad.
         this._propuestasCache.push(cached);
         this._propuestasCache.sort((a,b) => (b.createdAt||b.proposedAt||b.ts||0) - (a.createdAt||a.proposedAt||a.ts||0));
         this._renderPropuestasList(this._propuestasCache);
         return this.toast(`❌ No se pudo rechazar (¿sin permisos?): ${e.message||e.code||''}`);
       }
+      // Resetear el flag "ya propuesto" en el Loop/FotoLoop original — así el
+      // creador puede volver a proponerlo cuando quiera, en vez de quedar con
+      // un estado de "rechazado" permanente (no queremos que se sienta mal con
+      // la plataforma, mejor darle la chance de reintentar).
+      const isFL = cached.type === 'fotoloop_municipio';
+      const origId = isFL ? (id.startsWith('fl-') ? id.slice(3) : id) : id;
+      const coll = isFL ? 'fotoloops' : 'loops';
+      try { await this._db.collection(coll).doc(origId).update({ _sentToMuni: false }); } catch(e) {}
+      const localArr = isFL ? this._fotoPosts : this.routes;
+      const localObj = (localArr||[]).find(x => x.id === origId);
+      if (localObj) localObj._sentToMuni = false;
+      // Guardar en la papelera es "best effort": si falla (ej: falta la regla de
+      // Firestore para esta colección todavía), no debe impedir que el rechazo
+      // en sí funcione — ya se borró de pendientes en el paso de arriba.
+      try {
+        await this._db.collection('loops_municipio_rechazadas').doc(id).set({
+          ...cached, rejectedAt: Date.now(), rejectedBy: this._uid
+        });
+      } catch(e) { console.warn('No se pudo archivar en papelera (¿faltan reglas de Firestore?):', e); }
     }
-    this.toast('Propuesta rechazada');
+    this.toast('Propuesta rechazada — el creador puede volver a proponerla');
   },
 
   // ── Papelera: propuestas rechazadas (registro histórico) ──
