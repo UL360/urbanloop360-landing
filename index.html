@@ -6531,7 +6531,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         const el = document.createElement('div');
         el.className = 'ul-pin-wrap ul-pin-foto' + (p.source === 'municipio' ? ' ul-pin-oficial' : '');
         const pinFotoSrc = (p.source === 'municipio') ? this._PIN_FOTOLOOP_OFICIAL : this._PIN_FOTOLOOP;
-        el.innerHTML = `<img src="${pinFotoSrc}" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));" alt="FotoLoop" draggable="false">`;
+        el.innerHTML = `<img src="${pinFotoSrc}" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,.4)) saturate(1.35) brightness(1.08);" alt="FotoLoop" draggable="false">`;
         el.title = p.name || 'Foto Loop';
         const elImg = el.querySelector('img');
         el.onclick = (e) => { e.stopPropagation(); App._bouncePin(elImg); App._showFotoPopup(p); };
@@ -6595,7 +6595,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           const el = document.createElement('div');
           el.className = 'ul-pin-wrap ul-pin-foto' + (post.source === 'municipio' ? ' ul-pin-oficial' : '');
           const pinFotoSrc = (post.source === 'municipio') ? this._PIN_FOTOLOOP_OFICIAL : this._PIN_FOTOLOOP;
-          el.innerHTML = `<img src="${pinFotoSrc}" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));" alt="FotoLoop" draggable="false">`;
+          el.innerHTML = `<img src="${pinFotoSrc}" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,.4)) saturate(1.35) brightness(1.08);" alt="FotoLoop" draggable="false">`;
           el.title = post.name || 'Foto Loop';
           const elImg = el.querySelector('img');
           el.onclick = (ev) => { ev.stopPropagation(); App._bouncePin(elImg); App._showFotoPopup(post); };
@@ -15690,7 +15690,6 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
                 ? `<button class="adm-btn" style="opacity:.5;cursor:default;" disabled>📬 Ya en Municipio</button>`
                 : ''
             }
-            <button class="adm-btn" style="${r.isDemoLoop ? 'background:#FF5F00;color:#fff;border:1px solid #FF5F00;' : 'background:var(--bg2);'}" onclick="App._admSetDemoLoop('${r.id}')">${r.isDemoLoop ? '⭐ Es la Demo' : '☆ Usar como Demo'}</button>
             <button class="adm-btn" style="background:#EEF2FF;color:#4F46E5;border-color:#4F46E5;" onclick="App._admRetagLoop('${r.id}')">🏷️ Re-etiquetar ciudad</button>
             <button class="adm-btn adm-btn-red" onclick="App._admDeleteLoop('${r.id}','${r.name.replace(/'/g,'')}')">🗑️ Eliminar</button>
           </div>
@@ -15990,6 +15989,10 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     el.innerHTML = `<div style="padding:14px;display:flex;flex-direction:column;gap:10px;">` +
       list.map(r => {
         const isDestacado = r.tipo === 'destacado' || r.tipo === 'admin_manual';
+        const esFotoLoop = r.type === 'fotoloop_municipio';
+        const tipoBadge = esFotoLoop
+          ? `<span style="font-size:9px;background:#EDE9FE;color:#5B21B6;border-radius:6px;padding:1px 6px;font-weight:700;">📸 FotoLoop</span>`
+          : `<span style="font-size:9px;background:#FFF7ED;color:#9A3412;border-radius:6px;padding:1px 6px;font-weight:700;">🔄 Loop</span>`;
         const origenBadge = r.tipo === 'destacado'
           ? `<span style="font-size:9px;background:#FFF3CD;color:#92400E;border-radius:6px;padding:1px 6px;font-weight:700;">🔥 Por likes (${r.likeCount||0} ❤️)</span>`
           : r.tipo === 'admin_manual'
@@ -15998,17 +16001,17 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
         return `
       <div class="adm-item" style="${isDestacado ? 'border-left:3px solid #F59E0B;' : ''}">
         <div class="adm-item-row">
-          <div class="adm-item-thumb" style="display:flex;align-items:center;justify-content:center;font-size:22px;">${r.emoji||'🔄'}</div>
+          <div class="adm-item-thumb" style="display:flex;align-items:center;justify-content:center;font-size:22px;">${esFotoLoop ? (r.img ? App._imgTag(r.img,'width:100%;height:100%;object-fit:cover;border-radius:8px;') : '📸') : (r.emoji||'🔄')}</div>
           <div class="adm-item-info">
-            <div class="adm-item-name" style="display:flex;align-items:center;gap:6px;">${App._esc(r.name)} ${origenBadge}</div>
-            <div class="adm-item-meta">${r.ciudad||'—'} · ${r.dist||'—'} · ❤️${r.likeCount||r.likes||0} likes</div>
+            <div class="adm-item-name" style="display:flex;align-items:center;gap:6px;">${App._esc(r.name)} ${tipoBadge} ${origenBadge}</div>
+            <div class="adm-item-meta">${r.ciudad||'—'} · ${esFotoLoop ? '' : (r.dist||'—')+' · '}❤️${r.likeCount||r.likes||0} likes</div>
             <div class="adm-item-meta">Por: ${App._esc(r.authorName)||'Anónimo'}</div>
             ${r.proposedReason ? `<div class="adm-item-meta" style="margin-top:2px;font-style:italic;color:var(--gr);">${App._esc(r.proposedReason)}</div>` : ''}
             ${r.desc ? `<div class="adm-item-meta" style="margin-top:2px;">${App._esc(r.desc)}</div>` : ''}
           </div>
         </div>
         <div class="adm-item-actions">
-          <button class="adm-btn adm-btn-green" onclick="App._admApprovePropuesta('${r.id}')">✅ Aprobar → Loop Oficial</button>
+          <button class="adm-btn adm-btn-green" onclick="App._admApprovePropuesta('${r.id}')">✅ Aprobar → ${esFotoLoop ? 'FotoLoop Oficial' : 'Loop Oficial'}</button>
           <button class="adm-btn adm-btn-red"   onclick="App._admRejectPropuesta('${r.id}','${(r.authorId||'')}')">❌ Rechazar</button>
         </div>
       </div>`;
@@ -16021,6 +16024,23 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       const snap = await this._db.collection('loops_municipio_pending').doc(id).get();
       if (!snap.exists) return this.toast('⚠️ Propuesta no encontrada');
       const data = { ...snap.data(), source: 'municipio', status: 'published', approvedAt: Date.now() };
+
+      // ── FotoLoop propuesto: va a la colección fotoloops, no a loops ──
+      if (data.type === 'fotoloop_municipio') {
+        const flId = id.startsWith('fl-') ? id.slice(3) : id;
+        await this._db.collection('fotoloops').doc(flId).set(data, { merge: true });
+        await this._db.collection('loops_municipio_pending').doc(id).delete();
+        // Actualizar en memoria y redibujar el pin (con corona, por source:'municipio')
+        if (!this._fotoPosts) this._fotoPosts = [];
+        this._fotoPosts = this._fotoPosts.filter(p => p.id !== flId);
+        this._fotoPosts.unshift({ ...data, id: flId });
+        if (this.mainMap) this._drawFotoStopsOnMap();
+        this._admRenderPropuestas();
+        this.toast('✅ FotoLoop aprobado y publicado como oficial');
+        return;
+      }
+
+      // ── Loop propuesto (comportamiento original) ──
       await this._db.collection('loops_municipio').doc(id).set(data);
       await this._db.collection('loops_municipio_pending').doc(id).delete();
       // Agregar al array local
@@ -16108,6 +16128,12 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
           <div class="adm-item-actions" style="flex-wrap:wrap;min-width:180px;">
             ${st!=='approved'  ? `<button class="adm-btn adm-btn-green" onclick="App._admFLStatus('${p.id}','approved')">✅ Aprobar</button>` : ''}
             ${st!=='rejected'  ? `<button class="adm-btn adm-btn-red"   onclick="App._admFLStatus('${p.id}','rejected')">❌ Rechazar</button>` : ''}
+            ${p.source !== 'municipio' && !p._sentToMuni
+              ? `<button class="adm-btn" style="background:#FFF3CD;color:#92400E;border:1px solid #F59E0B;" onclick="App._admProponerMunicipioFL('${p.id}')">📤 Proponer al Municipio</button>`
+              : p.source !== 'municipio'
+                ? `<button class="adm-btn" style="opacity:.5;cursor:default;" disabled>📬 Ya en Municipio</button>`
+                : ''
+            }
             <button class="adm-btn" style="background:#EEF2FF;color:#4F46E5;border-color:#4F46E5;" onclick="App._admRetagFotoloop('${p.id}')">🏷️ Re-etiquetar ciudad</button>
             <button class="adm-btn adm-btn-red" onclick="App._admDeleteFL('${p.id}')">🗑️ Eliminar</button>
           </div>
@@ -16116,6 +16142,20 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     }).join('');
     // Cargar imágenes firestore: en thumbnails
     setTimeout(() => this._lazyLoadFsImgs(document.getElementById('adm-tab-fotoloops')), 50);
+  },
+
+  async _admProponerMunicipioFL(id) {
+    const p = (this._fotoPosts||[]).find(x => x.id === id);
+    if (!p) return this.toast('⚠️ FotoLoop no encontrado');
+    if (!confirm(`¿Proponer "${p.name||'este FotoLoop'}" al municipio para revisión?\nAparecerá en la pestaña Propuestas comunidad.`)) return;
+    if (!this._db) return this.toast('Firebase no disponible');
+    try {
+      const pendingData = { ...p, type: 'fotoloop_municipio', proposedAt: Date.now() };
+      await this._db.collection('loops_municipio_pending').doc('fl-' + id).set(pendingData, { merge: true });
+      p._sentToMuni = true;
+      this._admRenderFotoloops();
+      this.toast('📤 FotoLoop enviado a Propuestas Municipio');
+    } catch(e) { this.toast('❌ Error: ' + (e.message||e.code||'')); }
   },
 
   async _admRetagFotoloop(id) {
