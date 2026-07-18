@@ -16082,7 +16082,16 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     this._propuestasCache = (this._propuestasCache||[]).filter(r => r.id !== id);
     this._renderPropuestasList(this._propuestasCache);
     if (this._db) {
-      try { await this._db.collection('loops_municipio_pending').doc(id).delete(); } catch(e) {}
+      try {
+        await this._db.collection('loops_municipio_pending').doc(id).delete();
+      } catch(e) {
+        // No se pudo borrar de verdad (ej: permisos) — devolverla a la lista para
+        // que no parezca rechazada cuando en realidad sigue viva en la base.
+        this._propuestasCache.push(cached);
+        this._propuestasCache.sort((a,b) => (b.createdAt||b.proposedAt||b.ts||0) - (a.createdAt||a.proposedAt||a.ts||0));
+        this._renderPropuestasList(this._propuestasCache);
+        return this.toast(`❌ No se pudo rechazar (¿sin permisos?): ${e.message||e.code||''}`);
+      }
     }
     this.toast('Propuesta rechazada');
   },
