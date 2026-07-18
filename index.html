@@ -15969,15 +15969,31 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (!el) return;
     el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">Cargando propuestas...</div>`;
     const ciudad = this._admCity || '';
+    const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
     let list = [];
     if (this._db) {
       try {
-        const snap = await this._db.collection('loops_municipio_pending').orderBy('createdAt','desc').limit(50).get();
+        // Sin orderBy: si algún doc no tiene el campo 'createdAt' (pasa con algunos
+        // FotoLoops propuestos), Firestore lo excluye del resultado directamente sin
+        // avisar — eso hacía que la propuesta "desapareciera" antes de poder aprobarla.
+        // Ordenamos del lado del cliente en cambio, con fallback a otros campos de fecha.
+        const snap = await this._db.collection('loops_municipio_pending').limit(100).get();
         list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        list.sort((a,b) => (b.createdAt||b.proposedAt||b.ts||0) - (a.createdAt||a.proposedAt||a.ts||0));
       } catch(e) { console.warn('propuestas:', e); }
     }
-    // Filtrar por ciudad global
-    if (ciudad) list = list.filter(r => (r.ciudad||r.cityId||'') === ciudad);
+    // Filtrar por ciudad global — normalizado (antes era comparación exacta)
+    if (ciudad) list = list.filter(r => norm(r.ciudad||r.cityId) === norm(ciudad));
+    // Cache local: permite sacar un ítem al toque al aprobar/rechazar, sin esperar
+    // un nuevo viaje de ida y vuelta a Firestore (eso era lo que hacía que la fila
+    // se quedara pegada en pantalla después de aprobar).
+    this._propuestasCache = list;
+    this._renderPropuestasList(list);
+  },
+
+  _renderPropuestasList(list) {
+    const el = document.getElementById('adm-tab-propuestas');
+    if (!el) return;
     if (list.length === 0) {
       el.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--gr);">
         <div style="font-size:36px;margin-bottom:10px;">🏛</div>
@@ -16020,9 +16036,17 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
 
   async _admApprovePropuesta(id) {
     if (!this._db) return this.toast('Firebase no disponible');
+    // Si ya no está en la caché local, es un doble-click sobre algo que ya se procesó
+    // — no mostrar error, simplemente no hacer nada de nuevo.
+    const cached = (this._propuestasCache||[]).find(r => r.id === id);
+    if (!cached) return;
+    // Sacarla YA de la lista visible, antes de esperar la red — así no queda pegada
+    // en pantalla dando pie a un segundo click mientras se procesa la primera.
+    this._propuestasCache = (this._propuestasCache||[]).filter(r => r.id !== id);
+    this._renderPropuestasList(this._propuestasCache);
     try {
       const snap = await this._db.collection('loops_municipio_pending').doc(id).get();
-      if (!snap.exists) return this.toast('⚠️ Propuesta no encontrada');
+      if (!snap.exists) return; // ya se había aprobado/rechazado antes
       const data = { ...snap.data(), source: 'municipio', status: 'published', approvedAt: Date.now() };
 
       // ── FotoLoop propuesto: va a la colección fotoloops, no a loops ──
@@ -16035,7 +16059,6 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
         this._fotoPosts = this._fotoPosts.filter(p => p.id !== flId);
         this._fotoPosts.unshift({ ...data, id: flId });
         if (this.mainMap) this._drawFotoStopsOnMap();
-        this._admRenderPropuestas();
         this.toast('✅ FotoLoop aprobado y publicado como oficial');
         return;
       }
@@ -16048,17 +16071,19 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       this.routesMuni.push(loopForMap);
       this.routes.push(loopForMap);
       if (this.mainMap) this._drawRoute(loopForMap);
-      this._admRenderPropuestas();
       this.toast('✅ Loop aprobado y publicado en la capa municipal');
     } catch(e) { this.toast('❌ Error: ' + e.message); }
   },
 
   async _admRejectPropuesta(id, authorId) {
     if (!confirm('¿Rechazar esta propuesta?')) return;
+    const cached = (this._propuestasCache||[]).find(r => r.id === id);
+    if (!cached) return;
+    this._propuestasCache = (this._propuestasCache||[]).filter(r => r.id !== id);
+    this._renderPropuestasList(this._propuestasCache);
     if (this._db) {
       try { await this._db.collection('loops_municipio_pending').doc(id).delete(); } catch(e) {}
     }
-    this._admRenderPropuestas();
     this.toast('Propuesta rechazada');
   },
 
