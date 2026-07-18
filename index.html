@@ -2917,6 +2917,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
           <option value="rejected">❌ Rechazados</option>
         </select>
         <button onclick="App._admFLAprobarTodos()" class="adm-btn adm-btn-green" style="white-space:nowrap;">✅ Aprobar pendientes</button>
+        <button onclick="App._admFixOverlappingMiniLoops()" class="adm-btn" style="white-space:nowrap;background:var(--bg2);color:#7C5CFC;border-color:#7C5CFC33;" title="Corrige los mini-loops que quedaron pegados en la misma coordenada que su FotoLoop (bug viejo, ya corregido para los nuevos)">🔧 Corregir mini-loops pegados</button>
         <span id="adm-fl-count" style="font-size:12px;color:var(--gr);margin-left:auto;"></span>
       </div>
       <div id="adm-fl-wrap" class="adm-loops-wrap" style="overflow-x:auto;">
@@ -5568,7 +5569,7 @@ const App = {
 
   // ── Pines de logo (mascota Urban Loop) por sección ──
   _PIN_INICIO_LOOP: 'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pin-inicio-loop.png',
-  _PIN_FOTOLOOP:    'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pin-fotoloop.png',
+  _PIN_FOTOLOOP:    'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pinfotolooplila.PNG',
   _PIN_COMERCIO:    'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pin-comercio.png',
   // Pin para loops NO oficiales (comunidad): mismo formato que _PIN_INICIO_LOOP pero
   // con color/arte distinto para diferenciarlo de los oficiales y de FotoLoop.
@@ -5577,7 +5578,7 @@ const App = {
   // real (las imágenes originales traían mucho margen transparente) para que el "cuerpo" del
   // pin se vea del mismo tamaño que el pin común; la corona ocupa el alto extra de la caja.
   _PIN_INICIO_LOOP_OFICIAL: 'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pin-loop-oficial.PNG',
-  _PIN_FOTOLOOP_OFICIAL:    'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pin-fotoloop-oficial.PNG',
+  _PIN_FOTOLOOP_OFICIAL:    'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/oinfotoloopoficial.PNG',
   _isSatellite: false,
 
   toggleSatellite() {
@@ -9361,6 +9362,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
       // Mini-loop (sin arrays anidados)
       if (makeLoop) {
+        // Pequeño offset (~15m) para que su pin no quede EXACTO arriba del pin del FotoLoop
+        // (mismo punto = los dos pines se superponen y se ve como "un pin fantasma").
+        const OFFSET = 0.00015;
+        const loopLat = lat + OFFSET;
+        const loopLng = lng + OFFSET;
         const loopData = {
           id: stopId + '-loop',
           name, type: 'fotostop',
@@ -9368,8 +9374,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           emoji, color, badge: 'ba',
           dist: '0 km', dur: '—',
           img: stopData.img,   // misma URL del Storage
-          pts: [{ lat, lng }],
-          pois: [{ name, lat, lng }],
+          pts: [{ lat: loopLat, lng: loopLng }],
+          pois: [{ name, lat: loopLat, lng: loopLng }],
           cityId,
           ciudad:    cityId,
           provincia: _flLoc.provincia || this._luProv || 'Entre Ríos',
@@ -9379,7 +9385,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           createdAt: Date.now(),
           status: 'pending'
         };
-        const loopForMap = { ...loopData, pts: [[lat, lng]] };
+        const loopForMap = { ...loopData, pts: [[loopLat, loopLng]] };
         this.routes.push(loopForMap);
         if (this._db) await this._db.collection('loops').doc(loopData.id).set(loopData);
         if (this.mainMap) this._drawRoute(loopForMap);
@@ -9391,6 +9397,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       if (!this._fotoPosts) this._fotoPosts = [];
       const localPost = { ...stopData, img: stopData.imgData || stopData.img };
       delete localPost.imgData;
+      // Sacar cualquier entrada previa con el mismo id antes de agregar —
+      // si no, puede quedar duplicada en memoria y dibujarse 2 veces en el mapa.
+      this._fotoPosts = this._fotoPosts.filter(p => p.id !== localPost.id);
       this._fotoPosts.unshift(localPost);
       this._updateFotoLoopPendingBadge();
       this._drawFotoStopsOnMap();   // ← actualizar mapa
@@ -16218,6 +16227,63 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (this.mainMap) { this._drawFotoStopsOnMap(); this._drawNegociosOnMap(); }
     this._admRenderFotoloops();
     this.toast(`✅ ${ok} FotoLoop${ok!==1?'s':''} aprobados`);
+  },
+
+  // ── Corrige de una sola vez todos los mini-loops que quedaron pegados exactamente
+  //    a las coordenadas de su FotoLoop (bug de versiones viejas — ya arreglado para
+  //    los que se creen de acá en adelante, esto es solo para los que ya existían). ──
+  async _admFixOverlappingMiniLoops() {
+    if (!this._db) return;
+    if (!confirm('Esto va a mover levemente (unos 15m) los mini-loops que quedaron pegados exactos a su FotoLoop, para que se vean como 2 pines separados en vez de superpuestos.\n\n¿Continuar?')) return;
+
+    this.toast('🔧 Revisando FotoLoops...');
+    const OFFSET = 0.00015;
+    let checked = 0, fixed = 0, errors = 0;
+
+    try {
+      const flSnap = await this._db.collection('fotoloops').get();
+      for (const doc of flSnap.docs) {
+        const p = doc.data();
+        if (typeof p.lat !== 'number' || typeof p.lng !== 'number') continue;
+        const loopId = doc.id + '-loop';
+
+        let loopSnap;
+        try { loopSnap = await this._db.collection('loops').doc(loopId).get(); }
+        catch(e) { errors++; continue; }
+        if (!loopSnap.exists) continue;
+        checked++;
+
+        const ld = loopSnap.data();
+        const pt = ld.pts && ld.pts[0];
+        if (!pt) continue;
+        const plat = Array.isArray(pt) ? pt[0] : pt.lat;
+        const plng = Array.isArray(pt) ? pt[1] : pt.lng;
+        if (typeof plat !== 'number' || typeof plng !== 'number') continue;
+
+        // ¿Está pegado (misma coordenada, diferencia menor a ~5m) al FotoLoop?
+        const dLat = Math.abs(plat - p.lat), dLng = Math.abs(plng - p.lng);
+        if (dLat > 0.00005 || dLng > 0.00005) continue; // ya está separado, no tocar
+
+        const newLat = p.lat + OFFSET, newLng = p.lng + OFFSET;
+        try {
+          await this._db.collection('loops').doc(loopId).update({
+            pts:  [{ lat: newLat, lng: newLng }],
+            pois: [{ name: ld.name || p.name || '', lat: newLat, lng: newLng }]
+          });
+          // Reflejar el cambio en memoria y redibujar ese pin en su nueva posición
+          const r = this.routes.find(x => x.id === loopId);
+          if (r) {
+            r.pts = [[newLat, newLng]];
+            if (this.mainMap) this._drawRoute(r);
+          }
+          fixed++;
+        } catch(e) { console.warn('No se pudo corregir', loopId, e); errors++; }
+      }
+    } catch(e) {
+      return this.toast(`❌ Error al revisar: ${e.message||e.code||''}`);
+    }
+
+    this.toast(`✅ Revisados ${checked} · Corregidos ${fixed}${errors ? ' · '+errors+' con error' : ''}`);
   },
 
   async _admDeleteFL(id) {
