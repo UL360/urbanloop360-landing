@@ -12736,6 +12736,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           };
           this._db.collection('loops_municipio_pending').doc(r.id).set(pendingData, { merge: true })
             .catch(() => {});
+          // Guardar el flag en el propio loop — si no, al recargar la página se pierde
+          // (vivía solo en memoria) y el próximo like lo vuelve a proponer de nuevo,
+          // incluso si un admin ya lo había rechazado.
+          this._db.collection('loops').doc(r.id).update({ _sentToMuni: true }).catch(() => {});
         }
       }
     }
@@ -15898,6 +15902,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       };
       await this._db.collection('loops_municipio_pending').doc(r.id).set(pendingData, { merge: true });
       r._sentToMuni = true;
+      await this._db.collection('loops').doc(r.id).update({ _sentToMuni: true }).catch(() => {});
       this._admRenderLoops();
       this.toast('📤 Loop enviado a Propuestas Municipio');
     } catch(e) { this.toast('❌ Error: ' + e.message); }
@@ -15994,15 +15999,18 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   _renderPropuestasList(list) {
     const el = document.getElementById('adm-tab-propuestas');
     if (!el) return;
+    const header = `<div style="padding:14px 14px 0;display:flex;justify-content:flex-end;">
+      <button class="adm-btn" style="background:var(--bg2);color:var(--gr);" onclick="App._admToggleRechazadas()">🗑️ Ver rechazadas</button>
+    </div>`;
     if (list.length === 0) {
-      el.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--gr);">
+      el.innerHTML = header + `<div style="text-align:center;padding:40px 20px;color:var(--gr);">
         <div style="font-size:36px;margin-bottom:10px;">🏛</div>
         <div style="font-size:14px;font-weight:600;">Sin propuestas pendientes</div>
         <div style="font-size:12px;margin-top:6px;">Los loops que la comunidad proponga al municipio aparecerán acá.</div>
       </div>`;
       return;
     }
-    el.innerHTML = `<div style="padding:14px;display:flex;flex-direction:column;gap:10px;">` +
+    el.innerHTML = header + `<div style="padding:14px;display:flex;flex-direction:column;gap:10px;">` +
       list.map(r => {
         const isDestacado = r.tipo === 'destacado' || r.tipo === 'admin_manual';
         const esFotoLoop = r.type === 'fotoloop_municipio';
@@ -16076,17 +16084,20 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   },
 
   async _admRejectPropuesta(id, authorId) {
-    if (!confirm('¿Rechazar esta propuesta?')) return;
+    if (!confirm('¿Rechazar esta propuesta? Queda guardada en el historial de rechazadas.')) return;
     const cached = (this._propuestasCache||[]).find(r => r.id === id);
     if (!cached) return;
     this._propuestasCache = (this._propuestasCache||[]).filter(r => r.id !== id);
     this._renderPropuestasList(this._propuestasCache);
     if (this._db) {
       try {
+        // Se guarda en un historial de rechazadas (papelera) en vez de borrarse
+        // para siempre — así queda registro de qué se rechazó y por qué.
+        await this._db.collection('loops_municipio_rechazadas').doc(id).set({
+          ...cached, rejectedAt: Date.now(), rejectedBy: this._uid
+        });
         await this._db.collection('loops_municipio_pending').doc(id).delete();
       } catch(e) {
-        // No se pudo borrar de verdad (ej: permisos) — devolverla a la lista para
-        // que no parezca rechazada cuando en realidad sigue viva en la base.
         this._propuestasCache.push(cached);
         this._propuestasCache.sort((a,b) => (b.createdAt||b.proposedAt||b.ts||0) - (a.createdAt||a.proposedAt||a.ts||0));
         this._renderPropuestasList(this._propuestasCache);
@@ -16094,6 +16105,57 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       }
     }
     this.toast('Propuesta rechazada');
+  },
+
+  // ── Papelera: propuestas rechazadas (registro histórico) ──
+  _viendoRechazadas: false,
+  async _admToggleRechazadas() {
+    this._viendoRechazadas = !this._viendoRechazadas;
+    if (this._viendoRechazadas) {
+      const el = document.getElementById('adm-tab-propuestas');
+      if (el) el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">Cargando papelera...</div>`;
+      let list = [];
+      if (this._db) {
+        try {
+          const snap = await this._db.collection('loops_municipio_rechazadas').limit(100).get();
+          list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          list.sort((a,b) => (b.rejectedAt||0) - (a.rejectedAt||0));
+        } catch(e) { console.warn('rechazadas:', e); }
+      }
+      this._renderRechazadasList(list);
+    } else {
+      this._admRenderPropuestas();
+    }
+  },
+
+  _renderRechazadasList(list) {
+    const el = document.getElementById('adm-tab-propuestas');
+    if (!el) return;
+    const backBtn = `<div style="padding:10px 14px 0;"><button class="adm-btn" onclick="App._admToggleRechazadas()">← Volver a pendientes</button></div>`;
+    if (list.length === 0) {
+      el.innerHTML = backBtn + `<div style="text-align:center;padding:40px 20px;color:var(--gr);">
+        <div style="font-size:36px;margin-bottom:10px;">🗑️</div>
+        <div style="font-size:14px;font-weight:600;">Papelera vacía</div>
+        <div style="font-size:12px;margin-top:6px;">Las propuestas rechazadas quedan acá con fecha y quién las rechazó.</div>
+      </div>`;
+      return;
+    }
+    el.innerHTML = backBtn + `<div style="padding:14px;display:flex;flex-direction:column;gap:10px;">` +
+      list.map(r => {
+        const esFotoLoop = r.type === 'fotoloop_municipio';
+        const fecha = r.rejectedAt ? new Date(r.rejectedAt).toLocaleString('es-AR') : '—';
+        return `
+      <div class="adm-item" style="opacity:.75;">
+        <div class="adm-item-row">
+          <div class="adm-item-thumb" style="display:flex;align-items:center;justify-content:center;font-size:22px;">${esFotoLoop ? '📸' : (r.emoji||'🔄')}</div>
+          <div class="adm-item-info">
+            <div class="adm-item-name">${App._esc(r.name)} <span style="font-size:9px;background:#FEE2E2;color:#991B1B;border-radius:6px;padding:1px 6px;font-weight:700;">❌ Rechazada</span></div>
+            <div class="adm-item-meta">${r.ciudad||'—'} · Por: ${App._esc(r.authorName)||'Anónimo'}</div>
+            <div class="adm-item-meta">Rechazada: ${fecha}</div>
+          </div>
+        </div>
+      </div>`;
+      }).join('') + `</div>`;
   },
 
   // ── FotoLoops ──
@@ -16187,6 +16249,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       const pendingData = { ...p, type: 'fotoloop_municipio', proposedAt: Date.now() };
       await this._db.collection('loops_municipio_pending').doc('fl-' + id).set(pendingData, { merge: true });
       p._sentToMuni = true;
+      await this._db.collection('fotoloops').doc(id).update({ _sentToMuni: true }).catch(() => {});
       this._admRenderFotoloops();
       this.toast('📤 FotoLoop enviado a Propuestas Municipio');
     } catch(e) { this.toast('❌ Error: ' + (e.message||e.code||'')); }
