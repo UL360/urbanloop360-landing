@@ -16065,9 +16065,14 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (!this._db) return;
     try {
       await this._db.collection('loops_municipio_pending').doc(id).delete();
+      // Verificar contra el SERVIDOR (no el caché local) — ver comentario largo
+      // en _admRejectPropuesta sobre por qué esto es necesario con offline persistence.
+      const check = await this._db.collection('loops_municipio_pending').doc(id)
+        .get({ source: 'server' });
+      if (check.exists) throw new Error('El servidor rechazó el borrado (revisá las reglas de Firestore / tu rol de admin)');
       this.toast('🗑️ Propuesta eliminada de la lista');
     } catch(e) {
-      this.toast(`❌ No se pudo eliminar (¿sin permisos?): ${e.message||e.code||''}`);
+      this.toast(`❌ No se pudo eliminar de verdad (¿sin permisos?): ${e.message||e.code||''}`);
       this._admRenderPropuestas(); // refrescar de verdad para ver el estado real
     }
   },
@@ -16122,12 +16127,22 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (this._db) {
       try {
         await this._db.collection('loops_municipio_pending').doc(id).delete();
+        // IMPORTANTE: con la persistencia offline activada, este .delete() se resuelve
+        // como "éxito" apenas se aplica en la copia LOCAL del navegador — no espera la
+        // confirmación real del servidor. Si el servidor lo rechaza después (por
+        // permisos), Firestore lo deshace en segundo plano SIN avisar con un error acá.
+        // Por eso verificamos con una lectura forzada al servidor (bypass del caché).
+        const check = await this._db.collection('loops_municipio_pending').doc(id)
+          .get({ source: 'server' });
+        if (check.exists) {
+          throw new Error('El servidor rechazó el borrado (revisá las reglas de Firestore / tu rol de admin)');
+        }
       } catch(e) {
         // Esto sí es crítico: si esto falla, la propuesta sigue viva de verdad.
         this._propuestasCache.push(cached);
         this._propuestasCache.sort((a,b) => (b.createdAt||b.proposedAt||b.ts||0) - (a.createdAt||a.proposedAt||a.ts||0));
         this._renderPropuestasList(this._propuestasCache);
-        return this.toast(`❌ No se pudo rechazar (¿sin permisos?): ${e.message||e.code||''}`);
+        return this.toast(`❌ No se pudo rechazar de verdad (¿sin permisos?): ${e.message||e.code||''}`);
       }
       // Resetear el flag "ya propuesto" en el Loop/FotoLoop original — así el
       // creador puede volver a proponerlo cuando quiera, en vez de quedar con
