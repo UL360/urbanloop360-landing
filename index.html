@@ -16480,6 +16480,13 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       } catch(e) {
         return this.toast(`❌ No se pudo eliminar (¿sin permisos?): ${e.message||e.code||''}`);
       }
+      // Antes esto no se hacía: si el FotoLoop había sido propuesto al municipio
+      // (id de la propuesta = "fl-"+id, distinto del id del FotoLoop en sí), esa
+      // propuesta quedaba huérfana en loops_municipio_pending para siempre —
+      // seguía apareciendo en "Propuestas comunidad" aunque el FotoLoop ya no
+      // existiera ni en el mapa ni en la base.
+      try { await this._db.collection('loops_municipio_pending').doc('fl-' + id).delete(); } catch(e) {}
+      if (this._propuestasCache) this._propuestasCache = this._propuestasCache.filter(r => r.id !== 'fl-' + id);
     }
     if (this._fotoPosts) this._fotoPosts = this._fotoPosts.filter(p=>p.id!==id);
     // Los pines de FotoLoop se dibujan con clusters a partir de _fotoPosts —
@@ -16487,6 +16494,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     // sin necesidad de refrescar la página.
     this._drawFotoStopsOnMap();
     this._admRenderFotoloops();
+    if (document.getElementById('adm-tab-propuestas')?.style.display !== 'none') this._admRenderPropuestas();
     this.toast('🗑️ Foto loop eliminado');
     if (this._currentScreen === 'detail') this.go('explore');
   },
