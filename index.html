@@ -15995,7 +15995,11 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
         // FotoLoops propuestos), Firestore lo excluye del resultado directamente sin
         // avisar — eso hacía que la propuesta "desapareciera" antes de poder aprobarla.
         // Ordenamos del lado del cliente en cambio, con fallback a otros campos de fecha.
-        const snap = await this._db.collection('loops_municipio_pending').limit(100).get();
+        // { source: 'server' }: forzar que traiga la lista REAL del servidor, no una
+        // copia vieja del caché local (con persistencia offline, un .get() normal a
+        // veces devuelve una instantánea de la colección desactualizada, incluso
+        // después de que un borrado puntual ya se confirmó contra el servidor).
+        const snap = await this._db.collection('loops_municipio_pending').limit(100).get({ source: 'server' });
         list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         list.sort((a,b) => (b.createdAt||b.proposedAt||b.ts||0) - (a.createdAt||a.proposedAt||a.ts||0));
       } catch(e) { console.warn('propuestas:', e); }
@@ -16180,7 +16184,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       let list = [];
       if (this._db) {
         try {
-          const snap = await this._db.collection('loops_municipio_rechazadas').limit(100).get();
+          const snap = await this._db.collection('loops_municipio_rechazadas').limit(100).get({ source: 'server' });
           list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
           list.sort((a,b) => (b.rejectedAt||0) - (a.rejectedAt||0));
         } catch(e) { console.warn('rechazadas:', e); }
@@ -16229,7 +16233,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       await this._db.collection('loops_municipio_rechazadas').doc(id).delete();
       this.toast('🗑️ Registro purgado de la papelera');
       // Refrescar la vista de rechazadas directo (sin el hack de togglear 2 veces)
-      const snap = await this._db.collection('loops_municipio_rechazadas').limit(100).get();
+      const snap = await this._db.collection('loops_municipio_rechazadas').limit(100).get({ source: 'server' });
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       list.sort((a,b) => (b.rejectedAt||0) - (a.rejectedAt||0));
       this._renderRechazadasList(list);
