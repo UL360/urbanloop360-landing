@@ -2685,9 +2685,6 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       <button class="adm-tab" data-tab="notifs" onclick="App._admTab('notifs',this)">
         <span class="adm-tab-ic">🔔</span>Notificaciones
       </button>
-      <button class="adm-tab" data-tab="propuestas" onclick="App._admTab('propuestas',this)">
-        <span class="adm-tab-ic">🏛</span>Propuestas comunidad
-      </button>
       <button class="adm-tab" data-tab="negocios" onclick="App._admTab('negocios',this)">
         <span class="adm-tab-ic">🏪</span>Negocios
       </button>
@@ -2741,7 +2738,6 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 
 
     <!-- ── PROPUESTAS COMUNIDAD ── -->
-    <div id="adm-tab-propuestas" class="adm-panel" style="display:none;"></div>
 
     <!-- ── NEGOCIOS ── -->
     <div id="adm-tab-negocios" class="adm-panel" style="display:none;"></div>
@@ -3308,9 +3304,6 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
         </button>
         <button class="vis-opt on" id="vopt-public" onclick="App._cmSetVis('public',this)">
           <span class="vis-em">👥</span>Comunidad
-        </button>
-        <button class="vis-opt muni" id="vopt-pending" onclick="App._cmSetVis('pending',this)">
-          <span class="vis-em">👑</span>Proponer al municipio para que sea oficial
         </button>
       </div>
       <div id="vopt-hint" style="font-size:10px;color:var(--gr);margin-top:6px;">
@@ -4048,14 +4041,9 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
          tiene su botón "🧭 Cómo llegar" (App._navToFotoLoop), que resuelve lo mismo
          sin crear un objeto ni un pin extra. -->
 
-    <!-- Proponer al municipio -->
-    <div style="background:var(--orL);border:2px solid var(--or);border-radius:14px;padding:14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:12px;">
-      <input type="checkbox" id="fl-municipio" style="width:24px;height:24px;accent-color:var(--or);flex-shrink:0;margin-top:1px;">
-      <div style="flex:1;">
-        <label for="fl-municipio" style="font-size:16px;color:var(--or);cursor:pointer;font-weight:700;display:block;">👑 Proponer al municipio para que sea oficial</label>
-        <span style="font-size:12px;color:var(--md);line-height:1.4;">Se comparte en la comunidad + revisión oficial</span>
-      </div>
-    </div>
+    <!-- Se sacó el checkbox "Proponer al municipio": ahora la decisión de marcar
+         algo como oficial la toma directo el admin desde su panel, con un botón,
+         sin pasar por una cola de propuestas pendientes. -->
 
     <!-- Aviso: solo lugares, no personas -->
     <div style="background:#FEF2F2;border:2px solid #EF4444;border-radius:14px;padding:14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:12px;">
@@ -7792,8 +7780,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if (btn) btn.classList.add('on');
     const hints = {
       private: '🔒 Solo vos podés ver este loop.',
-      public:  '👥 Visible para todos los loopers de tu ciudad.',
-      pending: '🏛 Se enviará al municipio para revisión y <b>también</b> se publicará en el mapa y en Somos Loopers.'
+      public:  '👥 Visible para todos los loopers de tu ciudad.'
     };
     const h = document.getElementById('vopt-hint');
     if (h) h.textContent = hints[vis] || '';
@@ -9079,8 +9066,6 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     }
     document.getElementById('fl-name').value = '';
     document.getElementById('fl-desc').value = '';
-    const flMuni = document.getElementById('fl-municipio');
-    if (flMuni) flMuni.checked = false;
     const flNoPersonas = document.getElementById('fl-no-personas');
     if (flNoPersonas) flNoPersonas.checked = false;
     this._toggleFLPublishBtn();
@@ -9367,19 +9352,14 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         }
 
         await this._db.collection('fotoloops').doc(stopId).set(stopData);
-
-        // Si el usuario quiere proponer al municipio, guardar también en pending
-        if (document.getElementById('fl-municipio')?.checked) {
-          const pendingData = { ...stopData, type: 'fotoloop_municipio', proposedAt: Date.now() };
-          await this._db.collection('loops_municipio_pending').doc('fl-' + stopId).set(pendingData);
-        }
       }
 
       // Ya no se crea un "mini-loop" aparte: generaba un segundo pin pegado al
       // FotoLoop. El propio popup del FotoLoop ya tiene "🧭 Cómo llegar"
       // (App._navToFotoLoop), que resuelve la navegación sin crear ningún objeto.
+      // Tampoco existe más la propuesta al municipio en la creación — ahora el
+      // admin marca algo como oficial directo desde su panel, sin cola de espera.
 
-      const toMuni = document.getElementById('fl-municipio')?.checked;
       this.closeFotoLoop();
       // Guardar en lista local para preview inmediato — usar base64 (imgData) para mostrar sin reload
       if (!this._fotoPosts) this._fotoPosts = [];
@@ -9393,7 +9373,6 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       this._drawFotoStopsOnMap();   // ← actualizar mapa
       this._drawNegociosOnMap();
       this._addPts(30, 'Parada publicada');
-      if (toMuni) this._addPts(15, 'Propuesta al municipio');
       // ── Gamificación: bonus por explorar una zona nueva (sin Foto Loops en 150m) ──
       const zoneIsNew = (this._fotoPosts || []).filter(p =>
         p.id !== stopId && this._haversineKm(lat, lng, p.lat, p.lng) <= 0.15
@@ -9402,7 +9381,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         this._addPts(15, '🗺️ Descubridor de zona nueva');
         setTimeout(() => this.toast('🗺️ +15 pts extra por descubrir una zona nueva'), 400);
       }
-      this._showSaveSuccess(name, stopData.status==='pending' ? '⏳ Enviado a revisión — se publicará apenas un moderador lo apruebe' : (toMuni ? `🏛 Propuesto al municipio · publicado en ${cityId}` : `🌐 Publicado en ${cityId}`));
+      this._showSaveSuccess(name, stopData.status==='pending' ? '⏳ Enviado a revisión — se publicará apenas un moderador lo apruebe' : `🌐 Publicado en ${cityId}`);
       // FX
       this._fxBurst(document.getElementById('foto-loop-overlay'), 12);
       setTimeout(() => this._fxPts(30), 180);
@@ -11349,16 +11328,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       }
 
       if (this._db) {
-        if (vis === 'pending') {
-          await this._db.collection('loops_municipio_pending').doc(loopId).set(loopData);
-          // También publicar en la comunidad y en el mapa como looper
-          const publicData = { ...loopData, visibility: 'public', source: 'comunidad' };
-          await this._db.collection('loops').doc(loopId).set(publicData);
-          this.toast('🏛 Propuesta enviada al municipio + publicado en Somos Loopers');
-        } else {
-          await this._db.collection('loops').doc(loopId).set(loopData);
-          this.toast(vis === 'public' ? '✅ Loop publicado en la comunidad' : '🔒 Loop guardado como privado');
-        }
+        await this._db.collection('loops').doc(loopId).set(loopData);
+        this.toast(vis === 'public' ? '✅ Loop publicado en la comunidad' : '🔒 Loop guardado como privado');
       }
 
       // Agregar a routes locales con la URL ya resuelta
@@ -11371,7 +11342,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         this._renderCards('', this._activeFilter || 'all');
       }
 
-      this._addPts(vis === 'pending' ? 15 : 10, vis === 'pending' ? 'Propuesta enviada' : 'Loop publicado');
+      this._addPts(10, 'Loop publicado');
       // FX
       const cmBtn = document.getElementById('cm-save-btn');
       this._fxBurst(cmBtn || document.getElementById('crear-manual'), 14);
@@ -12737,32 +12708,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       // FX
       this._fxPts(2);
       this._fxCombo();
-
-      // ── Auto-propuesta al municipio por likes destacados ──
-      // _autoProposeBlocked es DISTINTO de _sentToMuni: cuando un admin rechaza una
-      // propuesta, _sentToMuni se resetea (para que el CREADOR pueda volver a proponerla
-      // a mano desde su perfil), pero _autoProposeBlocked queda en true para SIEMPRE —
-      // así el sistema automático de likes nunca la vuelve a proponer solo.
-      const LOOP_MUNI_THRESHOLD = 20;
-      if (r.likes >= LOOP_MUNI_THRESHOLD && !r._sentToMuni && !r._autoProposeBlocked && r.source !== 'municipio') {
-        r._sentToMuni = true;
-        if (this._db) {
-          const pendingData = {
-            ...r,
-            pts: (r.pts||[]).map(p => Array.isArray(p) ? {lat:p[0],lng:p[1]} : p),
-            tipo: 'destacado',
-            likeCount: r.likes,
-            proposedAt: Date.now(),
-            proposedReason: `Alcanzó ${r.likes} likes de la comunidad`
-          };
-          this._db.collection('loops_municipio_pending').doc(r.id).set(pendingData, { merge: true })
-            .catch(() => {});
-          // Guardar el flag en el propio loop — si no, al recargar la página se pierde
-          // (vivía solo en memoria) y el próximo like lo vuelve a proponer de nuevo,
-          // incluso si un admin ya lo había rechazado.
-          this._db.collection('loops').doc(r.id).update({ _sentToMuni: true }).catch(() => {});
-        }
-      }
+      // Se sacó el sistema de "auto-propuesta al municipio por likes destacados"
+      // junto con toda la cola de Propuestas — ahora el admin marca un Loop como
+      // oficial directo desde su panel, con un botón, sin pasos intermedios.
     }
     this._savePts();
     this._saveData();
@@ -14859,12 +14807,6 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           <label style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:5px;">NOMBRE DEL LOOP *</label>
           <input id="gsm-name" type="text" value="${autoName}" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1.5px solid var(--bd);border-radius:11px;font-size:14px;font-family:var(--fH);font-weight:600;background:var(--bg0);color:var(--dk);">
         </div>
-        <!-- Proponer al municipio — visible sin scrollear -->
-        <div style="background:rgba(90,60,140,.15);border:1px solid rgba(183,148,244,.3);border-radius:12px;padding:10px 13px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
-          <input type="checkbox" id="gsm-municipio" style="width:18px;height:18px;accent-color:#FF5F00;flex-shrink:0;">
-          <label for="gsm-municipio" style="font-size:13px;color:var(--dk);cursor:pointer;font-weight:600;flex:1;">👑 Proponer al municipio para que sea oficial</label>
-          <span style="font-size:10px;color:var(--gr);text-align:right;line-height:1.3;">Se publica en la<br>comunidad + revisión oficial</span>
-        </div>
         <!-- Descripción -->
         <div style="margin-bottom:12px;">
           <label style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:5px;">DESCRIPCIÓN (opcional)</label>
@@ -15044,17 +14986,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     this._fxGrabDone(r.name);
     setTimeout(() => this._fxPts(25 + (this._grabStopPois||[]).length * 10), 300);
 
-    const toMuni = document.getElementById('gsm-municipio')?.checked;
-
     try {
       await this._saveData();
-      if (toMuni && this._db) {
-        await this._db.collection('loops_municipio_pending').doc(r.id).set({...r, proposedAt: Date.now()});
-        this._addPts(15, 'Propuesta al municipio');
-        this._showSaveSuccess(r.name, r.status==='pending' ? `🏛 Propuesta al municipio · ⏳ pendiente de revisión` : `🏛 Propuesta al municipio + publicado en ${city}`);
-      } else {
-        this._showSaveSuccess(r.name, r.status==='pending' ? `⏳ Enviado a revisión — se publicará apenas un moderador lo apruebe` : `☁️ Subido a ${city}`);
-      }
+      this._showSaveSuccess(r.name, r.status==='pending' ? `⏳ Enviado a revisión — se publicará apenas un moderador lo apruebe` : `☁️ Subido a ${city}`);
     } catch(e) {
       this.toast(`⚠️ Guardado local (${e.message.slice(0,40)})`);
     }
@@ -15230,7 +15164,6 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (tab === 'usuarios')    this._admRenderUsuarios();
     if (tab === 'reportes')    this._admRenderReportes();
     if (tab === 'notifs')      this._admRenderNotifHistory();
-    if (tab === 'propuestas')  this._admRenderPropuestas();
     if (tab === 'negocios')    this._admRenderNegocios();
   },
 
@@ -15506,8 +15439,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (this._db) {
       const cols = [
         'loops', 'fotoloops', 'urban_reports',
-        'eventos', 'negocios',
-        'loops_municipio', 'loops_municipio_pending',
+        'eventos', 'negocios', 'loops_municipio',
       ];
       await Promise.all(cols.map(async col => {
         try {
@@ -15632,7 +15564,6 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (activeTab === 'fotoloops')   this._admRenderFotoloops();
     if (activeTab === 'reportes')    this._admRenderReportes();
     if (activeTab === 'eventos')     this._admRenderEventos();
-    if (activeTab === 'propuestas')  this._admRenderPropuestas();
     if (activeTab === 'negocios')    this._admRenderNegocios();
     if (activeTab === 'dashboard')   this._admLoadDashboard();
   },
@@ -15685,7 +15616,6 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       const stTxt   = {approved:'✅ Aprobado',rejected:'❌ Rechazado',pending:'⏳ Pendiente'}[st]||st;
       const facesInPois = (r.pois||[]).filter(p=>p.facesDetected).length;
       const faceBadge = facesInPois>0 ? `<span style="font-size:9px;background:#FFE4B5;color:#92400E;border-radius:6px;padding:1px 6px;font-weight:700;margin-left:4px;">👤 ${facesInPois} PARADA${facesInPois!==1?'S':''} CON POSIBLE PERSONA</span>` : '';
-      const alreadySentMuni = r._sentToMuni || (r.likes||0) >= MUNI_THR;
       return `<tr style="${facesInPois>0 ? 'background:#FFFBEB;' : ''}">
         <td>${hasImg
             ? App._imgTag(r.img, 'width:64px;height:64px;border-radius:8px;object-fit:cover;display:block;')
@@ -15706,14 +15636,8 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
             <button class="adm-btn adm-btn-blue" onclick="App._admEditLoop('${r.id}')">✏️ Editar</button>
             <button class="adm-btn adm-btn-orange" onclick="App.selectRoute('${r.id}');App.go('explore')">🗺️ Ver mapa</button>
             ${r.source !== 'municipio'
-              ? `<button class="adm-btn adm-btn-green" onclick="App._admSetCiudad('${r.id}','${r.name.replace(/'/g,'')}')">🏙️ Poner en Ciudad</button>`
-              : `<button class="adm-btn" style="opacity:.5;cursor:default;" disabled>🏙️ Ya es Ciudad</button>`
-            }
-            ${r.source !== 'municipio' && !alreadySentMuni
-              ? `<button class="adm-btn" style="background:#FFF3CD;color:#92400E;border:1px solid #F59E0B;" onclick="App._admProponerMunicipio('${r.id}')">📤 Proponer al Municipio</button>`
-              : r.source !== 'municipio' && alreadySentMuni
-                ? `<button class="adm-btn" style="opacity:.5;cursor:default;" disabled>📬 Ya en Municipio</button>`
-                : ''
+              ? `<button class="adm-btn adm-btn-green" onclick="App._admSetCiudad('${r.id}','${r.name.replace(/'/g,'')}')">👑 Marcar como Oficial</button>`
+              : `<button class="adm-btn" style="background:#FEF3C7;color:#92400E;" onclick="App._admProponerMunicipio('${r.id}')">👑 Quitar Oficial</button>`
             }
             <button class="adm-btn" style="background:#EEF2FF;color:#4F46E5;border-color:#4F46E5;" onclick="App._admRetagLoop('${r.id}')">🏷️ Re-etiquetar ciudad</button>
             <button class="adm-btn adm-btn-red" onclick="App._admDeleteLoop('${r.id}','${r.name.replace(/'/g,'')}')">🗑️ Eliminar</button>
@@ -15859,7 +15783,6 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
         return this.toast(`❌ No se pudo eliminar (¿sin permisos?): ${e.message||e.code||''}`);
       }
       try { await this._db.collection('loops_municipio').doc(id).delete(); } catch(e){}
-      try { await this._db.collection('loops_municipio_pending').doc(id).delete(); } catch(e){}
       // ── Registrar ID eliminado para que no vuelva a aparecer ──
       try {
         await this._db.collection('_deleted_loops').doc(id).set({
@@ -15907,26 +15830,27 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   },
 
 
+  // ── Marcar/desmarcar un Loop como oficial (municipio) — acción directa del
+  //    admin, sin cola de propuestas pendientes. Antes esto mandaba el loop a
+  //    "loops_municipio_pending" para revisar después; ahora el admin decide
+  //    al toque desde su propio panel. ──
   async _admProponerMunicipio(id) {
     const r = this.routes.find(x => x.id === id);
     if (!r) return this.toast('Loop no encontrado');
-    if (!confirm(`¿Proponer "${r.name}" al municipio para revisión?\nAparecerá en la pestaña Propuestas comunidad.`)) return;
+    const yaEsOficial = r.source === 'municipio';
+    const accion = yaEsOficial ? 'quitarle el estado de Oficial a' : 'marcar como Oficial (municipio)';
+    if (!confirm(`¿Confirmás ${accion} "${r.name}"?`)) return;
     if (!this._db) return this.toast('Firebase no disponible');
+    const nuevoSource = yaEsOficial ? 'comunidad' : 'municipio';
     try {
-      const pendingData = {
-        ...r,
-        pts: (r.pts||[]).map(p => Array.isArray(p) ? {lat:p[0],lng:p[1]} : p),
-        tipo: 'admin_manual',
-        likeCount: r.likes || 0,
-        proposedAt: Date.now(),
-        proposedReason: 'Propuesto manualmente por el admin'
-      };
-      await this._db.collection('loops_municipio_pending').doc(r.id).set(pendingData, { merge: true });
-      r._sentToMuni = true;
-      await this._db.collection('loops').doc(r.id).update({ _sentToMuni: true }).catch(() => {});
+      await this._db.collection('loops').doc(id).update({ source: nuevoSource, updatedAt: Date.now() });
+      r.source = nuevoSource;
+      // Redibujar el pin al toque, con o sin corona según corresponda
+      if (this.mainMap) this._drawRoute(r);
       this._admRenderLoops();
-      this.toast('📤 Loop enviado a Propuestas Municipio');
-    } catch(e) { this.toast('❌ Error: ' + e.message); }
+      this._renderCards('', this._activeFilter||'all');
+      this.toast(yaEsOficial ? `Se le sacó el estado de Oficial a "${r.name}"` : `👑 "${r.name}" ahora es un Loop Oficial`);
+    } catch(e) { this.toast('❌ Error: ' + (e.message||e.code||'')); }
   },
 
   async _admSetCiudad(id, name) {
@@ -15987,265 +15911,6 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       const btn = document.getElementById('adm-save-btn');
       if(btn) btn.textContent = '💾 Actualizar Loop';
     }, 150);
-  },
-
-  // ── Propuestas de usuarios para capa municipal ──
-  async _admRenderPropuestas() {
-    const el = document.getElementById('adm-tab-propuestas');
-    if (!el) return;
-    el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">Cargando propuestas...</div>`;
-    const ciudad = this._admCity || '';
-    const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
-    let list = [];
-    if (this._db) {
-      try {
-        // Sin orderBy: si algún doc no tiene el campo 'createdAt' (pasa con algunos
-        // FotoLoops propuestos), Firestore lo excluye del resultado directamente sin
-        // avisar — eso hacía que la propuesta "desapareciera" antes de poder aprobarla.
-        // Ordenamos del lado del cliente en cambio, con fallback a otros campos de fecha.
-        // { source: 'server' }: forzar que traiga la lista REAL del servidor, no una
-        // copia vieja del caché local (con persistencia offline, un .get() normal a
-        // veces devuelve una instantánea de la colección desactualizada, incluso
-        // después de que un borrado puntual ya se confirmó contra el servidor).
-        const snap = await this._db.collection('loops_municipio_pending').limit(100).get({ source: 'server' });
-        list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        list.sort((a,b) => (b.createdAt||b.proposedAt||b.ts||0) - (a.createdAt||a.proposedAt||a.ts||0));
-      } catch(e) { console.warn('propuestas:', e); }
-    }
-    // Filtrar por ciudad global — normalizado (antes era comparación exacta)
-    if (ciudad) list = list.filter(r => norm(r.ciudad||r.cityId) === norm(ciudad));
-    // Cache local: permite sacar un ítem al toque al aprobar/rechazar, sin esperar
-    // un nuevo viaje de ida y vuelta a Firestore (eso era lo que hacía que la fila
-    // se quedara pegada en pantalla después de aprobar).
-    this._propuestasCache = list;
-    this._renderPropuestasList(list);
-  },
-
-  _renderPropuestasList(list) {
-    const el = document.getElementById('adm-tab-propuestas');
-    if (!el) return;
-    const header = `<div style="padding:14px 14px 0;display:flex;justify-content:flex-end;">
-      <button class="adm-btn" style="background:var(--bg2);color:var(--gr);" onclick="App._admToggleRechazadas()">🗑️ Ver rechazadas</button>
-    </div>`;
-    if (list.length === 0) {
-      el.innerHTML = header + `<div style="text-align:center;padding:40px 20px;color:var(--gr);">
-        <div style="font-size:36px;margin-bottom:10px;">🏛</div>
-        <div style="font-size:14px;font-weight:600;">Sin propuestas pendientes</div>
-        <div style="font-size:12px;margin-top:6px;">Los loops que la comunidad proponga al municipio aparecerán acá.</div>
-      </div>`;
-      return;
-    }
-    el.innerHTML = header + `<div style="padding:14px;display:flex;flex-direction:column;gap:10px;">` +
-      list.map(r => {
-        const isDestacado = r.tipo === 'destacado' || r.tipo === 'admin_manual';
-        const esFotoLoop = r.type === 'fotoloop_municipio';
-        const tipoBadge = esFotoLoop
-          ? `<span style="font-size:9px;background:#EDE9FE;color:#5B21B6;border-radius:6px;padding:1px 6px;font-weight:700;">📸 FotoLoop</span>`
-          : `<span style="font-size:9px;background:#FFF7ED;color:#9A3412;border-radius:6px;padding:1px 6px;font-weight:700;">🔄 Loop</span>`;
-        const origenBadge = r.tipo === 'destacado'
-          ? `<span style="font-size:9px;background:#FFF3CD;color:#92400E;border-radius:6px;padding:1px 6px;font-weight:700;">🔥 Por likes (${r.likeCount||0} ❤️)</span>`
-          : r.tipo === 'admin_manual'
-          ? `<span style="font-size:9px;background:#E0F2FE;color:#0369A1;border-radius:6px;padding:1px 6px;font-weight:700;">📤 Admin</span>`
-          : `<span style="font-size:9px;background:#F0FDF4;color:#166534;border-radius:6px;padding:1px 6px;font-weight:700;">🏛 Comunidad</span>`;
-        return `
-      <div class="adm-item" style="${isDestacado ? 'border-left:3px solid #F59E0B;' : ''}">
-        <div class="adm-item-row">
-          <div class="adm-item-thumb" style="display:flex;align-items:center;justify-content:center;font-size:22px;">${esFotoLoop ? (r.img ? App._imgTag(r.img,'width:100%;height:100%;object-fit:cover;border-radius:8px;') : '📸') : (r.emoji||'🔄')}</div>
-          <div class="adm-item-info">
-            <div class="adm-item-name" style="display:flex;align-items:center;gap:6px;">${App._esc(r.name)} ${tipoBadge} ${origenBadge}</div>
-            <div class="adm-item-meta">${r.ciudad||'—'} · ${esFotoLoop ? '' : (r.dist||'—')+' · '}❤️${r.likeCount||r.likes||0} likes</div>
-            <div class="adm-item-meta">Por: ${App._esc(r.authorName)||'Anónimo'}</div>
-            ${r.proposedReason ? `<div class="adm-item-meta" style="margin-top:2px;font-style:italic;color:var(--gr);">${App._esc(r.proposedReason)}</div>` : ''}
-            ${r.desc ? `<div class="adm-item-meta" style="margin-top:2px;">${App._esc(r.desc)}</div>` : ''}
-          </div>
-        </div>
-        <div class="adm-item-actions">
-          <button class="adm-btn adm-btn-green" onclick="App._admApprovePropuesta('${r.id}')">✅ Aprobar → ${esFotoLoop ? 'FotoLoop Oficial' : 'Loop Oficial'}</button>
-          <button class="adm-btn adm-btn-red"   onclick="App._admRejectPropuesta('${r.id}','${(r.authorId||'')}')">❌ Rechazar</button>
-          <button class="adm-btn" style="background:var(--bg2);color:var(--gr);" onclick="App._admDeletePropuestaDirecta('${r.id}')" title="Borra la propuesta directamente, sin tocar el Loop/FotoLoop original ni pasar por la papelera">🗑️ Eliminar de la lista</button>
-        </div>
-      </div>`;
-      }).join('') + `</div>`;
-  },
-
-  // ── Borrado directo de una propuesta pendiente (sin resetear estado ni archivar).
-  //    Sirve como opción manual de "por las dudas" si algo quedó trabado. ──
-  async _admDeletePropuestaDirecta(id) {
-    if (!confirm('¿Eliminar esta propuesta directamente de la lista de pendientes?\nNo se archiva en la papelera ni se toca el Loop/FotoLoop original.')) return;
-    this._propuestasCache = (this._propuestasCache||[]).filter(r => r.id !== id);
-    this._renderPropuestasList(this._propuestasCache);
-    if (!this._db) return;
-    try {
-      await this._db.collection('loops_municipio_pending').doc(id).delete();
-      // Verificar contra el SERVIDOR (no el caché local) — ver comentario largo
-      // en _admRejectPropuesta sobre por qué esto es necesario con offline persistence.
-      const check = await this._db.collection('loops_municipio_pending').doc(id)
-        .get({ source: 'server' });
-      if (check.exists) throw new Error('El servidor rechazó el borrado (revisá las reglas de Firestore / tu rol de admin)');
-      this.toast('🗑️ Propuesta eliminada de la lista');
-    } catch(e) {
-      this.toast(`❌ No se pudo eliminar de verdad (¿sin permisos?): ${e.message||e.code||''}`);
-      this._admRenderPropuestas(); // refrescar de verdad para ver el estado real
-    }
-  },
-
-  async _admApprovePropuesta(id) {
-    if (!this._db) return this.toast('Firebase no disponible');
-    // Si ya no está en la caché local, es un doble-click sobre algo que ya se procesó
-    // — no mostrar error, simplemente no hacer nada de nuevo.
-    const cached = (this._propuestasCache||[]).find(r => r.id === id);
-    if (!cached) return;
-    // Sacarla YA de la lista visible, antes de esperar la red — así no queda pegada
-    // en pantalla dando pie a un segundo click mientras se procesa la primera.
-    this._propuestasCache = (this._propuestasCache||[]).filter(r => r.id !== id);
-    this._renderPropuestasList(this._propuestasCache);
-    try {
-      const snap = await this._db.collection('loops_municipio_pending').doc(id).get();
-      if (!snap.exists) return; // ya se había aprobado/rechazado antes
-      const data = { ...snap.data(), source: 'municipio', status: 'published', approvedAt: Date.now() };
-
-      // ── FotoLoop propuesto: va a la colección fotoloops, no a loops ──
-      if (data.type === 'fotoloop_municipio') {
-        const flId = id.startsWith('fl-') ? id.slice(3) : id;
-        await this._db.collection('fotoloops').doc(flId).set(data, { merge: true });
-        await this._db.collection('loops_municipio_pending').doc(id).delete();
-        // Actualizar en memoria y redibujar el pin (con corona, por source:'municipio')
-        if (!this._fotoPosts) this._fotoPosts = [];
-        this._fotoPosts = this._fotoPosts.filter(p => p.id !== flId);
-        this._fotoPosts.unshift({ ...data, id: flId });
-        if (this.mainMap) this._drawFotoStopsOnMap();
-        this.toast('✅ FotoLoop aprobado y publicado como oficial');
-        return;
-      }
-
-      // ── Loop propuesto (comportamiento original) ──
-      await this._db.collection('loops_municipio').doc(id).set(data);
-      await this._db.collection('loops_municipio_pending').doc(id).delete();
-      // Agregar al array local
-      const loopForMap = { ...data, pts: (data.pts||[]).map(p => Array.isArray(p) ? p : [p.lat, p.lng]) };
-      this.routesMuni.push(loopForMap);
-      this.routes.push(loopForMap);
-      if (this.mainMap) this._drawRoute(loopForMap);
-      this.toast('✅ Loop aprobado y publicado en la capa municipal');
-    } catch(e) { this.toast('❌ Error: ' + e.message); }
-  },
-
-  async _admRejectPropuesta(id, authorId) {
-    if (!confirm('¿Rechazar esta propuesta? Queda guardada en el historial de rechazadas.')) return;
-    const cached = (this._propuestasCache||[]).find(r => r.id === id);
-    if (!cached) return;
-    this._propuestasCache = (this._propuestasCache||[]).filter(r => r.id !== id);
-    this._renderPropuestasList(this._propuestasCache);
-    if (this._db) {
-      try {
-        await this._db.collection('loops_municipio_pending').doc(id).delete();
-        // IMPORTANTE: con la persistencia offline activada, este .delete() se resuelve
-        // como "éxito" apenas se aplica en la copia LOCAL del navegador — no espera la
-        // confirmación real del servidor. Si el servidor lo rechaza después (por
-        // permisos), Firestore lo deshace en segundo plano SIN avisar con un error acá.
-        // Por eso verificamos con una lectura forzada al servidor (bypass del caché).
-        const check = await this._db.collection('loops_municipio_pending').doc(id)
-          .get({ source: 'server' });
-        if (check.exists) {
-          throw new Error('El servidor rechazó el borrado (revisá las reglas de Firestore / tu rol de admin)');
-        }
-      } catch(e) {
-        // Esto sí es crítico: si esto falla, la propuesta sigue viva de verdad.
-        this._propuestasCache.push(cached);
-        this._propuestasCache.sort((a,b) => (b.createdAt||b.proposedAt||b.ts||0) - (a.createdAt||a.proposedAt||a.ts||0));
-        this._renderPropuestasList(this._propuestasCache);
-        return this.toast(`❌ No se pudo rechazar de verdad (¿sin permisos?): ${e.message||e.code||''}`);
-      }
-      // Resetear el flag "ya propuesto" en el Loop/FotoLoop original — así el
-      // creador puede volver a proponerlo cuando quiera, en vez de quedar con
-      // un estado de "rechazado" permanente (no queremos que se sienta mal con
-      // la plataforma, mejor darle la chance de reintentar).
-      // PERO _autoProposeBlocked sí queda en true para siempre — evita que el
-      // sistema automático (likes >= 20) lo vuelva a proponer solo apenas
-      // reciba un like más, sin que ningún humano haya tocado nada.
-      const isFL = cached.type === 'fotoloop_municipio';
-      const origId = isFL ? (id.startsWith('fl-') ? id.slice(3) : id) : id;
-      const coll = isFL ? 'fotoloops' : 'loops';
-      try { await this._db.collection(coll).doc(origId).update({ _sentToMuni: false, _autoProposeBlocked: true }); } catch(e) {}
-      const localArr = isFL ? this._fotoPosts : this.routes;
-      const localObj = (localArr||[]).find(x => x.id === origId);
-      if (localObj) { localObj._sentToMuni = false; localObj._autoProposeBlocked = true; }
-      // Guardar en la papelera es "best effort": si falla (ej: falta la regla de
-      // Firestore para esta colección todavía), no debe impedir que el rechazo
-      // en sí funcione — ya se borró de pendientes en el paso de arriba.
-      try {
-        await this._db.collection('loops_municipio_rechazadas').doc(id).set({
-          ...cached, rejectedAt: Date.now(), rejectedBy: this._uid
-        });
-      } catch(e) { console.warn('No se pudo archivar en papelera (¿faltan reglas de Firestore?):', e); }
-    }
-    this.toast('Propuesta rechazada — el creador puede volver a proponerla');
-  },
-
-  // ── Papelera: propuestas rechazadas (registro histórico) ──
-  _viendoRechazadas: false,
-  async _admToggleRechazadas() {
-    this._viendoRechazadas = !this._viendoRechazadas;
-    if (this._viendoRechazadas) {
-      const el = document.getElementById('adm-tab-propuestas');
-      if (el) el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">Cargando papelera...</div>`;
-      let list = [];
-      if (this._db) {
-        try {
-          const snap = await this._db.collection('loops_municipio_rechazadas').limit(100).get({ source: 'server' });
-          list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-          list.sort((a,b) => (b.rejectedAt||0) - (a.rejectedAt||0));
-        } catch(e) { console.warn('rechazadas:', e); }
-      }
-      this._renderRechazadasList(list);
-    } else {
-      this._admRenderPropuestas();
-    }
-  },
-
-  _renderRechazadasList(list) {
-    const el = document.getElementById('adm-tab-propuestas');
-    if (!el) return;
-    const backBtn = `<div style="padding:10px 14px 0;"><button class="adm-btn" onclick="App._admToggleRechazadas()">← Volver a pendientes</button></div>`;
-    if (list.length === 0) {
-      el.innerHTML = backBtn + `<div style="text-align:center;padding:40px 20px;color:var(--gr);">
-        <div style="font-size:36px;margin-bottom:10px;">🗑️</div>
-        <div style="font-size:14px;font-weight:600;">Papelera vacía</div>
-        <div style="font-size:12px;margin-top:6px;">Las propuestas rechazadas quedan acá con fecha y quién las rechazó.</div>
-      </div>`;
-      return;
-    }
-    el.innerHTML = backBtn + `<div style="padding:14px;display:flex;flex-direction:column;gap:10px;">` +
-      list.map(r => {
-        const esFotoLoop = r.type === 'fotoloop_municipio';
-        const fecha = r.rejectedAt ? new Date(r.rejectedAt).toLocaleString('es-AR') : '—';
-        return `
-      <div class="adm-item" style="opacity:.75;">
-        <div class="adm-item-row">
-          <div class="adm-item-thumb" style="display:flex;align-items:center;justify-content:center;font-size:22px;">${esFotoLoop ? '📸' : (r.emoji||'🔄')}</div>
-          <div class="adm-item-info">
-            <div class="adm-item-name">${App._esc(r.name)} <span style="font-size:9px;background:#FEE2E2;color:#991B1B;border-radius:6px;padding:1px 6px;font-weight:700;">❌ Rechazada</span></div>
-            <div class="adm-item-meta">${r.ciudad||'—'} · Por: ${App._esc(r.authorName)||'Anónimo'}</div>
-            <div class="adm-item-meta">Rechazada: ${fecha}</div>
-          </div>
-          <button class="adm-btn adm-btn-red" style="flex-shrink:0;" onclick="App._admPurgarRechazada('${r.id}')">🗑️ Purgar</button>
-        </div>
-      </div>`;
-      }).join('') + `</div>`;
-  },
-
-  async _admPurgarRechazada(id) {
-    if (!confirm('¿Borrar definitivamente este registro de la papelera?')) return;
-    if (!this._db) return;
-    try {
-      await this._db.collection('loops_municipio_rechazadas').doc(id).delete();
-      this.toast('🗑️ Registro purgado de la papelera');
-      // Refrescar la vista de rechazadas directo (sin el hack de togglear 2 veces)
-      const snap = await this._db.collection('loops_municipio_rechazadas').limit(100).get({ source: 'server' });
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      list.sort((a,b) => (b.rejectedAt||0) - (a.rejectedAt||0));
-      this._renderRechazadasList(list);
-    } catch(e) { this.toast(`❌ No se pudo purgar: ${e.message||e.code||''}`); }
   },
 
   // ── FotoLoops ──
@@ -16314,11 +15979,9 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
           <div class="adm-item-actions" style="flex-wrap:wrap;min-width:180px;">
             ${st!=='approved'  ? `<button class="adm-btn adm-btn-green" onclick="App._admFLStatus('${p.id}','approved')">✅ Aprobar</button>` : ''}
             ${st!=='rejected'  ? `<button class="adm-btn adm-btn-red"   onclick="App._admFLStatus('${p.id}','rejected')">❌ Rechazar</button>` : ''}
-            ${p.source !== 'municipio' && !p._sentToMuni
-              ? `<button class="adm-btn" style="background:#FFF3CD;color:#92400E;border:1px solid #F59E0B;" onclick="App._admProponerMunicipioFL('${p.id}')">📤 Proponer al Municipio</button>`
-              : p.source !== 'municipio'
-                ? `<button class="adm-btn" style="opacity:.5;cursor:default;" disabled>📬 Ya en Municipio</button>`
-                : ''
+            ${p.source !== 'municipio'
+              ? `<button class="adm-btn adm-btn-green" onclick="App._admProponerMunicipioFL('${p.id}')">👑 Marcar como Oficial</button>`
+              : `<button class="adm-btn" style="background:#FEF3C7;color:#92400E;" onclick="App._admProponerMunicipioFL('${p.id}')">👑 Quitar Oficial</button>`
             }
             <button class="adm-btn" style="background:#EEF2FF;color:#4F46E5;border-color:#4F46E5;" onclick="App._admRetagFotoloop('${p.id}')">🏷️ Re-etiquetar ciudad</button>
             <button class="adm-btn adm-btn-red" onclick="App._admDeleteFL('${p.id}')">🗑️ Eliminar</button>
@@ -16330,18 +15993,23 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     setTimeout(() => this._lazyLoadFsImgs(document.getElementById('adm-tab-fotoloops')), 50);
   },
 
+  // ── Marcar/desmarcar un FotoLoop como oficial (municipio) — acción directa,
+  //    sin cola de propuestas pendientes. Redibuja el pin al toque (con o sin
+  //    corona) usando los pines lila que ya tenés armados. ──
   async _admProponerMunicipioFL(id) {
     const p = (this._fotoPosts||[]).find(x => x.id === id);
     if (!p) return this.toast('⚠️ FotoLoop no encontrado');
-    if (!confirm(`¿Proponer "${p.name||'este FotoLoop'}" al municipio para revisión?\nAparecerá en la pestaña Propuestas comunidad.`)) return;
+    const yaEsOficial = p.source === 'municipio';
+    const accion = yaEsOficial ? 'quitarle el estado de Oficial a' : 'marcar como Oficial (municipio)';
+    if (!confirm(`¿Confirmás ${accion} "${p.name||'este FotoLoop'}"?`)) return;
     if (!this._db) return this.toast('Firebase no disponible');
+    const nuevoSource = yaEsOficial ? 'comunidad' : 'municipio';
     try {
-      const pendingData = { ...p, type: 'fotoloop_municipio', proposedAt: Date.now() };
-      await this._db.collection('loops_municipio_pending').doc('fl-' + id).set(pendingData, { merge: true });
-      p._sentToMuni = true;
-      await this._db.collection('fotoloops').doc(id).update({ _sentToMuni: true }).catch(() => {});
+      await this._db.collection('fotoloops').doc(id).update({ source: nuevoSource, updatedAt: Date.now() });
+      p.source = nuevoSource;
+      if (this.mainMap) this._drawFotoStopsOnMap();
       this._admRenderFotoloops();
-      this.toast('📤 FotoLoop enviado a Propuestas Municipio');
+      this.toast(yaEsOficial ? `Se le sacó el estado de Oficial a "${p.name}"` : `👑 "${p.name}" ahora es un FotoLoop Oficial`);
     } catch(e) { this.toast('❌ Error: ' + (e.message||e.code||'')); }
   },
 
@@ -16492,13 +16160,6 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       } catch(e) {
         return this.toast(`❌ No se pudo eliminar (¿sin permisos?): ${e.message||e.code||''}`);
       }
-      // Antes esto no se hacía: si el FotoLoop había sido propuesto al municipio
-      // (id de la propuesta = "fl-"+id, distinto del id del FotoLoop en sí), esa
-      // propuesta quedaba huérfana en loops_municipio_pending para siempre —
-      // seguía apareciendo en "Propuestas comunidad" aunque el FotoLoop ya no
-      // existiera ni en el mapa ni en la base.
-      try { await this._db.collection('loops_municipio_pending').doc('fl-' + id).delete(); } catch(e) {}
-      if (this._propuestasCache) this._propuestasCache = this._propuestasCache.filter(r => r.id !== 'fl-' + id);
     }
     if (this._fotoPosts) this._fotoPosts = this._fotoPosts.filter(p=>p.id!==id);
     // Los pines de FotoLoop se dibujan con clusters a partir de _fotoPosts —
@@ -16506,7 +16167,6 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     // sin necesidad de refrescar la página.
     this._drawFotoStopsOnMap();
     this._admRenderFotoloops();
-    if (document.getElementById('adm-tab-propuestas')?.style.display !== 'none') this._admRenderPropuestas();
     this.toast('🗑️ Foto loop eliminado');
     if (this._currentScreen === 'detail') this.go('explore');
   },
