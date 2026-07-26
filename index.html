@@ -17310,10 +17310,15 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   },
 
   // ── TEMA DÍA / NOCHE ──
-  toggleTheme() {
+  toggleTheme(auto) {
     const goingDark = document.body.classList.contains('day');
     document.body.classList.toggle('day', !goingDark);
-    try{localStorage.setItem('ul360_theme',goingDark?'dark':'light');}catch(e){}
+    // Si esto lo disparó el chequeo automático de horario (no un click del usuario),
+    // NO guardamos preferencia manual — así el modo sigue recalculándose solo.
+    // Si lo tocó el usuario a mano (botón), sí queda guardado y deja de ser automático.
+    if (!auto) {
+      try{localStorage.setItem('ul360_theme',goingDark?'dark':'light');}catch(e){}
+    }
     const icon = goingDark ? '☀️' : '🌙';
     const btn = document.getElementById('theme-toggle-btn');
     if (btn) btn.textContent = icon;
@@ -18182,9 +18187,15 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
 };
 
 document.addEventListener('DOMContentLoaded',()=>{
-  // Arrancar en modo oscuro por defecto
+  // ── Modo día/noche ──
+  // Si el usuario NUNCA tocó el botón de tema a mano, se calcula solo según la
+  // hora del día (7:00 a 19:00 = claro, resto = oscuro). Apenas toca el botón
+  // una vez, queda esa elección guardada y ya no se recalcula sola — se respeta
+  // lo que el usuario eligió a mano, para siempre (hasta que lo vuelva a tocar).
   let saved; try{saved=localStorage.getItem('ul360_theme');}catch(e){}
-  const isLight = saved === 'light';
+  const isManual = saved === 'light' || saved === 'dark';
+  const autoIsLight = () => { const h = new Date().getHours(); return h >= 7 && h < 19; };
+  const isLight = isManual ? (saved === 'light') : autoIsLight();
   if (isLight) {
     document.body.classList.add('day');
   } else {
@@ -18196,6 +18207,17 @@ document.addEventListener('DOMContentLoaded',()=>{
   if (t1) t1.textContent = initIcon;
   const t2 = document.getElementById('map-theme-toggle-btn');
   if (t2) t2.textContent = initIcon;
+  // Si está en modo automático (nunca tocó el botón a mano), revisar cada 15 min
+  // por si cruzó el horario de amanecer/atardecer mientras la app sigue abierta.
+  if (!isManual) {
+    setInterval(() => {
+      let cur; try{cur=localStorage.getItem('ul360_theme');}catch(e){}
+      if (cur === 'light' || cur === 'dark') return; // ya pasó a manual, no tocar más
+      const shouldBeLight = autoIsLight();
+      const currentlyLight = document.body.classList.contains('day');
+      if (shouldBeLight !== currentlyLight) App.toggleTheme(true);
+    }, 15 * 60 * 1000);
+  }
   App._hwRoundRectPolyfill();
   App.init();
 });
