@@ -2705,25 +2705,25 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       <div class="adm-muni-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
         <div>
           <label style="font-size:9px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:3px;">PAÍS</label>
-          <select id="adm-sel-pais" class="fi" style="font-size:12px;padding:7px 10px;" onchange="App._admSelPaisChanged()">
+          <select id="adm-sel-pais" class="fi" autocomplete="off" style="font-size:12px;padding:7px 10px;" onchange="App._admSelPaisChanged()">
             <option value="">⏳ Cargando...</option>
           </select>
         </div>
         <div>
           <label style="font-size:9px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:3px;">PROVINCIA</label>
-          <select id="adm-sel-provincia" class="fi" style="font-size:12px;padding:7px 10px;" onchange="App._admSelProvinciaChanged()">
+          <select id="adm-sel-provincia" class="fi" autocomplete="off" style="font-size:12px;padding:7px 10px;" onchange="App._admSelProvinciaChanged()">
             <option value="">— Elegí país —</option>
           </select>
         </div>
         <div>
           <label style="font-size:9px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:3px;">DEPARTAMENTO</label>
-          <select id="adm-sel-departamento" class="fi" style="font-size:12px;padding:7px 10px;" onchange="App._admSelDeptoChanged()">
+          <select id="adm-sel-departamento" class="fi" autocomplete="off" style="font-size:12px;padding:7px 10px;" onchange="App._admSelDeptoChanged()">
             <option value="">— Elegí provincia —</option>
           </select>
         </div>
         <div>
           <label style="font-size:9px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:3px;">CIUDAD / MUNICIPIO</label>
-          <select id="adm-sel-ciudad" class="fi" style="font-size:12px;padding:7px 10px;" onchange="App._admMunicipioChanged()">
+          <select id="adm-sel-ciudad" class="fi" autocomplete="off" style="font-size:12px;padding:7px 10px;" onchange="App._admMunicipioChanged()">
             <option value="">— Elegí departamento —</option>
           </select>
         </div>
