@@ -2885,8 +2885,10 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
           <option value="rejected">❌ Rechazados</option>
         </select>
         <button onclick="App._admLoopAprobarTodos()" class="adm-btn adm-btn-green" style="white-space:nowrap;">✅ Aprobar pendientes</button>
+        <button onclick="App._admFindOrphanFotostops()" class="adm-btn" style="white-space:nowrap;background:#FEF3C7;color:#92400E;" title="Busca mini-loops que quedaron guardados en la colección 'loops' de la vieja función de 'crear mini-loop desde FotoLoop' (ya descontinuada) — quedan invisibles en todas las listas normales.">👻 Ver mini-loops huérfanos</button>
         <span id="adm-loops-count" style="font-size:12px;color:var(--gr);margin-left:auto;"></span>
       </div>
+      <div id="adm-orphans-wrap" style="display:none;margin-bottom:12px;"></div>
       <div style="display:flex;gap:8px;margin-bottom:12px;">
         <button class="adm-btn" style="flex:1;background:#1a1a1a;color:#fff;" onclick="App._testOnboardingNow()">
           🔄 Probar onboarding ahora
@@ -15585,6 +15587,53 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (this._admProvincia)return norm(item.provincia) === norm(this._admProvincia);
     if (this._admPais)     return norm(item.pais) === norm(this._admPais);
     return true; // nada seleccionado en ningún nivel → mostrar todo
+  },
+
+  // ── Buscar mini-loops huérfanos (type: 'fotostop' guardados en la colección
+  //    'loops') — quedaron de la vieja función "crear también un mini-loop al
+  //    publicar un FotoLoop" (ya descontinuada). El resto de la app los excluye
+  //    a propósito de las listas normales (son solo un punto, no un recorrido
+  //    real), así que quedan invisibles salvo acá. ──
+  async _admFindOrphanFotostops() {
+    const wrap = document.getElementById('adm-orphans-wrap');
+    if (!wrap) return;
+    wrap.style.display = 'block';
+    wrap.innerHTML = `<div style="text-align:center;padding:16px;color:var(--gr);font-size:13px;">Buscando...</div>`;
+    if (!this._db) return;
+    let huerfanos = [];
+    try {
+      const snap = await this._db.collection('loops').where('type', '==', 'fotostop').get();
+      huerfanos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch(e) {
+      wrap.innerHTML = `<div style="text-align:center;padding:16px;color:var(--gr);font-size:13px;">❌ Error buscando: ${e.message||e.code||''}</div>`;
+      return;
+    }
+    if (huerfanos.length === 0) {
+      wrap.innerHTML = `<div style="text-align:center;padding:16px;color:var(--gr);font-size:13px;">✅ No hay mini-loops huérfanos.</div>`;
+      return;
+    }
+    wrap.innerHTML = `<div style="padding:10px;background:#FFFBEB;border:1px solid #F59E0B;border-radius:10px;">
+      <div style="font-size:12px;font-weight:700;color:#92400E;margin-bottom:8px;">👻 ${huerfanos.length} mini-loop${huerfanos.length!==1?'s':''} huérfano${huerfanos.length!==1?'s':''} encontrado${huerfanos.length!==1?'s':''}</div>
+      ${huerfanos.map(h => `
+        <div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--wh);border-radius:8px;margin-bottom:6px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;color:var(--dk);">${App._esc(h.name)||h.id}</div>
+            <div style="font-size:10px;color:var(--gr);">${h.ciudad||h.cityId||'—'} · ${h.provincia||''}</div>
+          </div>
+          <button class="adm-btn adm-btn-red" onclick="App._admDeleteOrphanFotostop('${h.id}')">🗑️ Eliminar</button>
+        </div>
+      `).join('')}
+    </div>`;
+  },
+
+  async _admDeleteOrphanFotostop(id) {
+    if (!confirm('¿Eliminar este mini-loop huérfano de la colección "loops"?')) return;
+    if (!this._db) return;
+    try {
+      await this._db.collection('loops').doc(id).delete();
+      this.toast('🗑️ Eliminado');
+      this._admFindOrphanFotostops();
+    } catch(e) { this.toast(`❌ No se pudo eliminar: ${e.message||e.code||''}`); }
   },
 
   _admRenderLoops() {
