@@ -7355,8 +7355,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
       let all = snap.docs.map(d => ({id:d.id,...d.data()}));
 
-      // Filtrar por ciudad global
-      if (ciudad) all = all.filter(r => norm(r.ciudad||r.cityId||'') === norm(ciudad));
+      // Filtro geográfico en cascada: Ciudad > Departamento > Provincia > País
+      if (this._admCity || this._admDepto || this._admProvincia || this._admPais) {
+        all = all.filter(r => this._admMatchesGeoFilter(r));
+      }
 
       // Contadores (sobre los de la ciudad activa)
       const ct = {pending:0, proceso:0, resuelto:0};
@@ -15568,9 +15570,25 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (activeTab === 'dashboard')   this._admLoadDashboard();
   },
 
+  // ── Filtro geográfico unificado para las listas del admin (Loops, FotoLoops,
+  //    Negocios, Eventos, Reportes). Antes SOLO el selector de Ciudad filtraba
+  //    de verdad — si elegías una Provincia pero dejabas Ciudad en "Todas", no
+  //    filtraba nada y aparecía contenido de cualquier lado. Ahora filtra en el
+  //    nivel más específico que hayas elegido: Ciudad > Departamento > Provincia > País.
+  _admNormGeo(s) {
+    return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+  },
+  _admMatchesGeoFilter(item) {
+    const norm = this._admNormGeo;
+    if (this._admCity)     return norm(item.ciudad||item.cityId) === norm(this._admCity);
+    if (this._admDepto)    return norm(item.departamento) === norm(this._admDepto);
+    if (this._admProvincia)return norm(item.provincia) === norm(this._admProvincia);
+    if (this._admPais)     return norm(item.pais) === norm(this._admPais);
+    return true; // nada seleccionado en ningún nivel → mostrar todo
+  },
+
   _admRenderLoops() {
     const q    = (document.getElementById('adm-loops-q')?.value||'').toLowerCase();
-    const city = this._admCity || '';
     const statusFilter = document.getElementById('adm-loops-filter')?.value || 'all';
 
     // Normalizar para comparar sin acentos ni mayúsculas
@@ -15579,7 +15597,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const list = this.routes.filter(r =>
       r.type !== 'fotostop' &&
       (!q    || norm(r.name).includes(norm(q))) &&
-      (!city || norm(r.cityId) === norm(city) || norm(r.ciudad) === norm(city)) &&
+      this._admMatchesGeoFilter(r) &&
       (statusFilter === 'all' || (r.status||'approved') === statusFilter)
     );
     list.sort((a,b) => {
@@ -15594,6 +15612,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (list.length === 0) {
       // Si no hay loops, mostrar cuántos hay en total como ayuda diagnóstica
       const total = this.routes.filter(r => r.type !== 'fotostop').length;
+      const city = this._admCity || this._admDepto || this._admProvincia || '';
       el.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">
         Sin loops para "${city || 'todas las ciudades'}"<br>
         <span style="font-size:11px;margin-top:6px;display:block;">
@@ -15916,7 +15935,6 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   // ── FotoLoops ──
   async _admRenderFotoloops() {
     const filter = document.getElementById('adm-fl-filter')?.value||'all';
-    const city   = this._admCity || '';
     const el = document.getElementById('adm-fl-list');
     const cntEl = document.getElementById('adm-fl-count');
     if (!el) return;
@@ -15938,9 +15956,8 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     }
 
     let list = this._fotoPosts || [];
-    // Filtrar por ciudad global — normalizado sin acentos
-    const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
-    if (city) list = list.filter(p => norm(p.ciudad||p.cityId||'') === norm(city));
+    // Filtro geográfico en cascada: Ciudad > Departamento > Provincia > País
+    list = list.filter(p => this._admMatchesGeoFilter(p));
     const filtered = filter === 'all' ? list : list.filter(p=>(p.status||'pending')===filter);
     // Priorizar en la revisión las que tienen posible persona detectada
     filtered.sort((a,b) => (b.facesDetected?1:0) - (a.facesDetected?1:0));
@@ -15951,6 +15968,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
 
     if (filtered.length === 0) {
       const total = (this._fotoPosts||[]).length;
+      const city = this._admCity || this._admDepto || this._admProvincia || '';
       el.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">
         Sin foto loops para "${city || 'todas las ciudades'}"<br>
         <span style="font-size:11px;margin-top:6px;display:block;">
@@ -16176,7 +16194,6 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const el = document.getElementById('adm-ev-list');
     if (!el) return;
     el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">Cargando eventos...</div>`;
-    const ciudad = this._admCity || '';
     let list = [];
     if (this._db) {
       try {
@@ -16195,9 +16212,8 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     } else {
       list = this._eventos || [];
     }
-    // Filtrar por ciudad global — normalizado
-    const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
-    if (ciudad) list = list.filter(ev => norm(ev.city||ev.ciudad||ev.cityId||'') === norm(ciudad));
+    // Filtro geográfico en cascada: Ciudad > Departamento > Provincia > País
+    list = list.filter(ev => this._admMatchesGeoFilter(ev));
     if (list.length === 0) { el.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">Sin eventos</div>`; return; }
     const now = new Date().toISOString().split('T')[0];
     el.innerHTML = list.map(ev => {
@@ -17565,7 +17581,6 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const el = document.getElementById('adm-tab-negocios');
     if (!el) return;
     el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">Cargando negocios...</div>`;
-    const ciudad = this._admCity || '';
     let lista = [];
     if (this._db) {
       try {
@@ -17574,10 +17589,8 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
         this._negociosCache = lista; // BUG FIX: guardar en cache para _negocioFiltrar
       } catch(e) { console.warn('negocios:', e); lista = []; }
     }
-    // Filtrar por ciudad global — normalizado (antes era comparación exacta: "La Paz" vs
-    // "la paz" o "La Paz " con espacio ya no matcheaban y el negocio quedaba invisible).
-    const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
-    if (ciudad) lista = lista.filter(n => norm(n.ciudad) === norm(ciudad));
+    // Filtro geográfico en cascada: Ciudad > Departamento > Provincia > País
+    lista = lista.filter(n => this._admMatchesGeoFilter(n));
     const RUBROS = ['Restaurante / Parrilla','Vinoteca / Vinería','Almacén / Proveeduría','Panadería / Confitería','Heladería','Farmacia','Bar / Cervecería','Café','Hospedaje / Camping','Guía de pesca','Alquiler de botes / Kayaks','Servicio náutico','Turismo aventura','Dietética / Naturista','Kiosco','Carnicería','Verdulería','Ferretería','Indumentaria','Peluquería / Estética','Veterinaria','Otro'];
     const PLANES = ['Básico (gratis)','Destacado','Premium'];
     el.innerHTML = `
