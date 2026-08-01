@@ -7930,8 +7930,22 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     try {
       const url = `https://router.project-osrm.org/route/v1/${mode.osrm}/${uLL.lng},${uLL.lat};${loopStartCoord[0]},${loopStartCoord[1]}?overview=full&geometries=geojson&steps=true&annotations=false`;
-      const resp = await fetch(url, { signal: this._abortSignal(6000) });
-      const data = await resp.json();
+      // 6s alcanzaba en wifi de escritorio, pero en datos móviles (con el GPS
+      // recién activándose compitiendo por señal) es común que tarde más y
+      // se corte, cayendo siempre a la línea recta. Ahora: 12s de margen +
+      // 1 reintento antes de rendirse (una petición que falla una vez por un
+      // hipo de red momentáneo no debería arruinar toda la navegación).
+      let resp, data;
+      for (let intento = 1; intento <= 2; intento++) {
+        try {
+          resp = await fetch(url, { signal: this._abortSignal(12000) });
+          data = await resp.json();
+          break;
+        } catch(errIntento) {
+          if (intento === 2) throw errIntento;
+          console.warn('[_calcAndDrawNav] Intento 1 falló, reintentando:', errIntento);
+        }
+      }
 
       // Quitar provisional
       try { if (this.mainMap.getLayer('nav-dashed')) this.mainMap.removeLayer('nav-dashed'); } catch(_){}
