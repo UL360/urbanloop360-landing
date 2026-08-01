@@ -6664,14 +6664,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   // Encabezado reusable para popups: 🚩 Reportar — Título — ✕ Cerrar
   _popupHeader(title, reportOnclick, closeOnclick) {
     return `
-      <div class="popup-drag-handle" style="display:flex;align-items:center;gap:6px;padding:7px 8px;background:#14141c;cursor:grab;touch-action:none;user-select:none;" title="Arrastrá para mover">
+      <div style="display:flex;align-items:center;gap:6px;padding:7px 8px;background:#14141c;">
         <button type="button" class="popup-report-btn" onpointerup="event.stopPropagation();${reportOnclick}" title="Reportar"
           style="width:26px;height:26px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,.08);border:none;color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;">🚩</button>
-        <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;">
-          <span style="font-size:9px;color:#555;letter-spacing:1px;line-height:1;pointer-events:none;">⠿</span>
-          <span style="font-size:12px;font-weight:800;color:#F0F0F8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${this._esc(title)}</span>
-          <span style="font-size:9px;color:#555;letter-spacing:1px;line-height:1;pointer-events:none;">⠿</span>
-        </div>
+        <div style="flex:1;text-align:center;font-size:12px;font-weight:800;color:#F0F0F8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${this._esc(title)}</div>
         <button type="button" class="popup-close-btn" onpointerup="event.stopPropagation();${closeOnclick}" title="Cerrar"
           style="width:26px;height:26px;flex-shrink:0;border-radius:50%;background:rgba(255,95,0,.18);border:none;color:var(--or);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
       </div>`;
@@ -6686,76 +6682,6 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       btn.onclick = (e) => { e.stopPropagation(); try { popup.remove(); } catch(err) {} };
       btn.onpointerup = (e) => { e.stopPropagation(); try { popup.remove(); } catch(err) {} };
     }
-  },
-
-  // ── Hace que un popup de MapLibre sea arrastrable por su header ──
-  // El usuario toca/clickea el header (fuera de los botones) y puede mover
-  // el popup para descubrir el recorrido debajo.
-  // Estrategia: durante el drag se deshabilita el pan del mapa y se pone
-  // un flag _isDraggingPopup para que el handler 'close' no borre la ruta.
-  _makePopupDraggable(popup) {
-    const el = popup.getElement && popup.getElement();
-    if (!el) return;
-    const handle = el.querySelector('.popup-drag-handle');
-    if (!handle) return;
-    // Evitar doble-binding si ya fue registrado
-    if (handle._dragBound) return;
-    handle._dragBound = true;
-
-    let isDragging = false;
-    let startX = 0, startY = 0;
-
-    const startDrag = (e) => {
-      // No iniciar drag si se clickeó un botón
-      if (e.target.closest('button')) return;
-      isDragging = true;
-      this._isDraggingPopup = true;   // ← protege la ruta en el close handler
-      startX = e.clientX;
-      startY = e.clientY;
-      handle.style.cursor = 'grabbing';
-      // Deshabilitamos el pan/zoom del mapa para que el toque no mueva el mapa
-      try { this.mainMap.dragPan.disable(); } catch(_) {}
-      try { this.mainMap.touchPitch.disable(); } catch(_) {}
-      try { this.mainMap.touchZoomRotate.disable(); } catch(_) {}
-      try { handle.setPointerCapture(e.pointerId); } catch(_) {}
-      e.stopPropagation();
-      e.preventDefault();
-    };
-
-    const onMove = (e) => {
-      if (!isDragging) return;
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      startX = e.clientX;
-      startY = e.clientY;
-      try {
-        const map = this.mainMap;
-        const lngLat = popup.getLngLat();
-        const pt = map.project(lngLat);
-        popup.setLngLat(map.unproject([pt.x + dx, pt.y + dy]));
-      } catch(_) {}
-      e.stopPropagation();
-      e.preventDefault();
-    };
-
-    const endDrag = (e) => {
-      if (!isDragging) return;
-      isDragging = false;
-      handle.style.cursor = 'grab';
-      // Reactivar interacciones del mapa
-      try { this.mainMap.dragPan.enable(); } catch(_) {}
-      try { this.mainMap.touchPitch.enable(); } catch(_) {}
-      try { this.mainMap.touchZoomRotate.enable(); } catch(_) {}
-      // Limpiar el flag con un pequeño delay para que el close handler (si disparara)
-      // lo encuentre todavía activo y no borre la ruta
-      setTimeout(() => { this._isDraggingPopup = false; }, 120);
-      e.stopPropagation();
-    };
-
-    handle.addEventListener('pointerdown', startDrag);
-    handle.addEventListener('pointermove', onMove);
-    handle.addEventListener('pointerup', endDrag);
-    handle.addEventListener('pointercancel', endDrag);
   },
 
   async _showNegocioPopup(n) {
@@ -6832,7 +6758,6 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     this._negocioPopup.on('close', () => { this._negocioPopup = null; });
     this._wirePopupCloseBtn(this._negocioPopup);
-    this._makePopupDraggable(this._negocioPopup);
   },
 
   // ── Popup liviano al pasar el mouse por un fotoloop (solo desktop/hover) ──
@@ -6917,7 +6842,6 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     this._fotoPopup.on('close', () => { this._fotoPopup = null; });
     this._wirePopupCloseBtn(this._fotoPopup);
-    this._makePopupDraggable(this._fotoPopup);
 
     // Resolver imagen async y actualizar el popup si sigue abierto
     if (p.img) {
@@ -6938,7 +6862,6 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         }
       }
       this._wirePopupCloseBtn(this._fotoPopup);
-      this._makePopupDraggable(this._fotoPopup);
     }
   },
 
@@ -7835,13 +7758,22 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       visible = [...this.routes];
     }
 
-    // Mostrar u ocultar rutas (loops) en el mapa
-    if (this._layers) {
-      this.routes.forEach(r => {
-        const show = showLoops && visible.find(v => v.id === r.id);
-        this._setRouteVisible(r.id, !!show, false);
-      });
-    }
+    // Mostrar u ocultar rutas (loops) en el mapa — línea Y pin, no solo la línea.
+    // Antes esto solo tocaba la línea del recorrido vía _setRouteVisible, que
+    // además requiere que _layers[id] ya exista (cosa que un loop comunitario
+    // normalmente NO tiene hasta que lo tocás/hacés hover) — el pin en sí
+    // (_startMarkers para oficiales, _iconMarkers para comunidad) nunca se
+    // ocultaba, así que cambiar de Vista no escondía ningún pin de verdad.
+    this.routes.forEach(r => {
+      const show = showLoops && !!visible.find(v => v.id === r.id);
+      this._setRouteVisible(r.id, show, false);
+      if (this._startMarkers && this._startMarkers[r.id]) {
+        try { this._startMarkers[r.id].getElement().style.display = show ? '' : 'none'; } catch(e) {}
+      }
+      if (this._iconMarkers && this._iconMarkers[r.id]) {
+        try { this._iconMarkers[r.id].getElement().style.display = show ? '' : 'none'; } catch(e) {}
+      }
+    });
 
     // Mostrar u ocultar markers de FotoLoop
     (this._fotoMarkers || []).forEach(m => {
@@ -8352,7 +8284,6 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       .setHTML(buildHTML(null))
       .addTo(this.mainMap);
     this._wirePopupCloseBtn(this._loopPopup);
-    this._makePopupDraggable(this._loopPopup);
 
     // Resolver imagen async y actualizar el popup si sigue abierto
     if (r.img && this._resolveImg) {
@@ -8362,22 +8293,17 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           const inner = el ? el.querySelector('#loop-popup-inner') : document.getElementById('loop-popup-inner');
           if (inner) inner.outerHTML = buildHTML(resolved);
           this._wirePopupCloseBtn(this._loopPopup);
-          this._makePopupDraggable(this._loopPopup);
         }
       }).catch(()=>{});
     } else if (r.img && (r.img.startsWith('data:') || r.img.startsWith('http'))) {
       const inner = document.getElementById('loop-popup-inner');
       if (inner) inner.outerHTML = buildHTML(r.img);
       this._wirePopupCloseBtn(this._loopPopup);
-      this._makePopupDraggable(this._loopPopup);
     }
 
-    // Cuando el usuario cierra el popup con la X → limpiar todo.
-    // Si el cierre ocurrió mientras se arrastraba el popup (_isDraggingPopup)
-    // solo limpiamos la referencia interna y dejamos la ruta/selección intactas.
+    // Cuando el usuario cierra el popup con la X nativa → limpiar todo
     this._loopPopup.on('close', () => {
       this._loopPopup = null;
-      if (this._isDraggingPopup) return; // drag en curso: no tocar la ruta
       this.selId = null;
       const b = document.getElementById('rt-badge');
       if (b) b.style.display = 'none';
