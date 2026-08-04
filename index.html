@@ -4972,7 +4972,8 @@ const App = {
           // Marcar como comunidad si no tiene source explícito
           if (!loop.source) loop.source = 'comunidad';
           // Filtro de moderación: ocultar pendientes y rechazados (los viejos sin status se muestran)
-          if (loop.status === 'pending' || loop.status === 'rejected') return;
+          // El admin/mod ve todo para poder aprobar o rechazar
+          if ((loop.status === 'pending' || loop.status === 'rejected') && !this._isMod()) return;
           // Ocultar contenido marcado por reportes (salvo para el propio autor, mod o admin)
           if (loop.hidden && loop.authorId !== this._uid && !this._isMod()) return;
           // Ocultar loops pendientes de moderación (salvo para el propio autor, mod o admin)
@@ -5061,7 +5062,8 @@ const App = {
             const p = { ...d.data(), id: d.id };
             if (p.img === '[[base64]]') p.img = ''; // compatibilidad datos viejos
             // Filtro de moderación: ocultar pendientes y rechazados (los viejos sin status se muestran)
-            if (p.status === 'pending' || p.status === 'rejected') return;
+            // El admin/mod ve todo para poder aprobar o rechazar
+            if ((p.status === 'pending' || p.status === 'rejected') && !this._isAdmin()) return;
             // Ocultar contenido marcado por reportes (salvo para el propio autor o admin)
             if (p.hidden && p.authorId !== this._uid && p.uid !== this._uid && !this._isAdmin()) return;
             this._fotoPosts.push(p);
