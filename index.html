@@ -6592,7 +6592,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   // Encabezado reusable para popups: 🚩 Reportar — Título — ✕ Cerrar
   _popupHeader(title, reportOnclick, closeOnclick) {
     return `
-      <div style="display:flex;align-items:center;gap:6px;padding:7px 8px;background:#14141c;">
+      <div class="ul-drag-handle" style="display:flex;align-items:center;gap:6px;padding:7px 8px;background:#14141c;cursor:grab;touch-action:none;user-select:none;">
         <button type="button" class="popup-report-btn" onpointerup="event.stopPropagation();${reportOnclick}" title="Reportar"
           style="width:26px;height:26px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,.08);border:none;color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;">🚩</button>
         <div style="flex:1;text-align:center;font-size:12px;font-weight:800;color:#F0F0F8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${this._esc(title)}</div>
@@ -6610,6 +6610,60 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       btn.onclick = (e) => { e.stopPropagation(); try { popup.remove(); } catch(err) {} };
       btn.onpointerup = (e) => { e.stopPropagation(); try { popup.remove(); } catch(err) {} };
     }
+  },
+
+  _makeDraggablePopup(popup) {
+    setTimeout(() => {
+      const el = popup && popup.getElement ? popup.getElement() : null;
+      if (!el) return;
+      const content = el.querySelector('.maplibregl-popup-content');
+      if (!content) return;
+      const handle = content.querySelector('.ul-drag-handle');
+      if (!handle || handle.dataset.dragReady) return;
+      handle.dataset.dragReady = '1';
+
+      let dragging = false, startX, startY, offX = 0, offY = 0;
+
+      const onDown = (cx, cy) => {
+        dragging = true;
+        startX = cx - offX; startY = cy - offY;
+        handle.style.cursor = 'grabbing';
+      };
+      const onMove = (cx, cy) => {
+        if (!dragging) return;
+        offX = cx - startX; offY = cy - startY;
+        content.style.transform = `translate(${offX}px,${offY}px)`;
+      };
+      const onUp = () => {
+        if (!dragging) return;
+        dragging = false;
+        handle.style.cursor = 'grab';
+      };
+
+      const onMouseMove = e => onMove(e.clientX, e.clientY);
+      const onTouchMove = e => { if (!dragging) return; const t = e.touches[0]; onMove(t.clientX, t.clientY); };
+
+      handle.addEventListener('mousedown', e => {
+        if (e.target.closest('button')) return;
+        onDown(e.clientX, e.clientY); e.preventDefault(); e.stopPropagation();
+      });
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onUp);
+
+      handle.addEventListener('touchstart', e => {
+        if (e.target.closest('button')) return;
+        const t = e.touches[0]; onDown(t.clientX, t.clientY); e.stopPropagation();
+      }, { passive: true });
+      document.addEventListener('touchmove', onTouchMove, { passive: true });
+      document.addEventListener('touchend', onUp);
+
+      popup.once('close', () => {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onUp);
+        document.removeEventListener('touchmove', onTouchMove);
+        document.removeEventListener('touchend', onUp);
+      });
+    }, 80);
   },
 
   async _showNegocioPopup(n) {
@@ -6771,6 +6825,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     this._fotoPopup.on('close', () => { this._fotoPopup = null; });
     this._wirePopupCloseBtn(this._fotoPopup);
+    this._makeDraggablePopup(this._fotoPopup);
 
     // Resolver imagen async y actualizar el popup si sigue abierto
     if (p.img) {
@@ -8231,6 +8286,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       .setHTML(buildHTML(null))
       .addTo(this.mainMap);
     this._wirePopupCloseBtn(this._loopPopup);
+    this._makeDraggablePopup(this._loopPopup);
 
     // Resolver imagen async y actualizar el popup si sigue abierto
     if (r.img && this._resolveImg) {
