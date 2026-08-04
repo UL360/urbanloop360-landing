@@ -7057,10 +7057,15 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       try { if (this.mainMap.getLayer(lid)) this.mainMap.setLayoutProperty(lid, 'visibility', vis); } catch(e) {}
     });
     if (!includeMarkers) return;
-    // POI markers
+    // POI markers: solo se ocultan acá — mostrarlos es responsabilidad exclusiva
+    // de _refreshPoiMarkersVisibility() que verifica selId. Así en mobile nunca
+    // aparecen solos por un _setRouteVisible(id, true) sin selección activa.
     if (this._poiMarkers && this._poiMarkers[id]) {
       this._poiMarkers[id].forEach(m => {
-        try { m.getElement().style.display = visible ? '' : 'none'; } catch(e) {}
+        try {
+          if (!visible) m.getElement().style.display = 'none';
+          // Si visible=true, no tocamos el display — _refreshPoiMarkersVisibility lo maneja
+        } catch(e) {}
       });
     }
     // Pin de inicio del Loop
