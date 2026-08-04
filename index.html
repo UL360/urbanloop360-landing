@@ -4886,7 +4886,10 @@ const App = {
     const myLoops = (this.routes || []).filter(r => r.authorId === this._uid && !DEFAULTS.find(d=>d.id===r.id))
       .map(r => ({ id:r.id, name:r.name||'Loop', emoji:r.emoji||'🔁', ts:r.createdAt||0, status:r.status||'approved', kind:'Loop', sentToMuni: !!r._sentToMuni, source: r.source }));
 
-    const all = [...myFotos, ...myLoops].sort((a,b) => b.ts - a.ts);
+    const myEventos = (this._eventos || []).filter(e => e.authorId === this._uid)
+      .map(e => ({ id:e.id, name:e.name||'Evento', emoji:e.emoji||'📅', ts:e.ts||0, status:e.status||'pending', kind:'Evento', source: e.source }));
+
+    const all = [...myFotos, ...myLoops, ...myEventos].sort((a,b) => b.ts - a.ts);
 
     if (!all.length) {
       box.innerHTML = `<div style="text-align:center;padding:20px 10px;font-size:12px;color:var(--gr);">Todavía no publicaste nada. ¡Sumá tu primer Foto Loop! 📸</div>`;
@@ -4977,8 +4980,8 @@ const App = {
           // Marcar como comunidad si no tiene source explícito
           if (!loop.source) loop.source = 'comunidad';
           // Filtro de moderación: ocultar pendientes y rechazados (los viejos sin status se muestran)
-          // El admin/mod ve todo para poder aprobar o rechazar
-          if ((loop.status === 'pending' || loop.status === 'rejected') && !this._isMod()) return;
+          // El admin/mod y el propio autor ven los suyos
+          if ((loop.status === 'pending' || loop.status === 'rejected') && !this._isMod() && loop.authorId !== this._uid) return;
           // Ocultar contenido marcado por reportes (salvo para el propio autor, mod o admin)
           if (loop.hidden && loop.authorId !== this._uid && !this._isMod()) return;
           // Ocultar loops pendientes de moderación (salvo para el propio autor, mod o admin)
@@ -5067,8 +5070,8 @@ const App = {
             const p = { ...d.data(), id: d.id };
             if (p.img === '[[base64]]') p.img = ''; // compatibilidad datos viejos
             // Filtro de moderación: ocultar pendientes y rechazados (los viejos sin status se muestran)
-            // El admin/mod ve todo para poder aprobar o rechazar
-            if ((p.status === 'pending' || p.status === 'rejected') && !this._isAdmin()) return;
+            // El admin/mod y el propio autor ven los suyos
+            if ((p.status === 'pending' || p.status === 'rejected') && !this._isAdmin() && p.authorId !== this._uid) return;
             // Ocultar contenido marcado por reportes (salvo para el propio autor o admin)
             if (p.hidden && p.authorId !== this._uid && p.uid !== this._uid && !this._isAdmin()) return;
             this._fotoPosts.push(p);
@@ -12558,7 +12561,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       departamento: evGeo.departamento,
       provincia:    evGeo.provincia,
       pais:         evGeo.pais,
-      ts: Date.now(), attendees: [this._uid], likes: 0
+      ts: Date.now(), attendees: [this._uid], likes: 0,
+      status: this._isAdmin() ? 'approved' : 'pending'
     };
 
     // Incluir imagen si la cargaron
@@ -12581,8 +12585,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       }
     }
 
-    this._eventos = this._eventos || [];
-    this._eventos.unshift(ev);
+    // Solo agregar al listado local si fue aprobado (admin), si está pending no se muestra
+    if (ev.status !== 'pending') {
+      this._eventos = this._eventos || [];
+      this._eventos.unshift(ev);
+    }
 
     // También publicar en feed
     const feedPost = { id:'post_ev_'+ev.id, type:'evento', text:`📅 Nuevo evento: "${App._esc(ev.name)}" — ${ev.fecha} ${ev.hora}${ev.desc?' — '+ev.desc:''}`, loopId, authorId:ev.authorId, authorName:ev.authorName, city:ev.city, ts:ev.ts, likes:0, replies:[], evId:ev.id };
@@ -12633,7 +12640,12 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         // Intentar con orderBy primero
         const snap = await this._db.collection('eventos').orderBy('ts','desc').limit(100).get();
         this._eventos = [];
-        snap.forEach(d => this._eventos.push({...d.data(), id:d.id}));
+        snap.forEach(d => {
+          const ev = {...d.data(), id:d.id};
+          // Filtro moderación: pendientes y rechazados visibles para admin y para el propio autor
+          if ((ev.status === 'pending' || ev.status === 'rejected') && !this._isAdmin() && ev.authorId !== this._uid) return;
+          this._eventos.push(ev);
+        });
         console.log(`[eventos] Cargados ${this._eventos.length} eventos`);
       } catch(e) {
         console.warn('[eventos] orderBy falló, intentando sin orderBy:', e.message);
