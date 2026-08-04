@@ -6322,17 +6322,19 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     // Click en la ruta
     this.mainMap.on('click', 'line-' + r.id, () => App.selectRoute(r.id));
-    this.mainMap.on('mouseenter', 'line-' + r.id, () => {
-      this.mainMap.getCanvas().style.cursor = 'pointer';
-      App._hoverShowLoopCard(r);
-      // Si esta línea es un preview de loop no oficial, no dejar que se cierre mientras el mouse esté encima
-      if (this._previewRouteId === r.id) clearTimeout(this._previewTimer);
-    });
-    this.mainMap.on('mouseleave', 'line-' + r.id, () => {
-      this.mainMap.getCanvas().style.cursor = '';
-      App._hoverHideLoopCard();
-      if (this._previewRouteId === r.id) this._previewRouteOff(r.id);
-    });
+    // Hover de loops solo en desktop — en touch dispara el popup fantasma
+    if (!('ontouchstart' in window)) {
+      this.mainMap.on('mouseenter', 'line-' + r.id, () => {
+        this.mainMap.getCanvas().style.cursor = 'pointer';
+        App._hoverShowLoopCard(r);
+        if (this._previewRouteId === r.id) clearTimeout(this._previewTimer);
+      });
+      this.mainMap.on('mouseleave', 'line-' + r.id, () => {
+        this.mainMap.getCanvas().style.cursor = '';
+        App._hoverHideLoopCard();
+        if (this._previewRouteId === r.id) this._previewRouteOff(r.id);
+      });
+    }
 
     // Punto de inicio — pin con el logo de Urban Loop (mascota)
     if (!this._startMarkers) this._startMarkers = {};
@@ -6555,8 +6557,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       el.title = p.name || 'Foto Loop';
       const elImg = el.querySelector('img');
       el.onclick = (e) => { e.stopPropagation(); App._bouncePin(elImg); App._showFotoPopup(p); };
-      el.addEventListener('mouseenter', () => { elImg.style.transform = 'scale(1.15) translateY(-2px)'; App._hoverShowFotoCard(p, el); });
-      el.addEventListener('mouseleave', () => { elImg.style.transform = 'scale(1) translateY(0)'; App._hoverHideLoopCard(); });
+      // Hover solo en desktop — en touch el mouseenter causa el popup fantasma
+      if (!('ontouchstart' in window)) {
+        el.addEventListener('mouseenter', () => { elImg.style.transform = 'scale(1.15) translateY(-2px)'; App._hoverShowFotoCard(p, el); });
+        el.addEventListener('mouseleave', () => { elImg.style.transform = 'scale(1) translateY(0)'; App._hoverHideLoopCard(); });
+      }
       const mkr = new maplibregl.Marker({ element: el, anchor: 'bottom' })
         .setLngLat([p.lng, p.lat]).addTo(this.mainMap);
       this._fotoMarkers.push(mkr);
