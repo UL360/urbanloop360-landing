@@ -1811,24 +1811,24 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
 }
 
 /* ═══ PINES DE LOGO (Inicio de Loop / FotoLoop / Comercio) ═══ */
-.ul-pin-wrap { cursor: pointer; pointer-events: all; display: flex; align-items: flex-end; justify-content: center; padding: 12px 10px 0; touch-action: manipulation; }
+.ul-pin-wrap { cursor: pointer; pointer-events: all; display: flex; align-items: flex-end; justify-content: center; padding: 12px 10px 0; touch-action: manipulation; box-sizing: content-box; }
 .ul-pin-wrap img { width: 100%; height: 100%; object-fit: contain; display: block; transition: transform .15s; }
 .ul-pin-start    { width: 34px; height: 44px; }
-.ul-pin-foto     { width: 58px; height: 62px; }
+.ul-pin-foto     { width: 34px; height: 44px; }
 .ul-pin-comercio { width: 34px; height: 44px; }
 .ul-pin-comunidad{ width: 34px; height: 44px; }
 /* Pines oficiales: mismo ancho que el pin común para que el cuerpo se vea igual de grande;
    el alto es mayor solo para darle lugar a la corona (imagen ya recortada a su bounding box). */
-.ul-pin-oficial  { width: 58px; height: 67px; }
+.ul-pin-oficial  { width: 34px; height: 49px; }
 
 /* ═══ MOBILE FIRST — EXPLORE ═══ */
 @media (max-width: 768px) {
   /* Pines de logo — área de toque más grande (el ancla queda abajo-centro, no se mueve) */
   .ul-pin-start    { width: 44px; height: 56px; }
-  .ul-pin-foto     { width: 70px; height: 78px; }
+  .ul-pin-foto     { width: 44px; height: 56px; }
   .ul-pin-comercio { width: 44px; height: 56px; }
   .ul-pin-comunidad{ width: 44px; height: 56px; }
-  .ul-pin-oficial  { width: 70px; height: 85px; }
+  .ul-pin-oficial  { width: 44px; height: 63px; }
 
   /* Map controls — bigger tap targets */
   #locate-btn { width: 46px !important; height: 46px !important; border-radius: 14px !important; }
@@ -6691,6 +6691,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   // ── Popup liviano al pasar el mouse por un fotoloop (solo desktop/hover) ──
   _hoverShowFotoCard(p, markerEl) {
     if (this._fotoPopup) return; // ya hay uno abierto por click, no interferir
+    clearTimeout(this._hoverHideTimer);
     if (this._hoverPopup) { try { this._hoverPopup.remove(); } catch(e){} this._hoverPopup = null; }
     if (!this.mainMap) return;
 
@@ -8155,6 +8156,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   _hoverShowLoopCard(r) {
     // Si el usuario ya tiene un loop seleccionado (click), no interferir
     if (this.selId) return;
+    clearTimeout(this._hoverHideTimer);
     if (this._hoverPopup) { try { this._hoverPopup.remove(); } catch(e){} this._hoverPopup = null; }
     if (!r.pts || !r.pts.length || !this.mainMap) return;
     const pt = r.pts[0];
@@ -8180,7 +8182,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   },
 
   _hoverHideLoopCard() {
-    if (this._hoverPopup) { try { this._hoverPopup.remove(); } catch(e){} this._hoverPopup = null; }
+    clearTimeout(this._hoverHideTimer);
+    this._hoverHideTimer = setTimeout(() => {
+      if (this._hoverPopup) { try { this._hoverPopup.remove(); } catch(e){} this._hoverPopup = null; }
+    }, 120);
   },
 
   // Popup con foto + CTA en el mapa (MapLibre)
