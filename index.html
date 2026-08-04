@@ -1811,24 +1811,24 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
 }
 
 /* ═══ PINES DE LOGO (Inicio de Loop / FotoLoop / Comercio) ═══ */
-.ul-pin-wrap { cursor: pointer; pointer-events: all; display: flex; align-items: flex-end; justify-content: center; }
+.ul-pin-wrap { cursor: pointer; pointer-events: all; display: flex; align-items: flex-end; justify-content: center; padding: 12px 10px 0; touch-action: manipulation; }
 .ul-pin-wrap img { width: 100%; height: 100%; object-fit: contain; display: block; transition: transform .15s; }
 .ul-pin-start    { width: 34px; height: 44px; }
-.ul-pin-foto     { width: 34px; height: 44px; }
+.ul-pin-foto     { width: 58px; height: 62px; }
 .ul-pin-comercio { width: 34px; height: 44px; }
 .ul-pin-comunidad{ width: 34px; height: 44px; }
 /* Pines oficiales: mismo ancho que el pin común para que el cuerpo se vea igual de grande;
    el alto es mayor solo para darle lugar a la corona (imagen ya recortada a su bounding box). */
-.ul-pin-oficial  { width: 34px; height: 49px; }
+.ul-pin-oficial  { width: 58px; height: 67px; }
 
 /* ═══ MOBILE FIRST — EXPLORE ═══ */
 @media (max-width: 768px) {
   /* Pines de logo — área de toque más grande (el ancla queda abajo-centro, no se mueve) */
   .ul-pin-start    { width: 44px; height: 56px; }
-  .ul-pin-foto     { width: 44px; height: 56px; }
+  .ul-pin-foto     { width: 70px; height: 78px; }
   .ul-pin-comercio { width: 44px; height: 56px; }
   .ul-pin-comunidad{ width: 44px; height: 56px; }
-  .ul-pin-oficial  { width: 44px; height: 63px; }
+  .ul-pin-oficial  { width: 70px; height: 85px; }
 
   /* Map controls — bigger tap targets */
   #locate-btn { width: 46px !important; height: 46px !important; border-radius: 14px !important; }
