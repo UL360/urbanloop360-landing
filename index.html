@@ -6532,93 +6532,21 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     const FL_CATS = {lugar:'📍',gastro:'🍽️',bar:'🍸',cafe:'☕',nocturno:'🌙',cultura:'🎭',arte:'🎨',patrimonio:'🏛️',musica:'🎵',naturaleza:'🌿',playa:'🏖️',parque:'🌳',pesca:'🎣',aventura:'🧗',deporte:'⚽',bienestar:'🧘',eventos:'📅',perro:'🐕'};
 
-    // Si no hay supercluster disponible o pocos puntos, dibujar directo
-    if (!window.Supercluster || visible.length < 10) {
-      visible.forEach(p => {
-        const el = document.createElement('div');
-        el.className = 'ul-pin-wrap ul-pin-foto' + (p.source === 'municipio' ? ' ul-pin-oficial' : '');
-        const pinFotoSrc = (p.source === 'municipio') ? this._PIN_FOTOLOOP_OFICIAL : this._PIN_FOTOLOOP;
-        el.innerHTML = `<img src="${pinFotoSrc}" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,.4)) saturate(1.35) brightness(1.08);" alt="FotoLoop" draggable="false">`;
-        el.title = p.name || 'Foto Loop';
-        const elImg = el.querySelector('img');
-        el.onclick = (e) => { e.stopPropagation(); App._bouncePin(elImg); App._showFotoPopup(p); };
-        el.addEventListener('mouseenter', () => { elImg.style.transform = 'scale(1.15) translateY(-2px)'; App._hoverShowFotoCard(p, el); });
-        el.addEventListener('mouseleave', () => { elImg.style.transform = 'scale(1) translateY(0)'; App._hoverHideLoopCard(); });
-        const mkr = new maplibregl.Marker({ element: el, anchor: 'bottom' })
-          .setLngLat([p.lng, p.lat]).addTo(this.mainMap);
-        this._fotoMarkers.push(mkr);
-      });
-      return;
-    }
-
-    // Construir índice supercluster
-    const geojsonPoints = visible.map(p => ({
-      type: 'Feature',
-      geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
-      properties: { post: p }
-    }));
-    this._fotoCluster = new Supercluster({ radius: 60, maxZoom: 16 });
-    this._fotoCluster.load(geojsonPoints);
-
-    const renderClusters = () => {
-      // Limpiar markers actuales
-      (this._fotoMarkers || []).forEach(m => { try { m.remove(); } catch(e){} });
-      this._fotoMarkers = [];
-
-      const zoom = Math.floor(this.mainMap.getZoom());
-      const bounds = this.mainMap.getBounds();
-      const bbox = [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()];
-      const clusters = this._fotoCluster.getClusters(bbox, zoom);
-
-      clusters.forEach(feature => {
-        const [lng, lat] = feature.geometry.coordinates;
-        const { cluster, point_count, post } = feature.properties;
-
-        if (cluster) {
-          // — Marker de cluster —
-          const el = document.createElement('div');
-          const size = Math.min(20 + point_count * 2, 52);
-          el.style.cssText = [
-            `width:${size}px`,`height:${size}px`,
-            'background:#FF5F00','border-radius:50%',
-            'display:flex','align-items:center','justify-content:center',
-            'color:#fff','font-weight:700',`font-size:${size > 40 ? 14 : 12}px`,
-            'box-shadow:0 2px 12px rgba(255,95,0,.5)',
-            'cursor:pointer','pointer-events:all',
-            'border:2px solid rgba(255,255,255,0.2)'
-          ].join(';');
-          el.textContent = point_count;
-          el.title = `${point_count} FotoLoops`;
-          el.onclick = (e) => {
-            e.stopPropagation();
-            const expansionZoom = Math.min(this._fotoCluster.getClusterExpansionZoom(feature.properties.cluster_id), 18);
-            this.mainMap.easeTo({ center: [lng, lat], zoom: expansionZoom, duration: 400 });
-          };
-          const mkr = new maplibregl.Marker({ element: el, anchor: 'center' })
-            .setLngLat([lng, lat]).addTo(this.mainMap);
-          this._fotoMarkers.push(mkr);
-        } else {
-          // — Marker individual —
-          const el = document.createElement('div');
-          el.className = 'ul-pin-wrap ul-pin-foto' + (post.source === 'municipio' ? ' ul-pin-oficial' : '');
-          const pinFotoSrc = (post.source === 'municipio') ? this._PIN_FOTOLOOP_OFICIAL : this._PIN_FOTOLOOP;
-          el.innerHTML = `<img src="${pinFotoSrc}" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,.4)) saturate(1.35) brightness(1.08);" alt="FotoLoop" draggable="false">`;
-          el.title = post.name || 'Foto Loop';
-          const elImg = el.querySelector('img');
-          el.onclick = (ev) => { ev.stopPropagation(); App._bouncePin(elImg); App._showFotoPopup(post); };
-          el.addEventListener('mouseenter', () => { elImg.style.transform = 'scale(1.15) translateY(-2px)'; App._hoverShowFotoCard(post, el); });
-          el.addEventListener('mouseleave', () => { elImg.style.transform = 'scale(1) translateY(0)'; App._hoverHideLoopCard(); });
-          const mkr = new maplibregl.Marker({ element: el, anchor: 'bottom' })
-            .setLngLat([lng, lat]).addTo(this.mainMap);
-          this._fotoMarkers.push(mkr);
-        }
-      });
-    };
-
-    renderClusters();
-    this._fotoClusterHandler = renderClusters;
-    this.mainMap.on('moveend', this._fotoClusterHandler);
-    this.mainMap.on('zoomend', this._fotoClusterHandler);
+    // Dibujar siempre pins individuales, sin clustering
+    visible.forEach(p => {
+      const el = document.createElement('div');
+      el.className = 'ul-pin-wrap ul-pin-foto' + (p.source === 'municipio' ? ' ul-pin-oficial' : '');
+      const pinFotoSrc = (p.source === 'municipio') ? this._PIN_FOTOLOOP_OFICIAL : this._PIN_FOTOLOOP;
+      el.innerHTML = `<img src="${pinFotoSrc}" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,.4)) saturate(1.35) brightness(1.08);" alt="FotoLoop" draggable="false">`;
+      el.title = p.name || 'Foto Loop';
+      const elImg = el.querySelector('img');
+      el.onclick = (e) => { e.stopPropagation(); App._bouncePin(elImg); App._showFotoPopup(p); };
+      el.addEventListener('mouseenter', () => { elImg.style.transform = 'scale(1.15) translateY(-2px)'; App._hoverShowFotoCard(p, el); });
+      el.addEventListener('mouseleave', () => { elImg.style.transform = 'scale(1) translateY(0)'; App._hoverHideLoopCard(); });
+      const mkr = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+        .setLngLat([p.lng, p.lat]).addTo(this.mainMap);
+      this._fotoMarkers.push(mkr);
+    });
   },
 
   // ── Negocios activos en el mapa ──
