@@ -2453,20 +2453,25 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 
   </div>
 
-  <!-- Grabar CTA (solo abierto) -->
-  <div class="sb-grabar-btn" style="padding:10px 8px 12px;">
-    <button onclick="App.sideNav('grabar');"
-      style="width:100%;height:44px;background:var(--or);color:white;border:none;border-radius:11px;
-             font-family:var(--fH);font-size:13px;font-weight:700;cursor:pointer;
-             display:flex;align-items:center;justify-content:center;gap:8px;
-             box-shadow:0 4px 16px rgba(255,95,0,.4);">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="white" stroke="none"/></svg>
-      Grabar Loop
+  <!-- Footer con versión y botón actualizar -->
+  <div class="sb-footer" style="padding:6px 8px 10px;display:flex;flex-direction:column;gap:6px;">
+    <!-- Versión -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:6px;">
+      <span style="font-size:10px;color:var(--gr);">Urban Loop 360°</span>
+      <span style="font-size:9px;font-weight:700;background:rgba(255,95,0,0.15);color:var(--or);
+                   border-radius:6px;padding:2px 7px;letter-spacing:.3px;">v3.0</span>
+    </div>
+    <!-- Botón buscar actualización -->
+    <button onclick="App._checkForUpdate()" id="sb-update-btn"
+      style="width:100%;height:34px;background:var(--bg2);color:var(--gr);border:1px solid var(--bd);
+             border-radius:9px;font-family:var(--fH);font-size:11px;font-weight:600;cursor:pointer;
+             display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
+      </svg>
+      Buscar actualización
     </button>
   </div>
-
-  <!-- Footer -->
-  <div class="sb-footer" style="text-align:center;padding:2px 0 8px;font-size:10px;color:var(--bd);">Urban Loop 360° · v3.0</div>
 </div>
 
 <!-- ════════════ DETAIL ════════════ -->
@@ -10338,6 +10343,40 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   },
 
   // Banner de éxito visible y duradero
+  async _checkForUpdate() {
+    const btn = document.getElementById('sb-update-btn');
+    if (btn) { btn.textContent = '⏳ Buscando...'; btn.disabled = true; }
+    try {
+      if (!('serviceWorker' in navigator)) {
+        if (btn) { btn.innerHTML = '❌ No soportado'; btn.disabled = false; }
+        return;
+      }
+      const reg = await navigator.serviceWorker.getRegistration('/');
+      if (!reg) {
+        if (btn) { btn.innerHTML = '❌ SW no registrado'; btn.disabled = false; }
+        return;
+      }
+      await reg.update();
+      if (reg.waiting) {
+        // Hay una versión nueva esperando → activarla
+        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        if (btn) btn.textContent = '✅ Actualizando...';
+        setTimeout(() => window.location.reload(), 800);
+      } else {
+        if (btn) {
+          btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg> ✅ Ya tenés la última versión';
+          btn.disabled = false;
+          setTimeout(() => {
+            btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg> Buscar actualización';
+          }, 3000);
+        }
+      }
+    } catch(e) {
+      if (btn) { btn.textContent = 'Buscar actualización'; btn.disabled = false; }
+      this.toast('⚠️ No se pudo verificar: ' + e.message);
+    }
+  },
+
   _showSaveSuccess(name, msg) {
     const isPending = msg.includes('revisión') || msg.includes('pending');
     const duration  = isPending ? 8000 : 5000;

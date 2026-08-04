@@ -79,3 +79,8 @@ self.addEventListener('fetch', e => {
     );
   }
 });
+
+// Escuchar mensaje para activar el SW nuevo inmediatamente
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
