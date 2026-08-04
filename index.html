@@ -8331,7 +8331,12 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     // Cuando el usuario cierra el popup con la X nativa → limpiar todo
     this._loopPopup.on('close', () => {
       this._loopPopup = null;
+      // Ocultar iconos de cámara antes de limpiar selId
+      this._refreshPoiMarkersVisibility();
+      // Limpiar ruta pineada/seleccionada
+      this._unpinRoute();
       this.selId = null;
+      this._previewRouteId = null;
       const b = document.getElementById('rt-badge');
       if (b) b.style.display = 'none';
       const panel = document.getElementById('nav-panel'); if (panel) panel.remove();
@@ -8340,8 +8345,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       this._removeNavLine();
       this._stopVoice();
       document.querySelectorAll('.rc').forEach(c => c.classList.remove('sel'));
+      // Restaurar todas las rutas visibles y ocultar iconos de cámara
       if (this._layers) Object.keys(this._layers).forEach(rid => this._setRouteVisible(rid, true));
-      // Los pines de fotos solo deben verse con un Loop seleccionado
       this._refreshPoiMarkersVisibility();
     });
   },
