@@ -10433,7 +10433,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           'border:1px solid #FDDBC7','box-shadow:0 4px 20px rgba(0,0,0,.08)'
         ].join(';');
         banner.innerHTML = [
-          `<button onclick="document.getElementById('save-banner').style.display='none'" style="position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:#FDE8D8;border:1px solid #FBBF9A;color:#C2714F;font-size:13px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;">×</button>`,
+          `<button onclick="App._cerrarBannerYRecargar()" style="position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:#FDE8D8;border:1px solid #FBBF9A;color:#C2714F;font-size:13px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;">×</button>`,
           '<div style="font-size:28px;margin-bottom:8px;">🏙️</div>',
           '<div style="font-size:14px;font-weight:700;margin-bottom:6px;color:#C2714F;">¡Gracias por tu propuesta!</div>',
           '<div style="font-size:12px;color:#A07060;line-height:1.5;margin-bottom:8px;">La ciudad está revisando lo que nos compartiste. Pronto va a aparecer en el mapa.</div>',
@@ -10442,7 +10442,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           '<span style="font-size:14px;">👤</span>',
           '<div style="font-size:11px;color:#3A8C65;line-height:1.4;">Ya podés verlo en tu <strong style="color:#2A7050;">Perfil</strong> mientras esperás la aprobación.</div>',
           '</div>',
-          `<button onclick="document.getElementById('save-banner').style.display='none'" style="width:100%;padding:8px;background:#FDE8D8;border:1px solid #FBBF9A;border-radius:9px;color:#C2714F;font-size:11px;font-weight:700;cursor:pointer;">Entendido</button>`
+          `<button onclick="App._cerrarBannerYRecargar()" style="width:100%;padding:8px;background:#FDE8D8;border:1px solid #FBBF9A;border-radius:9px;color:#C2714F;font-size:11px;font-weight:700;cursor:pointer;">Entendido</button>`
         ].join('');
       } else {
         banner.style.cssText = [
@@ -10453,7 +10453,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           'border:1px solid rgba(180,180,255,0.12)','box-shadow:0 6px 28px rgba(0,0,0,.5)'
         ].join(';');
         banner.innerHTML = [
-          `<button onclick="document.getElementById('save-banner').style.display='none'" style="position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:#9CA3AF;font-size:13px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;">×</button>`,
+          `<button onclick="App._cerrarBannerYRecargar()" style="position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:#9CA3AF;font-size:13px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;">×</button>`,
           '<div style="font-size:28px;margin-bottom:8px;">🏙️</div>',
           '<div style="font-size:14px;font-weight:700;margin-bottom:6px;background:linear-gradient(135deg,#C9B8FF,#A8D8FF,#A8F0D8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">¡Gracias por tu propuesta!</div>',
           '<div style="font-size:12px;color:#B0BAC9;line-height:1.5;margin-bottom:8px;">La ciudad está revisando lo que nos compartiste. Pronto va a aparecer en el mapa.</div>',
@@ -10462,7 +10462,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           '<span style="font-size:14px;">👤</span>',
           '<div style="font-size:11px;color:#A8C8E8;line-height:1.4;">Ya podés verlo en tu <strong style="color:#C9B8FF;">Perfil</strong> mientras esperás la aprobación.</div>',
           '</div>',
-          `<button onclick="document.getElementById('save-banner').style.display='none'" style="width:100%;padding:8px;background:rgba(201,184,255,0.12);border:1px solid rgba(201,184,255,0.25);border-radius:9px;color:#C9B8FF;font-size:11px;font-weight:700;cursor:pointer;">Entendido</button>`
+          `<button onclick="App._cerrarBannerYRecargar()" style="width:100%;padding:8px;background:rgba(201,184,255,0.12);border:1px solid rgba(201,184,255,0.25);border-radius:9px;color:#C9B8FF;font-size:11px;font-weight:700;cursor:pointer;">Entendido</button>`
         ].join('');
       }
     } else {
@@ -10477,6 +10477,54 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     }
 
     banner.style.display = 'block';
+  },
+
+  async _cerrarBannerYRecargar() {
+    // Ocultar el banner
+    const banner = document.getElementById('save-banner');
+    if (banner) banner.style.display = 'none';
+
+    if (!this._db || !this._uid) return;
+
+    // Recargar fotoloops frescos de Firebase
+    try {
+      const flSnap = await this._db.collection('fotoloops').orderBy('ts', 'desc').limit(100)
+        .get().catch(() => this._db.collection('fotoloops').get());
+      this._fotoPosts = [];
+      flSnap.forEach(d => {
+        const p = { ...d.data(), id: d.id };
+        if (p.img === '[[base64]]') p.img = '';
+        if ((p.status === 'pending' || p.status === 'rejected') && !this._isAdmin() && p.authorId !== this._uid) return;
+        if (p.hidden && p.authorId !== this._uid && p.uid !== this._uid && !this._isAdmin()) return;
+        this._fotoPosts.push(p);
+      });
+      // Resolver imágenes en Firestore
+      await Promise.all(this._fotoPosts.map(async p => {
+        if (p.img && p.img.startsWith('firestore:')) {
+          p.img = await this._resolveImg(p.img).catch(() => '');
+        }
+      }));
+    } catch(e) { console.warn('Reload fotoloops:', e); }
+
+    // Recargar loops frescos de Firebase
+    try {
+      const lSnap = await this._db.collection('loops').orderBy('createdAt', 'desc').limit(200).get();
+      lSnap.forEach(d => {
+        const r = { ...d.data(), id: d.id };
+        const idx = this.routes.findIndex(x => x.id === r.id);
+        if (idx >= 0) this.routes[idx] = r;
+        else this.routes.push(r);
+      });
+    } catch(e) { console.warn('Reload loops:', e); }
+
+    // Actualizar el perfil con los datos frescos
+    this._updateFotoLoopPendingBadge();
+    this._updateProfileUI();
+
+    // Si el usuario está en perfil, ir al perfil para que lo vea
+    if (this._currentScreen !== 'profile') {
+      setTimeout(() => this.go('profile'), 200);
+    }
   },
 
   _calcDist(pts) {
