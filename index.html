@@ -6364,8 +6364,12 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     }
 
 
-    // POIs como marcadores HTML
+    // POIs como marcadores HTML — limpiar los anteriores del mismo loop si existen
     if (r.pois) {
+      if (this._poiMarkers && this._poiMarkers[r.id]) {
+        this._poiMarkers[r.id].forEach(m => { try { m.remove(); } catch(e) {} });
+        this._poiMarkers[r.id] = [];
+      }
       r.pois.forEach((p, i) => {
         // Usar las coordenadas reales guardadas en el POI (momento exacto de la foto).
         // Solo si faltan, caer como respaldo a un punto del trazado GPS.
@@ -8331,9 +8335,6 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     // Cuando el usuario cierra el popup con la X nativa → limpiar todo
     this._loopPopup.on('close', () => {
       this._loopPopup = null;
-      // Ocultar iconos de cámara antes de limpiar selId
-      this._refreshPoiMarkersVisibility();
-      // Limpiar ruta pineada/seleccionada
       this._unpinRoute();
       this.selId = null;
       this._previewRouteId = null;
@@ -8345,9 +8346,14 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       this._removeNavLine();
       this._stopVoice();
       document.querySelectorAll('.rc').forEach(c => c.classList.remove('sel'));
-      // Restaurar todas las rutas visibles y ocultar iconos de cámara
       if (this._layers) Object.keys(this._layers).forEach(rid => this._setRouteVisible(rid, true));
-      this._refreshPoiMarkersVisibility();
+      // Remover TODOS los POI markers del mapa (se re-crean al volver a seleccionar)
+      if (this._poiMarkers) {
+        Object.values(this._poiMarkers).forEach(markers => {
+          (markers || []).forEach(m => { try { m.remove(); } catch(e) {} });
+        });
+        this._poiMarkers = {};
+      }
     });
   },
 
