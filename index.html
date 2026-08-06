@@ -17897,7 +17897,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     // Filtro geográfico en cascada: Ciudad > Departamento > Provincia > País
     lista = lista.filter(n => this._admMatchesGeoFilter(n));
     const RUBROS = ['Restaurante / Parrilla','Vinoteca / Vinería','Almacén / Proveeduría','Panadería / Confitería','Heladería','Farmacia','Bar / Cervecería','Café','Hospedaje / Camping','Guía de pesca','Alquiler de botes / Kayaks','Servicio náutico','Turismo aventura','Dietética / Naturista','Kiosco','Carnicería','Verdulería','Ferretería','Indumentaria','Peluquería / Estética','Veterinaria','Otro'];
-    const PLANES = ['Básico (gratis)','Destacado','Premium'];
+    const PLANES = ['NFree','NegocioC','NegocioM','NegocioG','Mayorista Premium'];
     el.innerHTML = `
       <div style="padding:14px;display:flex;flex-direction:column;gap:14px;">
         <button onclick="App._negocioFormAbrir(null)"
@@ -17970,8 +17970,42 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
               <textarea id="neg-desc" rows="3" placeholder="Contá qué ofrece el negocio…" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg2);color:var(--dk);font-size:13px;font-family:var(--fH);resize:vertical;box-sizing:border-box;"></textarea>
             </div>
             <div>
-              <div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Plan</div>
-              <select id="neg-plan" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg2);color:var(--dk);font-size:13px;font-family:var(--fH);">
+              <div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">📦 Plan</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;">
+                <div class="neg-plan-card" data-plan="NFree" onclick="App._negPlanSelect('NFree')"
+                  style="border-radius:12px;border:2px solid var(--bd);background:var(--bg2);padding:10px 10px 8px;cursor:pointer;text-align:center;transition:all .15s;user-select:none;">
+                  <div style="font-size:20px;margin-bottom:3px;">🆓</div>
+                  <div style="font-size:12px;font-weight:800;color:var(--dk);">NFree</div>
+                  <div style="font-size:10px;color:var(--gr);margin-top:2px;">Perfil básico gratis</div>
+                </div>
+                <div class="neg-plan-card" data-plan="NegocioC" onclick="App._negPlanSelect('NegocioC')"
+                  style="border-radius:12px;border:2px solid var(--bd);background:var(--bg2);padding:10px 10px 8px;cursor:pointer;text-align:center;transition:all .15s;user-select:none;">
+                  <div style="font-size:20px;margin-bottom:3px;">🏪</div>
+                  <div style="font-size:12px;font-weight:800;color:var(--dk);">NegocioC</div>
+                  <div style="font-size:10px;color:var(--gr);margin-top:2px;">Chico · Perfil + fotos</div>
+                </div>
+                <div class="neg-plan-card" data-plan="NegocioM" onclick="App._negPlanSelect('NegocioM')"
+                  style="border-radius:12px;border:2px solid var(--bd);background:var(--bg2);padding:10px 10px 8px;cursor:pointer;text-align:center;transition:all .15s;user-select:none;">
+                  <div style="font-size:20px;margin-bottom:3px;">🏬</div>
+                  <div style="font-size:12px;font-weight:800;color:var(--dk);">NegocioM</div>
+                  <div style="font-size:10px;color:var(--gr);margin-top:2px;">Mediano · Destacado</div>
+                </div>
+                <div class="neg-plan-card" data-plan="NegocioG" onclick="App._negPlanSelect('NegocioG')"
+                  style="border-radius:12px;border:2px solid var(--bd);background:var(--bg2);padding:10px 10px 8px;cursor:pointer;text-align:center;transition:all .15s;user-select:none;">
+                  <div style="font-size:20px;margin-bottom:3px;">🏢</div>
+                  <div style="font-size:12px;font-weight:800;color:var(--dk);">NegocioG</div>
+                  <div style="font-size:10px;color:var(--gr);margin-top:2px;">Grande · Premium</div>
+                </div>
+                <div class="neg-plan-card" data-plan="Mayorista Premium" onclick="App._negPlanSelect('Mayorista Premium')"
+                  style="grid-column:span 2;border-radius:12px;border:2px solid var(--bd);background:var(--bg2);padding:10px 14px 8px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .15s;user-select:none;">
+                  <div style="font-size:26px;">⭐</div>
+                  <div style="text-align:left;">
+                    <div style="font-size:12px;font-weight:800;color:var(--dk);">Mayorista Premium</div>
+                    <div style="font-size:10px;color:var(--gr);margin-top:1px;">Máxima visibilidad · Estadísticas</div>
+                  </div>
+                </div>
+              </div>
+              <select id="neg-plan" style="display:none;">
                 ${PLANES.map(p => '<option value="'+p+'">'+p+'</option>').join('')}
               </select>
             </div>
@@ -18011,7 +18045,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   },
 
   _negocioCard(n) {
-    const planColor = n.plan === 'Premium' ? '#A78BFA' : n.plan === 'Destacado' ? '#FF5F00' : '#9898B8';
+    const planColor = n.plan === 'Mayorista Premium' ? '#F59E0B' : n.plan === 'NegocioG' ? '#A78BFA' : n.plan === 'NegocioM' ? '#FF5F00' : n.plan === 'NegocioC' ? '#38BDF8' : '#9898B8';
     const imgHtml = n.img
       ? `<img src="${n.img}" style="width:52px;height:52px;object-fit:cover;border-radius:10px;flex-shrink:0;" loading="lazy">`
       : `<div style="width:52px;height:52px;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">🏪</div>`;
@@ -18050,6 +18084,34 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (el) el.innerHTML = lista.length ? lista.map(n => App._negocioCard(n)).join('') : `<div style="text-align:center;padding:30px;color:var(--gr);font-size:13px;">Sin resultados</div>`;
   },
 
+  // ── Selector visual de planes ──
+  _PLAN_COLORS: {
+    'NFree':             { border:'#9898B8', bg:'rgba(152,152,184,.12)', emoji:'🆓' },
+    'NegocioC':         { border:'#38BDF8', bg:'rgba(56,189,248,.12)',  emoji:'🏪' },
+    'NegocioM':         { border:'#FF5F00', bg:'rgba(255,95,0,.12)',    emoji:'🏬' },
+    'NegocioG':         { border:'#A78BFA', bg:'rgba(167,139,250,.12)', emoji:'🏢' },
+    'Mayorista Premium':{ border:'#F59E0B', bg:'rgba(245,158,11,.12)',  emoji:'⭐' },
+  },
+
+  _negPlanSelect(plan) {
+    const sel = document.getElementById('neg-plan');
+    if (sel) sel.value = plan;
+    this._negPlanSetUI(plan);
+  },
+
+  _negPlanSetUI(plan) {
+    document.querySelectorAll('.neg-plan-card').forEach(card => {
+      const p = card.dataset.plan;
+      const cfg = this._PLAN_COLORS[p] || {};
+      const isActive = p === plan;
+      card.style.border = isActive ? `2px solid ${cfg.border || '#FF5F00'}` : '2px solid var(--bd)';
+      card.style.background = isActive ? (cfg.bg || 'rgba(255,95,0,.12)') : 'var(--bg2)';
+      card.style.transform = isActive ? 'scale(1.02)' : 'scale(1)';
+      const nameEl = card.querySelector('div:nth-child(2)');
+      if (nameEl) nameEl.style.color = isActive ? (cfg.border || '#FF5F00') : 'var(--dk)';
+    });
+  },
+
   _negocioFormAbrir(id) {
     this._negocioEditId = id;
     this._negocioImgData = null;
@@ -18065,6 +18127,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       set('neg-provincia', n.provincia);
       set('neg-direccion', n.direccion); set('neg-tel', n.tel); set('neg-web', n.web);
       set('neg-horario', n.horario); set('neg-desc', n.desc); set('neg-plan', n.plan); set('neg-notas', n.notas);
+      setTimeout(() => App._negPlanSetUI(n.plan || 'NFree'), 50);
       const ca = document.getElementById('neg-activo'); if (ca) ca.checked = n.activo !== false;
       const cd2 = document.getElementById('neg-delivery'); if (cd2) cd2.checked = n.delivery === true;
       const prev = document.getElementById('neg-foto-preview');
@@ -18078,6 +18141,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       // BUG FIX: pre-llenar ciudad con el municipio activo del selector global
       const ciudadEl = document.getElementById('neg-ciudad');
       if (ciudadEl) ciudadEl.value = this._admCity || '';
+      setTimeout(() => App._negPlanSetUI('NFree'), 50);
       const ca = document.getElementById('neg-activo'); if (ca) ca.checked = true;
       const cd2 = document.getElementById('neg-delivery'); if (cd2) cd2.checked = false;
       const prev = document.getElementById('neg-foto-preview');
@@ -18172,7 +18236,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const data = {
       nombre, rubro: get('neg-rubro'), ciudad: get('neg-ciudad'), provincia: get('neg-provincia'), direccion: get('neg-direccion'),
       tel: get('neg-tel'), web: get('neg-web'), horario: get('neg-horario'), desc: get('neg-desc'),
-      plan: get('neg-plan') || 'Básico (gratis)',
+      plan: get('neg-plan') || 'NFree',
       lat: latRaw ? parseFloat(latRaw) : null,
       lng: lngRaw ? parseFloat(lngRaw) : null,
       notas: get('neg-notas'),
