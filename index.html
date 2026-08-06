@@ -17921,9 +17921,13 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
                 <input type="text" id="neg-ciudad" placeholder="La Paz, Santa Elena…" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg2);color:var(--dk);font-size:13px;font-family:var(--fH);box-sizing:border-box;">
               </div>
               <div>
-                <div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Dirección</div>
-                <input type="text" id="neg-direccion" placeholder="Av. Costanera 120" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg2);color:var(--dk);font-size:13px;font-family:var(--fH);box-sizing:border-box;">
+                <div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Provincia</div>
+                <input type="text" id="neg-provincia" placeholder="Entre Ríos…" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg2);color:var(--dk);font-size:13px;font-family:var(--fH);box-sizing:border-box;">
               </div>
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Dirección</div>
+              <input type="text" id="neg-direccion" placeholder="Av. Costanera 120" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg2);color:var(--dk);font-size:13px;font-family:var(--fH);box-sizing:border-box;">
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
               <div>
@@ -18036,6 +18040,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const set = (eid, val) => { const e = document.getElementById(eid); if (!e) return; if (e.type === 'checkbox') e.checked = val === true; else e.value = val || ''; };
     if (n) {
       set('neg-nombre', n.nombre); set('neg-rubro', n.rubro); set('neg-ciudad', n.ciudad);
+      set('neg-provincia', n.provincia);
       set('neg-direccion', n.direccion); set('neg-tel', n.tel); set('neg-web', n.web);
       set('neg-horario', n.horario); set('neg-desc', n.desc); set('neg-plan', n.plan); set('neg-notas', n.notas);
       const ca = document.getElementById('neg-activo'); if (ca) ca.checked = n.activo !== false;
@@ -18047,7 +18052,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       const cd = document.getElementById('neg-coords-display');
       if (cd && n.lat && n.lng) cd.textContent = `📍 ${parseFloat(n.lat).toFixed(5)}, ${parseFloat(n.lng).toFixed(5)}`;
     } else {
-      ['neg-nombre','neg-direccion','neg-tel','neg-web','neg-horario','neg-desc','neg-notas'].forEach(fid => { const e = document.getElementById(fid); if (e) e.value = ''; });
+      ['neg-nombre','neg-provincia','neg-direccion','neg-tel','neg-web','neg-horario','neg-desc','neg-notas'].forEach(fid => { const e = document.getElementById(fid); if (e) e.value = ''; });
       // BUG FIX: pre-llenar ciudad con el municipio activo del selector global
       const ciudadEl = document.getElementById('neg-ciudad');
       if (ciudadEl) ciudadEl.value = this._admCity || '';
@@ -18143,7 +18148,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (!nombre) return this.toast('⚠️ El nombre es obligatorio');
     const latRaw = get('neg-lat'), lngRaw = get('neg-lng');
     const data = {
-      nombre, rubro: get('neg-rubro'), ciudad: get('neg-ciudad'), direccion: get('neg-direccion'),
+      nombre, rubro: get('neg-rubro'), ciudad: get('neg-ciudad'), provincia: get('neg-provincia'), direccion: get('neg-direccion'),
       tel: get('neg-tel'), web: get('neg-web'), horario: get('neg-horario'), desc: get('neg-desc'),
       plan: get('neg-plan') || 'Básico (gratis)',
       lat: latRaw ? parseFloat(latRaw) : null,
