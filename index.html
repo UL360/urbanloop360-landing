@@ -2307,6 +2307,8 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       onclick="App._setLayer('com')"  title="Solo loops de loopers">👟 Loop</button>
     <button id="lbtn-foto" class="layer-chip" aria-pressed="false"
       onclick="App._setLayer('foto')" title="Solo fotos geolocalizadas">📸 Fotoloop</button>
+    <button id="lbtn-shop" class="layer-chip" aria-pressed="false"
+      onclick="App._setLayer('shop')" title="Solo comercios">🏪 Comercios</button>
   </div>
 
   <!-- ── SEARCH BAR movida al menú lateral — se mantienen los ids para el JS ── -->
@@ -7747,7 +7749,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   _setLayer(mode) {
     this._layerMode = mode;
     // Actualizar estilos de chips
-    ['all','muni','com','foto'].forEach(m => {
+    ['all','muni','com','foto','shop'].forEach(m => {
       const btn = document.getElementById('lbtn-' + m);
       if (!btn) return;
       btn.className = 'layer-chip' + (m === mode ? ' ' + m : '');
@@ -7758,7 +7760,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     this._pillCollapse();
 
     this._applyLayer();
-    const labels = { all:'🔀 Todos los loops y fotos', muni:'🏛 Loops municipales', com:'👥 Loops de la comunidad', foto:'📸 Solo FotoLoops' };
+    const labels = { all:'🔀 Todos los loops y fotos', muni:'🏛 Loops municipales', com:'👥 Loops de la comunidad', foto:'📸 Solo FotoLoops', shop:'🏪 Solo Comercios' };
     this.toast(labels[mode] || '');
   },
 
@@ -7767,16 +7769,28 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     let visible = [];
     let showLoops = true;
     let showFotos = true;
+    let showNegocios = true;
 
     if (mode === 'muni') {
       visible = this.routes.filter(r => r.source === 'municipio');
       showFotos = false;
+      showNegocios = false;
     } else if (mode === 'com') {
       visible = this.routes.filter(r => r.source !== 'municipio');
       showFotos = false;
+      showNegocios = false;
     } else if (mode === 'foto') {
       visible = [];
       showLoops = false;
+      showNegocios = false;
+    } else if (mode === 'shop') {
+      visible = [];
+      showLoops = false;
+      showFotos = false;
+      // Asegurar que los negocios estén dibujados en el mapa
+      if (!this._negocioMarkers || this._negocioMarkers.length === 0) {
+        this._drawNegociosOnMap();
+      }
     } else {
       visible = [...this.routes];
     }
@@ -7803,6 +7817,14 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       try {
         const el = m.getElement ? m.getElement() : null;
         if (el) el.style.display = showFotos ? '' : 'none';
+      } catch(e) {}
+    });
+
+    // Mostrar u ocultar markers de Negocios/Comercios
+    (this._negocioMarkers || []).forEach(m => {
+      try {
+        const el = m.getElement ? m.getElement() : null;
+        if (el) el.style.display = showNegocios ? '' : 'none';
       } catch(e) {}
     });
 
