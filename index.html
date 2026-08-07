@@ -1374,6 +1374,37 @@ textarea.fi { height:80px; padding:10px 12px; resize:none; }
 select.fi { cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%239CA3AF' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; }
 
 #admin-map { width:100%; height:240px; border-radius:var(--rs); border:1.5px solid var(--bd); overflow:hidden; display:block; }
+
+/* ── Desktop: mapa de trazado más grande y redimensionable ── */
+@media (min-width:769px) {
+  #admin-map {
+    height: 480px;
+    min-height: 200px;
+    max-height: 82vh;
+    resize: vertical;
+    overflow: auto;        /* resize necesita overflow != hidden */
+    cursor: default;
+  }
+  /* Indicador visual en la esquina inferior-derecha del mapa */
+  #admin-map-wrap {
+    position: relative;
+  }
+  #admin-map-wrap::after {
+    content: '↕ arrastrá para redimensionar';
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: rgba(255,255,255,0.65);
+    background: rgba(0,0,0,0.45);
+    padding: 2px 10px;
+    border-radius: 20px;
+    pointer-events: none;
+    white-space: nowrap;
+    letter-spacing: .3px;
+  }
+}
 .map-hint { text-align:center; font-size:12px; color:var(--gr); margin-top:7px; display:flex; align-items:center; justify-content:center; gap:5px; }
 .pts-list { display:flex; flex-direction:column; gap:6px; margin-top:9px; }
 .pt-item { display:flex; align-items:center; gap:8px; background:var(--lt); border-radius:var(--rs); padding:8px 10px; font-size:13px; }
@@ -2844,7 +2875,9 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       </div>
       <div class="ac">
         <div class="act">🗺️ Trazado de la Ruta</div>
-        <div id="admin-map"></div>
+        <div id="admin-map-wrap" style="position:relative;">
+          <div id="admin-map"></div>
+        </div>
         <div class="map-hint">💡 Hacé clic en el mapa para agregar puntos a la ruta</div>
         <div class="pts-list" id="pts-list"></div>
         <button class="btn-clr" onclick="App.clearPts()">🗑 Limpiar puntos</button>
@@ -10057,6 +10090,16 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       this._admCenterOnGPS();
     });
     this._renderPts(); this._renderPois();
+
+    // ── ResizeObserver: si el usuario arrastra el borde del mapa en desktop,
+    //    notificar a MapLibre para que redibuje el canvas al nuevo tamaño ──
+    if (window.ResizeObserver) {
+      if (this._admMapResizeObs) this._admMapResizeObs.disconnect();
+      this._admMapResizeObs = new ResizeObserver(() => {
+        if (this.admMap) this.admMap.resize();
+      });
+      this._admMapResizeObs.observe(document.getElementById('admin-map'));
+    }
   },
 
   // Centra el mapa admin en la posición GPS real y auto-llena la ciudad
