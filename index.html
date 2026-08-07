@@ -7778,6 +7778,17 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const menu = document.getElementById('layer-menu');
     if (!menu) return;
     const isOpen = menu.style.display === 'flex';
+    if (!isOpen) {
+      const btn = document.getElementById('btn-vistas');
+      const mapEl = document.getElementById('main-map');
+      if (btn && mapEl) {
+        const bRect = btn.getBoundingClientRect();
+        const mRect = mapEl.getBoundingClientRect();
+        menu.style.top    = (bRect.bottom - mRect.top + 6) + 'px';
+        menu.style.right  = (mRect.right  - bRect.right)   + 'px';
+        menu.style.bottom = 'auto';
+      }
+    }
     menu.style.display = isOpen ? 'none' : 'flex';
   },
 
