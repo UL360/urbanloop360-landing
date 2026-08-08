@@ -10623,7 +10623,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         'box-shadow:0 6px 24px rgba(0,0,0,.4)','text-align:center',
         'min-width:240px','max-width:calc(100vw - 32px)','animation:fadeUp .3s ease'
       ].join(';');
-      banner.innerHTML = `<div style="font-size:20px;margin-bottom:4px;">☁️</div><div>${msg}</div><div style="font-size:12px;font-weight:400;margin-top:3px;opacity:.85;">"${name}"</div>`;
+      banner.style.position = 'relative';
+      banner.innerHTML = `<button onclick="document.getElementById('save-banner').style.display='none'" style="position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.2);border:none;color:white;font-size:16px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;">×</button><div style="font-size:20px;margin-bottom:4px;">☁️</div><div>${msg}</div><div style="font-size:12px;font-weight:400;margin-top:3px;opacity:.85;">"${name}"</div>`;
+      clearTimeout(this._bannerTimer);
+      this._bannerTimer = setTimeout(() => { const b = document.getElementById('save-banner'); if (b) b.style.display = 'none'; }, 5000);
     }
 
     banner.style.display = 'block';
