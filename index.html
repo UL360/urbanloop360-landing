@@ -247,6 +247,42 @@ body.day .cn-sym-bubble { background:var(--lt) !important; border-color:var(--bd
 body.day .qr-sheet { background:var(--wh) !important; }
 body.day .qr-close-btn { background:var(--lt) !important; color:var(--md) !important; }
 
+/* ── MAP CONTROL BUTTONS: día oliva pastel / noche oliva oscuro ── */
+body.day #map-theme-toggle-btn,
+body.day #locate-btn,
+body.day #main-compass,
+body.day #btn-3d,
+body.day #btn-report-urban,
+body.day #btn-vistas {
+  background: #EEE0A0 !important;
+  border-color: #C0A830 !important;
+  color: #7A6A10 !important;
+}
+body.day #sat-toggle-btn {
+  background: #EEE0A0 !important;
+  border-color: #C0A830 !important;
+  color: #7A6A10 !important;
+}
+body.day #sat-toggle-btn .sat-lbl { color: #7A6A10 !important; }
+
+/* noche oliva oscuro */
+body:not(.day) #map-theme-toggle-btn,
+body:not(.day) #locate-btn,
+body:not(.day) #main-compass,
+body:not(.day) #btn-3d,
+body:not(.day) #btn-report-urban,
+body:not(.day) #btn-vistas {
+  background: #506A38 !important;
+  border-color: #3E5228 !important;
+  color: #fff !important;
+}
+body:not(.day) #sat-toggle-btn {
+  background: #506A38 !important;
+  border-color: #3E5228 !important;
+  color: #fff !important;
+}
+body:not(.day) #sat-toggle-btn .sat-lbl { color: #fff !important; }
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); color:var(--dk); background:var(--lt); -webkit-tap-highlight-color:transparent; -webkit-text-size-adjust:100%; text-size-adjust:100%; }
 
