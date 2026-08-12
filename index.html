@@ -3755,6 +3755,25 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
           style="background:var(--bg2);border:0.5px solid var(--bd);border-radius:8px;padding:5px 10px;font-size:11px;color:var(--md);cursor:pointer;">🏙️ Ciudad</button>
       </div>
     </div>
+    <!-- Buscador de ciudad -->
+    <div style="padding:0 14px 10px;position:relative;">
+      <div style="display:flex;align-items:center;gap:8px;background:var(--bg2);border:0.5px solid var(--bd);border-radius:10px;padding:8px 11px;" id="lu-search-box">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--gr)" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="lu-city-search" type="text" placeholder="Buscá otra ciudad…"
+          style="border:none;outline:none;font-family:var(--fB);font-size:13px;color:var(--dk);background:transparent;flex:1;min-width:0;"
+          oninput="App._luSearchCity(this.value)"
+          onfocus="App._luShowSuggestions()"
+          onblur="setTimeout(()=>App._luHideSuggestions(),200)">
+        <button id="lu-city-reset" onclick="App._luResetCity()" style="display:none;background:none;border:none;padding:0;cursor:pointer;font-size:13px;color:var(--gr);">✕</button>
+      </div>
+      <!-- Badge ciudad remota -->
+      <div id="lu-remote-badge" style="display:none;margin-top:6px;display:none;align-items:center;gap:6px;">
+        <span style="background:#FF5F0015;color:#FF5F00;border:0.5px solid #FF5F0040;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;" id="lu-remote-label">📍 Ciudad remota</span>
+        <button onclick="App._luResetCity()" style="font-size:11px;color:var(--gr);background:none;border:none;cursor:pointer;padding:0;">Volver a mi ciudad</button>
+      </div>
+      <!-- Sugerencias -->
+      <div id="lu-city-suggestions" style="display:none;position:absolute;left:14px;right:14px;top:100%;background:var(--wh);border:0.5px solid var(--bd);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:100;max-height:200px;overflow-y:auto;"></div>
+    </div>
     <!-- Tabs: Loops / Foto Loops / Explorar -->
     <div style="display:flex;border-top:0.5px solid var(--bd);">
       <button id="lu-tab-loops"   onclick="App.luSetTab('loops',this)"   class="com-tab on">🔄 Loops</button>
@@ -11352,6 +11371,113 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if (bp) { bp.style.background='var(--bg2)'; bp.style.color='var(--md)'; bp.style.border='0.5px solid var(--bd)'; bp.style.fontWeight='500'; }
     // Activo
     if (el) { el.style.background='var(--orL)'; el.style.color='var(--or)'; el.style.border='0.5px solid var(--or)33'; el.style.fontWeight='700'; }
+    this._renderLoopsUrbanos();
+  },
+
+  // ── Buscador de ciudad en Loops Urbanos ──
+  _luRemoteCity: null, // ciudad remota seleccionada (null = ciudad propia)
+
+  _luGetAllCities() {
+    // Extrae todas las ciudades únicas de routes + fotoloops cargados
+    const norm = c => (c||'').trim().toLowerCase();
+    const cities = new Map();
+    const add = (r) => {
+      const city = (r.ciudad || r.cityId || '').trim();
+      const prov = (r.provincia || '').trim();
+      if (!city) return;
+      const key = norm(city);
+      if (!cities.has(key)) cities.set(key, { city, prov, count: 0 });
+      cities.get(key).count++;
+    };
+    (this.routes || []).forEach(r => { if (r.type !== 'fotostop') add(r); });
+    (this._fotoPosts || []).forEach(r => add(r));
+    return [...cities.values()].sort((a,b) => b.count - a.count);
+  },
+
+  _luSearchCity(val) {
+    const q = (val || '').trim().toLowerCase();
+    const sug = document.getElementById('lu-city-suggestions');
+    const reset = document.getElementById('lu-city-reset');
+    if (reset) reset.style.display = q ? 'block' : 'none';
+    if (!sug) return;
+    if (!q) { sug.style.display = 'none'; return; }
+    const all = this._luGetAllCities();
+    const matches = all.filter(c => c.city.toLowerCase().includes(q) || c.prov.toLowerCase().includes(q)).slice(0, 8);
+    if (!matches.length) {
+      sug.innerHTML = `<div style="padding:12px 14px;font-size:13px;color:var(--gr);">Sin resultados para "${this._esc(val)}"</div>`;
+      sug.style.display = 'block'; return;
+    }
+    sug.innerHTML = matches.map(c => `
+      <div onclick="App._luSelectCity('${c.city.replace(/'/g,"\'")}','${c.prov.replace(/'/g,"\'")}');App._luHideSuggestions();"
+        style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:0.5px solid var(--bd);"
+        onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2.5" style="flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:var(--dk);">${this._esc(c.city)}</div>
+          <div style="font-size:11px;color:var(--gr);">${this._esc(c.prov)} · ${c.count} loop${c.count!==1?'s':''}</div>
+        </div>
+      </div>`).join('');
+    sug.style.display = 'block';
+  },
+
+  _luShowSuggestions() {
+    const inp = document.getElementById('lu-city-search');
+    if (inp && inp.value.trim()) this._luSearchCity(inp.value);
+  },
+
+  _luHideSuggestions() {
+    const sug = document.getElementById('lu-city-suggestions');
+    if (sug) sug.style.display = 'none';
+  },
+
+  _luSelectCity(city, prov) {
+    const myCity = this._luCity || 'La Paz';
+    const myProv = this._luProv || 'Entre Ríos';
+    const isOwn  = city.toLowerCase() === myCity.toLowerCase();
+
+    // Actualizar input
+    const inp = document.getElementById('lu-city-search');
+    if (inp) inp.value = isOwn ? '' : city;
+    const reset = document.getElementById('lu-city-reset');
+    if (reset) reset.style.display = isOwn ? 'none' : 'block';
+
+    // Badge remota
+    const badge = document.getElementById('lu-remote-badge');
+    const label = document.getElementById('lu-remote-label');
+    if (badge) badge.style.display = isOwn ? 'none' : 'flex';
+    if (label) label.textContent = `📍 ${city}, ${prov}`;
+
+    // Cambiar ciudad temporalmente y re-renderizar
+    this._luRemoteCity = isOwn ? null : city;
+    this._luRemoteProv = isOwn ? null : prov;
+
+    // Sobreescribir temporalmente _luCity/_luProv para el render
+    if (!isOwn) {
+      this._luCityReal = this._luCityReal || this._luCity;
+      this._luProvReal = this._luProvReal || this._luProv;
+      this._luCity = city;
+      this._luProv = prov;
+    } else {
+      if (this._luCityReal) { this._luCity = this._luCityReal; this._luProv = this._luProvReal; }
+      this._luCityReal = null; this._luProvReal = null;
+    }
+    this._renderLoopsUrbanos();
+  },
+
+  _luResetCity() {
+    // Volver a la ciudad real del usuario
+    if (this._luCityReal) {
+      this._luCity = this._luCityReal;
+      this._luProv = this._luProvReal;
+      this._luCityReal = null; this._luProvReal = null;
+    }
+    this._luRemoteCity = null;
+    const inp = document.getElementById('lu-city-search');
+    if (inp) inp.value = '';
+    const reset = document.getElementById('lu-city-reset');
+    if (reset) reset.style.display = 'none';
+    const badge = document.getElementById('lu-remote-badge');
+    if (badge) badge.style.display = 'none';
     this._renderLoopsUrbanos();
   },
 
