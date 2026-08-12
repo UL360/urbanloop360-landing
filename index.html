@@ -5778,6 +5778,181 @@ const App = {
     this.mainMap.on('moveend',   () => App._showNavDelay());
     this.mainMap.on('zoomstart', () => App._hideNav());
     this.mainMap.on('zoomend',   () => App._showNavDelay());
+
+    // ── Long press en el mapa: modo ciudad virtual ──
+    this._initMapLongPress();
+  },
+
+  _initMapLongPress() {
+    const canvas = this.mainMap.getCanvas();
+    let pressTimer  = null;
+    let pressStart  = null;
+    let pressPt     = null;
+    let progressEl  = null;
+    const DURATION  = 2000; // ms
+
+    const createProgress = (x, y) => {
+      progressEl = document.createElement('div');
+      progressEl.id = 'lp-progress';
+      progressEl.style.cssText = `
+        position:fixed;left:${x}px;top:${y}px;
+        transform:translate(-50%,-50%);
+        width:60px;height:60px;pointer-events:none;z-index:9999;
+      `;
+      progressEl.innerHTML = `
+        <svg width="60" height="60" viewBox="0 0 60 60">
+          <circle cx="30" cy="30" r="26" fill="rgba(0,0,0,0.25)" stroke="none"/>
+          <circle id="lp-arc" cx="30" cy="30" r="26"
+            fill="none" stroke="#FF5F00" stroke-width="4"
+            stroke-dasharray="163" stroke-dashoffset="163"
+            stroke-linecap="round"
+            transform="rotate(-90 30 30)"/>
+          <circle cx="30" cy="30" r="6" fill="#FF5F00"/>
+        </svg>`;
+      document.body.appendChild(progressEl);
+    };
+
+    const removeProgress = () => {
+      if (progressEl) { progressEl.remove(); progressEl = null; }
+    };
+
+    const animateProgress = () => {
+      if (!pressStart || !progressEl) return;
+      const arc = document.getElementById('lp-arc');
+      if (!arc) return;
+      const elapsed = Date.now() - pressStart;
+      const pct = Math.min(elapsed / DURATION, 1);
+      arc.style.strokeDashoffset = 163 * (1 - pct);
+      if (pct < 1) requestAnimationFrame(animateProgress);
+    };
+
+    const getXY = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      if (e.touches) {
+        return { x: e.touches[0].clientX, y: e.touches[0].clientY,
+                 mapPt: { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top }};
+      }
+      return { x: e.clientX, y: e.clientY,
+               mapPt: { x: e.clientX - rect.left, y: e.clientY - rect.top }};
+    };
+
+    const startPress = (e) => {
+      if (this._virtualCityMode) return; // ya en modo virtual
+      const { x, y, mapPt } = getXY(e);
+      pressPt = mapPt;
+      pressStart = Date.now();
+      createProgress(x, y);
+      requestAnimationFrame(animateProgress);
+      pressTimer = setTimeout(() => {
+        removeProgress();
+        const lngLat = this.mainMap.unproject([pressPt.x, pressPt.y]);
+        this._activateVirtualCity(lngLat.lat, lngLat.lng);
+      }, DURATION);
+    };
+
+    const cancelPress = () => {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+      pressStart = null;
+      removeProgress();
+    };
+
+    canvas.addEventListener('touchstart', startPress,  { passive: true });
+    canvas.addEventListener('touchend',   cancelPress, { passive: true });
+    canvas.addEventListener('touchmove',  cancelPress, { passive: true });
+    canvas.addEventListener('mousedown',  startPress);
+    canvas.addEventListener('mouseup',    cancelPress);
+    canvas.addEventListener('mousemove',  (e) => {
+      if (!pressStart) return;
+      const { mapPt } = getXY(e);
+      const dx = mapPt.x - pressPt.x, dy = mapPt.y - pressPt.y;
+      if (Math.sqrt(dx*dx+dy*dy) > 10) cancelPress();
+    });
+  },
+
+  async _activateVirtualCity(lat, lng) {
+    // Detectar ciudad del punto tocado
+    this.toast('🔍 Detectando ciudad…');
+    const loc = await this._detectLocation(lat, lng);
+    const city = loc.ciudad || loc.locality || '';
+    const prov = loc.provincia || '';
+    const dept = loc.departamento || '';
+    if (!city) { this.toast('No se encontró una ciudad en ese punto'); return; }
+
+    // Guardar ciudad real si no estaba en modo virtual
+    if (!this._virtualCityMode) {
+      this._realCity = this._luCity;
+      this._realProv = this._luProv;
+      this._realDept = this._luDept;
+      this._realComCity = this._comCity;
+    }
+
+    // Activar modo virtual
+    this._virtualCityMode = true;
+    this._cityDetected = true; // bloquear sobreescritura por GPS
+    this._luCity  = city;
+    this._luProv  = prov;
+    this._luDept  = dept;
+    this._comCity = city;
+    this._refreshCityLabels();
+
+    // Volar al punto
+    this.mainMap.flyTo({ center: [lng, lat], zoom: 14, speed: 1.2 });
+
+    // Mostrar banner
+    this._showVirtualCityBanner(city, prov);
+  },
+
+  _showVirtualCityBanner(city, prov) {
+    let banner = document.getElementById('virtual-city-banner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'virtual-city-banner';
+      document.body.appendChild(banner);
+    }
+    banner.style.cssText = `
+      position:fixed;top:68px;left:50%;transform:translateX(-50%);
+      z-index:9998;background:#FF5F00;color:#fff;
+      border-radius:20px;padding:10px 18px 10px 14px;
+      display:flex;align-items:center;gap:10px;
+      box-shadow:0 4px 20px rgba(255,95,0,0.45);
+      font-family:var(--fB);font-size:13px;font-weight:600;
+      white-space:nowrap;max-width:calc(100vw - 32px);
+      animation:fadeUp .3s ease;
+    `;
+    banner.innerHTML = `
+      <span style="font-size:18px;">🌍</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;">Explorando ${this._esc(city)}</div>
+        <div style="font-size:11px;opacity:.85;font-weight:400;">${this._esc(prov)} · Modo ciudad virtual</div>
+      </div>
+      <button onclick="App._deactivateVirtualCity()" style="
+        background:rgba(255,255,255,0.25);border:none;border-radius:12px;
+        color:#fff;font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer;">
+        ✕ Salir
+      </button>
+    `;
+  },
+
+  _deactivateVirtualCity() {
+    this._virtualCityMode = false;
+    this._cityDetected    = false; // reactivar detección GPS
+
+    // Restaurar ciudad real
+    this._luCity  = this._realCity  || 'La Paz';
+    this._luProv  = this._realProv  || 'Entre Ríos';
+    this._luDept  = this._realDept  || '';
+    this._comCity = this._realComCity || this._luCity;
+    this._refreshCityLabels();
+
+    // Quitar banner
+    const banner = document.getElementById('virtual-city-banner');
+    if (banner) banner.remove();
+
+    // Volver a ubicación real
+    if (this._lastLat && this._lastLng) {
+      this.mainMap.flyTo({ center: [this._lastLng, this._lastLat], zoom: 13, speed: 1.2 });
+    }
   },
 
   // ── ONBOARDING: card fijo con el loop demo + botón "Iniciar Demo" ──
@@ -6314,6 +6489,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
   // Toggle follow-me mode
   toggleFollowMe() {
+    // Si estamos en modo ciudad virtual, salir primero
+    if (this._virtualCityMode) this._deactivateVirtualCity();
     this._followMe = !this._followMe;
     const btn = document.getElementById('locate-btn');
     if (btn) {
