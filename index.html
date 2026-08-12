@@ -10834,9 +10834,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const userLng = this._lastLng || null;
 
     // ── 1. Loops de la ciudad exacta ──
-    // Usar igualdad ESTRICTA de nombre. Si hay GPS, verificar también que esté
-    // dentro de 35 km — evita que loops de otras ciudades guardados con ciudad
-    // incorrecta aparezcan en la lista local.
+    // Si hay ciudad remota seleccionada, filtrar SOLO por nombre (sin validación GPS).
+    // Si es ciudad propia, usar distancia como árbitro para evitar loops mal geoposicionados.
+    const isRemote = !!this._luRemoteCity;
     const seenIds = new Set();
     const localLoops = this.routes.filter(r => {
       if (r.type==='fotostop') return false;
@@ -10844,9 +10844,16 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       if (!rCity) return false;
 
       const nameMatch = rCity === uCity;
+
+      // Ciudad remota: filtrar solo por nombre, sin GPS
+      if (isRemote) {
+        if (nameMatch) { seenIds.add(r.id); return true; }
+        return false;
+      }
+
       const coords = getCoords(r);
 
-      // Si hay GPS del usuario y GPS del loop, usar distancia como árbitro
+      // Ciudad propia: si hay GPS del usuario y GPS del loop, usar distancia como árbitro
       if (coords && userLat && userLng) {
         const dist = haversine(userLat, userLng, coords.lat, coords.lng);
         if (dist > 35) return false; // más de 35 km → no es local sin importar el nombre
