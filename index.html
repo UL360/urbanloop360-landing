@@ -6056,8 +6056,8 @@ const App = {
         });
 
         if (this._locCentered) {
-          // No hacemos flyTo automático: dejamos el mapa mostrando toda la ciudad
-          // con todos los loops y fotoloops visibles, en vez de centrar en el usuario.
+          // Volar automáticamente a la ubicación real del usuario al primer fix GPS
+          this.mainMap.flyTo({ center: [lng, lat], zoom: 13, speed: 1.4 });
           this._locCentered = false;
         }
         // Detectar ciudad real del usuario y actualizar filtros
