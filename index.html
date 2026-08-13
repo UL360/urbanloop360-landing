@@ -5784,122 +5784,144 @@ const App = {
   },
 
   _initMapLongPress() {
-    const canvas = this.mainMap.getCanvas();
-    let pressTimer  = null;
-    let pressStart  = null;
-    let pressPt     = null;
-    let progressEl  = null;
-    const DURATION  = 2000; // ms
+    // Evitar registrar listeners múltiples veces
+    if (this._longPressReady) return;
+    this._longPressReady = true;
 
-    const createProgress = (x, y) => {
-      progressEl = document.createElement('div');
-      progressEl.id = 'lp-progress';
-      progressEl.style.cssText = `
-        position:fixed;left:${x}px;top:${y}px;
-        transform:translate(-50%,-50%);
-        width:60px;height:60px;pointer-events:none;z-index:9999;
-      `;
-      progressEl.innerHTML = `
-        <svg width="60" height="60" viewBox="0 0 60 60">
-          <circle cx="30" cy="30" r="26" fill="rgba(0,0,0,0.25)" stroke="none"/>
-          <circle id="lp-arc" cx="30" cy="30" r="26"
-            fill="none" stroke="#FF5F00" stroke-width="4"
-            stroke-dasharray="163" stroke-dashoffset="163"
-            stroke-linecap="round"
-            transform="rotate(-90 30 30)"/>
-          <circle cx="30" cy="30" r="6" fill="#FF5F00"/>
-        </svg>`;
-      document.body.appendChild(progressEl);
+    const canvas = this.mainMap.getCanvas();
+    const DURATION = 2000;
+    let pressTimer = null;
+    let pressStart = null;
+    let pressPt    = null;
+    let touchCount = 0; // ignorar multitouch (zoom pinch)
+    let animFrame  = null;
+
+    // ── Crear/destruir el indicador de progreso ──
+    const showProgress = (x, y) => {
+      removeProgress();
+      const el = document.createElement('div');
+      el.id = 'lp-progress';
+      el.style.cssText = `position:fixed;left:${x}px;top:${y}px;transform:translate(-50%,-50%);width:64px;height:64px;pointer-events:none;z-index:9999;`;
+      el.innerHTML = `<svg width="64" height="64" viewBox="0 0 64 64">
+        <circle cx="32" cy="32" r="28" fill="rgba(0,0,0,0.3)" stroke="none"/>
+        <circle class="lp-ring" cx="32" cy="32" r="28"
+          fill="none" stroke="#FF5F00" stroke-width="4"
+          stroke-dasharray="176" stroke-dashoffset="176"
+          stroke-linecap="round" transform="rotate(-90 32 32)"/>
+        <circle cx="32" cy="32" r="7" fill="#FF5F00"/>
+      </svg>`;
+      document.body.appendChild(el);
     };
 
     const removeProgress = () => {
-      if (progressEl) { progressEl.remove(); progressEl = null; }
+      const old = document.getElementById('lp-progress');
+      if (old) old.remove();
+      if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
     };
 
-    const animateProgress = () => {
-      if (!pressStart || !progressEl) return;
-      const arc = document.getElementById('lp-arc');
-      if (!arc) return;
-      const elapsed = Date.now() - pressStart;
-      const pct = Math.min(elapsed / DURATION, 1);
-      arc.style.strokeDashoffset = 163 * (1 - pct);
-      if (pct < 1) requestAnimationFrame(animateProgress);
+    const animateRing = () => {
+      const el = document.getElementById('lp-progress');
+      if (!el || !pressStart) return;
+      const ring = el.querySelector('.lp-ring');
+      if (!ring) return;
+      const pct = Math.min((Date.now() - pressStart) / DURATION, 1);
+      ring.style.strokeDashoffset = 176 * (1 - pct);
+      if (pct < 1) animFrame = requestAnimationFrame(animateRing);
     };
 
-    const getXY = (e) => {
+    // ── Coordenadas del evento (touch o mouse) ──
+    const getCoords = (e) => {
       const rect = canvas.getBoundingClientRect();
-      if (e.touches) {
-        return { x: e.touches[0].clientX, y: e.touches[0].clientY,
-                 mapPt: { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top }};
-      }
-      return { x: e.clientX, y: e.clientY,
-               mapPt: { x: e.clientX - rect.left, y: e.clientY - rect.top }};
+      const src  = e.touches ? e.touches[0] : e;
+      return {
+        clientX: src.clientX, clientY: src.clientY,
+        mapX: src.clientX - rect.left, mapY: src.clientY - rect.top
+      };
     };
 
-    const startPress = (e) => {
-      if (this._virtualCityMode) return; // ya en modo virtual
-      const { x, y, mapPt } = getXY(e);
-      pressPt = mapPt;
+    // ── Inicio del press ──
+    const onStart = (e) => {
+      if (this._virtualCityMode) return;
+      // Ignorar multitouch (pellizco de zoom)
+      if (e.touches && e.touches.length > 1) { cancel(); return; }
+      const { clientX, clientY, mapX, mapY } = getCoords(e);
+      pressPt    = { mapX, mapY };
       pressStart = Date.now();
-      createProgress(x, y);
-      requestAnimationFrame(animateProgress);
+      showProgress(clientX, clientY);
+      animFrame  = requestAnimationFrame(animateRing);
       pressTimer = setTimeout(() => {
         removeProgress();
-        const lngLat = this.mainMap.unproject([pressPt.x, pressPt.y]);
+        const lngLat = this.mainMap.unproject([pressPt.mapX, pressPt.mapY]);
         this._activateVirtualCity(lngLat.lat, lngLat.lng);
       }, DURATION);
     };
 
-    const cancelPress = () => {
+    // ── Cancelar si se mueve o suelta ──
+    const cancel = () => {
       clearTimeout(pressTimer);
       pressTimer = null;
       pressStart = null;
+      pressPt    = null;
       removeProgress();
     };
 
-    canvas.addEventListener('touchstart', startPress,  { passive: true });
-    canvas.addEventListener('touchend',   cancelPress, { passive: true });
-    canvas.addEventListener('touchmove',  cancelPress, { passive: true });
-    canvas.addEventListener('mousedown',  startPress);
-    canvas.addEventListener('mouseup',    cancelPress);
-    canvas.addEventListener('mousemove',  (e) => {
-      if (!pressStart) return;
-      const { mapPt } = getXY(e);
-      const dx = mapPt.x - pressPt.x, dy = mapPt.y - pressPt.y;
-      if (Math.sqrt(dx*dx+dy*dy) > 10) cancelPress();
-    });
+    const onMove = (e) => {
+      if (!pressStart || !pressPt) return;
+      const { mapX, mapY } = getCoords(e);
+      const d = Math.hypot(mapX - pressPt.mapX, mapY - pressPt.mapY);
+      if (d > 8) cancel(); // movió más de 8px → es un pan, no un long press
+    };
+
+    const onTouchStart = (e) => {
+      touchCount = e.touches.length;
+      if (touchCount === 1) onStart(e); else cancel();
+    };
+    const onTouchMove  = (e) => { if (e.touches.length > 1) cancel(); else onMove(e); };
+
+    canvas.addEventListener('touchstart', onTouchStart, { passive: true });
+    canvas.addEventListener('touchend',   cancel,       { passive: true });
+    canvas.addEventListener('touchcancel',cancel,       { passive: true });
+    canvas.addEventListener('touchmove',  onTouchMove,  { passive: true });
+    canvas.addEventListener('mousedown',  onStart);
+    canvas.addEventListener('mouseup',    cancel);
+    canvas.addEventListener('mouseleave', cancel);
+    canvas.addEventListener('mousemove',  onMove);
   },
 
   async _activateVirtualCity(lat, lng) {
-    // Detectar ciudad del punto tocado
+    // 1. Volar primero al punto tocado
+    this.mainMap.flyTo({ center: [lng, lat], zoom: 14, speed: 1.2 });
+
+    // 2. Detectar ciudad mientras vuela
     this.toast('🔍 Detectando ciudad…');
-    const loc = await this._detectLocation(lat, lng);
-    const city = loc.ciudad || loc.locality || '';
-    const prov = loc.provincia || '';
-    const dept = loc.departamento || '';
+    let loc;
+    try { loc = await this._detectLocation(lat, lng); }
+    catch(e) { this.toast('No se pudo detectar la ciudad'); return; }
+
+    const city = (loc && (loc.ciudad || loc.locality || '')).trim();
+    const prov = (loc && loc.provincia) ? loc.provincia.trim() : '';
+    const dept = (loc && loc.departamento) ? loc.departamento.trim() : '';
+
     if (!city) { this.toast('No se encontró una ciudad en ese punto'); return; }
 
-    // Guardar ciudad real si no estaba en modo virtual
+    // 3. Guardar ciudad real (solo la primera vez)
     if (!this._virtualCityMode) {
-      this._realCity = this._luCity;
-      this._realProv = this._luProv;
-      this._realDept = this._luDept;
+      this._realCity    = this._luCity;
+      this._realProv    = this._luProv;
+      this._realDept    = this._luDept;
       this._realComCity = this._comCity;
     }
 
-    // Activar modo virtual
+    // 4. Activar modo virtual
     this._virtualCityMode = true;
-    this._cityDetected = true; // bloquear sobreescritura por GPS
+    this._cityDetected    = true; // bloquear sobreescritura por GPS
     this._luCity  = city;
     this._luProv  = prov;
     this._luDept  = dept;
     this._comCity = city;
     this._refreshCityLabels();
 
-    // Volar al punto
-    this.mainMap.flyTo({ center: [lng, lat], zoom: 14, speed: 1.2 });
-
-    // Mostrar banner
+    // 5. Mostrar banner
     this._showVirtualCityBanner(city, prov);
   },
 
