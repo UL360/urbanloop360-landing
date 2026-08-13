@@ -5934,26 +5934,62 @@ const App = {
     }
     banner.style.cssText = `
       position:fixed;top:68px;left:50%;transform:translateX(-50%);
-      z-index:9998;background:#FF5F00;color:#fff;
+      z-index:9998;background:#FFF3C4;color:#7A5C00;
+      border:1.5px solid #F0D060;
       border-radius:20px;padding:10px 18px 10px 14px;
       display:flex;align-items:center;gap:10px;
-      box-shadow:0 4px 20px rgba(255,95,0,0.45);
+      box-shadow:0 4px 20px rgba(200,160,0,0.2);
       font-family:var(--fB);font-size:13px;font-weight:600;
       white-space:nowrap;max-width:calc(100vw - 32px);
       animation:fadeUp .3s ease;
+      cursor:grab;user-select:none;
     `;
+    // Hacer el banner movible (drag)
+    this._makeDraggable(banner);
     banner.innerHTML = `
       <span style="font-size:18px;">🌍</span>
       <div style="flex:1;min-width:0;">
-        <div style="font-weight:700;">Explorando ${this._esc(city)}</div>
-        <div style="font-size:11px;opacity:.85;font-weight:400;">${this._esc(prov)} · Modo ciudad virtual</div>
+        <div style="font-weight:700;color:#5A4000;">Explorando ${this._esc(city)}</div>
+        <div style="font-size:11px;color:#9A7A20;font-weight:400;margin-top:1px;">${this._esc(prov)} · Modo ciudad virtual</div>
       </div>
       <button onclick="App._deactivateVirtualCity()" style="
-        background:rgba(255,255,255,0.25);border:none;border-radius:12px;
-        color:#fff;font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer;">
+        background:#F0D060;border:none;border-radius:12px;
+        color:#7A5C00;font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer;flex-shrink:0;">
         ✕ Salir
       </button>
     `;
+  },
+
+  _makeDraggable(el) {
+    let startX, startY, origLeft, origTop, dragging = false;
+    const onDown = (e) => {
+      if (e.target.tagName === 'BUTTON') return; // no arrastrar si toca el botón
+      dragging = true;
+      const src = e.touches ? e.touches[0] : e;
+      startX = src.clientX; startY = src.clientY;
+      const rect = el.getBoundingClientRect();
+      origLeft = rect.left; origTop = rect.top;
+      el.style.transition = 'none';
+      el.style.left = origLeft + 'px';
+      el.style.top  = origTop  + 'px';
+      el.style.transform = 'none';
+    };
+    const onMove = (e) => {
+      if (!dragging) return;
+      const src = e.touches ? e.touches[0] : e;
+      const dx = src.clientX - startX, dy = src.clientY - startY;
+      const newLeft = Math.max(8, Math.min(window.innerWidth  - el.offsetWidth  - 8, origLeft + dx));
+      const newTop  = Math.max(8, Math.min(window.innerHeight - el.offsetHeight - 8, origTop  + dy));
+      el.style.left = newLeft + 'px';
+      el.style.top  = newTop  + 'px';
+    };
+    const onUp = () => { dragging = false; };
+    el.addEventListener('mousedown',  onDown);
+    el.addEventListener('touchstart', onDown, { passive: true });
+    window.addEventListener('mousemove',  onMove);
+    window.addEventListener('touchmove',  onMove, { passive: true });
+    window.addEventListener('mouseup',    onUp);
+    window.addEventListener('touchend',   onUp);
   },
 
   _deactivateVirtualCity() {
