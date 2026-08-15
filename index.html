@@ -4500,9 +4500,12 @@ const App = {
 
   _wsLooper() {
     this._userRole = 'looper';
+    this._fromLooperFlow = true; // marcar para volver si cierra el login
     this._hideWelcome(() => {
       this._enterApp();
-      setTimeout(() => this._showAuthGate('ingresar', () => {}), 400);
+      setTimeout(() => this._showAuthGate('ingresar', () => {
+        this._fromLooperFlow = false;
+      }), 400);
     });
   },
 
@@ -17991,7 +17994,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
               📧 Registrarme con email
             </button>
             <!-- Ahora no -->
-            <button onclick="document.getElementById('auth-gate-overlay').remove();"
+            <button onclick="App._authGateCancel();"
               style="width:100%;padding:8px;border:none;background:transparent;color:var(--gr);font-size:13px;cursor:pointer;">
               Ahora no, seguir explorando
             </button>
@@ -17999,8 +18002,18 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
         </div>
       </div>`;
 
-    ov.addEventListener('click', e => { if(e.target===ov) ov.remove(); });
+    ov.addEventListener('click', e => { if(e.target===ov) App._authGateCancel(); });
     document.body.appendChild(ov);
+  },
+
+  _authGateCancel() {
+    const ov = document.getElementById('auth-gate-overlay');
+    if (ov) ov.remove();
+    if (this._fromLooperFlow) {
+      this._fromLooperFlow = false;
+      this._userRole = null;
+      this._showWelcome();
+    }
   },
 
   openLoopModal() {
