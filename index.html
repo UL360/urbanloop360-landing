@@ -431,6 +431,26 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
 .sp-loading span:nth-child(2){animation-delay:.2s;} .sp-loading span:nth-child(3){animation-delay:.4s;}
 
 /* ── Pantalla bienvenida ── */
+/* Pin animado welcome */
+@keyframes wsPinBounce { 0%,100%{transform:translateY(0)} 40%{transform:translateY(-12px)} 60%{transform:translateY(-6px)} }
+@keyframes wsPinShadow { 0%,100%{transform:scaleX(1);opacity:.3} 40%{transform:scaleX(0.5);opacity:.1} }
+#ws-pin-wrap { position:absolute;bottom:18px;right:18px;z-index:3;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer; }
+#ws-pin-icon { width:48px;height:48px;animation:wsPinBounce 1.8s ease-in-out infinite;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.4)); }
+#ws-pin-shadow { width:16px;height:5px;background:rgba(0,0,0,0.3);border-radius:50%;animation:wsPinShadow 1.8s ease-in-out infinite; }
+/* Párrafo inferior welcome */
+#ws-bottom-text { position:absolute;bottom:62px;left:0;right:0;z-index:2;text-align:center;padding:0 28px; }
+/* Popup amarillo */
+#ws-popup {
+  display:none;
+  position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  z-index:9995;width:min(calc(100vw - 48px), 380px);
+  background:rgba(255,230,80,0.50);
+  border:1.5px solid rgba(255,200,0,0.5);
+  border-radius:20px;padding:22px 18px;
+  text-align:center;backdrop-filter:blur(4px);
+}
+#ws-popup.ws-popup-show { display:block; animation:fadeUp .25s ease; }
 #welcome-screen {
   position:fixed;inset:0;z-index:9990;
   display:none;flex-direction:column;align-items:center;justify-content:flex-start;
@@ -439,6 +459,7 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
   background-position:center top;
   font-family:var(--fB);
   opacity:0;transition:opacity .35s ease;
+  overflow:hidden;
 }
 #welcome-screen.ws-show { display:flex; }
 #welcome-screen.ws-visible { opacity:1; }
@@ -2224,7 +2245,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 
     <!-- Logo + nombre arriba -->
     <div style="position:relative;z-index:2;width:100%;padding:16px 20px 0;display:flex;flex-direction:column;align-items:center;gap:0;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <div onclick="App._wsTogglePopup()" style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer;">
         <img src="https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/LOGO%20SOLO.png"
           alt="Urban Loop 360" style="width:48px;height:48px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.3));">
         <div style="font-family:var(--fH);font-size:20px;font-weight:800;color:#fff;letter-spacing:-0.3px;text-shadow:0 2px 8px rgba(0,0,0,0.3);">Urban Loop 360</div>
@@ -2274,6 +2295,32 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       </div>
     </div>
   </div>
+
+  <!-- Párrafo inferior -->
+  <div id="ws-bottom-text">
+    <div style="font-size:11px;color:rgba(255,255,255,0.85);line-height:1.6;text-shadow:0 1px 4px rgba(0,0,0,0.5);">
+      Recorrés, descubrís y conectás con cada rincón.<br>Loops para todos.
+    </div>
+  </div>
+
+  <!-- Logo animado abajo derecha -->
+  <div id="ws-pin-wrap" onclick="App._wsTogglePopup()">
+    <img id="ws-pin-icon" src="https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/LOGO%20SOLO.png"
+      alt="UL360" style="width:48px;height:48px;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));">
+    <div id="ws-pin-shadow"></div>
+  </div>
+
+  <!-- Popup amarillo — toca el logo para abrir/cerrar -->
+  <div id="ws-popup" onclick="App._wsTogglePopup()">
+    <img src="https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/LOGO%20SOLO.png"
+      alt="UL360" style="width:46px;height:46px;object-fit:contain;margin-bottom:10px;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.3));">
+    <div style="font-size:16px;font-weight:900;color:#3A2A00;letter-spacing:0.5px;margin-bottom:4px;">URBAN LOOP 360°</div>
+    <div style="font-size:11px;font-weight:700;color:#6A4A00;margin-bottom:10px;">Bienvenidos Exploradores Urbanos</div>
+    <div style="width:28px;height:2px;background:#FF5F00;border-radius:2px;margin:0 auto 10px;"></div>
+    <div style="font-size:13px;font-weight:700;color:#3A2A00;line-height:1.5;margin-bottom:6px;">La ciudad contada<br>desde adentro hacia afuera.</div>
+    <div style="font-size:11px;color:#6A4A00;font-style:italic;letter-spacing:0.3px;">Explorá · Compartí · Conectá</div>
+  </div>
+
 </div>
 
 <!-- ════════════ EXPLORE ════════════ -->
@@ -4525,6 +4572,11 @@ const App = {
     this._sbApply(isMobile ? 0 : 1);
     this._checkAdBlock();
     setTimeout(() => this._onbShow(), 600);
+  },
+
+  _wsTogglePopup() {
+    const popup = document.getElementById('ws-popup');
+    if (popup) popup.classList.toggle('ws-popup-show');
   },
 
   // ── Guard para visitantes ──
