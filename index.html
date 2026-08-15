@@ -430,6 +430,27 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
 .sp-loading span { width:8px; height:8px; border-radius:50%; background:var(--or); animation:dotAnim 1.2s ease-in-out infinite; }
 .sp-loading span:nth-child(2){animation-delay:.2s;} .sp-loading span:nth-child(3){animation-delay:.4s;}
 
+/* ── Pantalla bienvenida ── */
+#welcome-screen {
+  position:fixed;inset:0;z-index:9990;
+  display:none;flex-direction:column;align-items:center;justify-content:flex-start;
+  background: linear-gradient(165deg, #FF5F00 0%, #FF5F00 42%, #F0F0F0 42%, #F0F0F0 100%);
+  font-family:var(--fB);
+  opacity:0;transition:opacity .35s ease;
+}
+#welcome-screen.ws-show { display:flex; }
+#welcome-screen.ws-visible { opacity:1; }
+.ws-btn {
+  width:100%;border-radius:16px;padding:14px 16px;
+  display:flex;align-items:center;gap:12px;cursor:pointer;
+  text-align:left;border:none;box-sizing:border-box;
+}
+.ws-btn-icon { width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+.ws-btn-arrow { width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0; }
+.ws-btn-text { flex:1; }
+.ws-btn-title { font-size:15px;font-weight:700;display:block; }
+.ws-btn-sub { font-size:11px;display:block;margin-top:2px; }
+
 /* ── Animaciones splash recorrido ── */
 @keyframes drawRoute {
   0%   { stroke-dashoffset: 600; }
@@ -2193,6 +2214,74 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     </div>
   </div>
 
+</div>
+
+<!-- ════════════ WELCOME SCREEN ════════════ -->
+<div id="welcome-screen">
+  <div style="width:100%;max-width:430px;padding:0 24px;display:flex;flex-direction:column;align-items:center;">
+
+    <!-- Logo + título (zona naranja) -->
+    <div style="display:flex;flex-direction:column;align-items:center;padding-top:64px;padding-bottom:20px;gap:10px;">
+      <img src="https://raw.githubusercontent.com/UL360/home/refs/heads/main/imagenes/LOGO%20SOLO.png"
+        alt="Urban Loop 360" style="width:80px;height:80px;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.2));">
+      <div style="font-family:var(--fH);font-size:24px;font-weight:800;color:#fff;letter-spacing:-0.3px;">Urban Loop 360</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.75);">Explorá tu ciudad</div>
+    </div>
+
+    <!-- Separador -->
+    <div style="width:36px;height:2px;background:rgba(255,255,255,0.45);border-radius:2px;margin-bottom:20px;"></div>
+
+    <!-- Pregunta (zona blanca) -->
+    <div style="font-size:14px;font-weight:600;color:#1A1A1A;margin-bottom:18px;text-align:center;">¿Cómo querés ingresar?</div>
+
+    <!-- Botones -->
+    <div style="width:100%;display:flex;flex-direction:column;gap:10px;">
+
+      <!-- Soy Visitante -->
+      <button class="ws-btn" onclick="App._wsVisitante()"
+        style="background:#fff;border:1.5px solid #FFD0A8;">
+        <div class="ws-btn-icon" style="background:#FFF0E6;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF5F00" stroke-width="2" stroke-linecap="round"><path d="M16 20V8a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v12"/><rect x="6" y="10" width="12" height="10" rx="1"/><path d="M12 2v4"/></svg>
+        </div>
+        <div class="ws-btn-text">
+          <span class="ws-btn-title" style="color:#1A1A1A;">Soy Visitante</span>
+          <span class="ws-btn-sub" style="color:#888;">Explorá sin registrarte</span>
+        </div>
+        <div class="ws-btn-arrow" style="background:#FFF0E6;color:#FF5F00;">›</div>
+      </button>
+
+      <!-- Soy Looper -->
+      <button class="ws-btn" onclick="App._wsLooper()"
+        style="background:#3A3A3A;border:1.5px solid #2A2A2A;">
+        <div class="ws-btn-icon" style="background:#2A2A2A;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF5F00" stroke-width="2" stroke-linecap="round"><path d="M3 12h18M3 12l4-4M3 12l4 4M21 12l-4-4M21 12l-4 4"/></svg>
+        </div>
+        <div class="ws-btn-text">
+          <span class="ws-btn-title" style="color:#fff;">Soy Looper</span>
+          <span class="ws-btn-sub" style="color:#666;">Iniciá sesión o registrate</span>
+        </div>
+        <div class="ws-btn-arrow" style="background:#FF5F00;color:#fff;">›</div>
+      </button>
+
+      <!-- Acceso Comercial -->
+      <button class="ws-btn" onclick="App._wsComercial()"
+        style="background:#EBEBEB;border:1.5px solid #E0E0E0;">
+        <div class="ws-btn-icon" style="background:#E0E0F0;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7B8CDE" stroke-width="2" stroke-linecap="round"><path d="M3 21h18M3 7l9-4 9 4M4 7v14M20 7v14M9 21v-4a3 3 0 0 1 6 0v4"/></svg>
+        </div>
+        <div class="ws-btn-text">
+          <span class="ws-btn-title" style="color:#1A1A1A;">Acceso Comercial</span>
+          <span class="ws-btn-sub" style="color:#888;">Municipios, hoteles y comercios</span>
+        </div>
+        <div class="ws-btn-arrow" style="background:#E0E0F0;color:#7B8CDE;">›</div>
+      </button>
+
+    </div>
+
+    <div style="margin-top:20px;font-size:10px;color:#bbb;text-align:center;line-height:1.5;">
+      Al ingresar aceptás los términos y condiciones de la plataforma
+    </div>
+  </div>
 </div>
 
 <!-- ════════════ EXPLORE ════════════ -->
@@ -4392,20 +4481,95 @@ const App = {
 
   _hideSplash() {
     const sp = document.getElementById('splash');
-    if (!sp) { this.go('explore'); return; }
+    if (!sp) { this._showWelcome(); return; }
     sp.style.opacity = '0';
     sp.style.pointerEvents = 'none';
-    setTimeout(() => {
-      this.go('explore');
-      // Mostrar menu-btn ahora que el splash terminó
-      const mb = document.getElementById('menu-btn');
-      if (mb) mb.classList.remove('hidden-splash');
-      // Inicializar sidebar según dispositivo
-      const isMobile = window.innerWidth <= 768;
-      this._sbApply(isMobile ? 0 : 1);
-      this._checkAdBlock();
-      setTimeout(() => this._onbShow(), 600);
-    }, 520);
+    setTimeout(() => { this._showWelcome(); }, 520);
+  },
+
+  _showWelcome() {
+    const ws = document.getElementById('welcome-screen');
+    if (!ws) { this._enterApp(); return; }
+    ws.classList.add('ws-show');
+    requestAnimationFrame(() => requestAnimationFrame(() => ws.classList.add('ws-visible')));
+  },
+
+  _hideWelcome(cb) {
+    const ws = document.getElementById('welcome-screen');
+    if (!ws) { if (cb) cb(); return; }
+    ws.classList.remove('ws-visible');
+    setTimeout(() => { ws.classList.remove('ws-show'); if (cb) cb(); }, 350);
+  },
+
+  _wsVisitante() {
+    this._userRole = 'visitante';
+    this._hideWelcome(() => this._enterApp());
+  },
+
+  _wsLooper() {
+    this._userRole = 'looper';
+    this._hideWelcome(() => {
+      this._enterApp();
+      setTimeout(() => this._showAuthGate('ingresar', () => {}), 400);
+    });
+  },
+
+  _wsComercial() {
+    this._userRole = 'turismo';
+    this._hideWelcome(() => {
+      this._enterApp();
+      setTimeout(() => this._showAuthGate('ingresar', () => {}), 400);
+    });
+  },
+
+  _enterApp() {
+    this.go('explore');
+    const mb = document.getElementById('menu-btn');
+    if (mb) mb.classList.remove('hidden-splash');
+    const isMobile = window.innerWidth <= 768;
+    this._sbApply(isMobile ? 0 : 1);
+    this._checkAdBlock();
+    setTimeout(() => this._onbShow(), 600);
+  },
+
+  // ── Guard para visitantes ──
+  _isVisitante() { return this._userRole === 'visitante' && !this._user; },
+
+  _wsGate(accion) {
+    // Mostrar cartel invitando a registrarse como Looper
+    let overlay = document.getElementById('ws-gate-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'ws-gate-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:9995;background:rgba(0,0,0,0.55);display:flex;align-items:flex-end;justify-content:center;';
+      overlay.innerHTML = `
+        <div style="background:var(--wh);border-radius:24px 24px 0 0;padding:28px 24px 40px;width:100%;max-width:430px;font-family:var(--fB);">
+          <div style="width:36px;height:4px;background:var(--bd);border-radius:4px;margin:0 auto 20px;"></div>
+          <div style="font-size:22px;text-align:center;margin-bottom:8px;">🔒</div>
+          <div style="font-size:17px;font-weight:700;color:var(--dk);text-align:center;margin-bottom:6px;">Función exclusiva para Loopers</div>
+          <div id="ws-gate-msg" style="font-size:13px;color:var(--gr);text-align:center;margin-bottom:24px;line-height:1.5;"></div>
+          <button onclick="App._wsGateLogin()" style="width:100%;background:#FF5F00;border:none;border-radius:14px;padding:15px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;">Registrarme como Looper</button>
+          <button onclick="App._wsGateLogin()" style="width:100%;background:transparent;border:1.5px solid var(--bd);border-radius:14px;padding:14px;color:var(--dk);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:14px;">Ya tengo cuenta — Iniciar sesión</button>
+          <button onclick="document.getElementById('ws-gate-overlay').remove()" style="width:100%;background:transparent;border:none;color:var(--gr);font-size:13px;cursor:pointer;">Seguir como Visitante</button>
+        </div>`;
+      overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+      document.body.appendChild(overlay);
+    }
+    const msgs = {
+      like: 'Para dar likes y guardar tus favoritos necesitás una cuenta Looper.',
+      comunidad: 'El feed de comunidad, comentarios y publicaciones son exclusivos para Loopers.',
+      reporte: 'Para reportar problemas urbanos necesitás una cuenta Looper.',
+      proponer: 'Para proponer loops y subir fotoloops necesitás una cuenta Looper.',
+    };
+    const msg = document.getElementById('ws-gate-msg');
+    if (msg) msg.textContent = msgs[accion] || 'Para usar esta función necesitás registrarte como Looper.';
+    overlay.style.display = 'flex';
+  },
+
+  _wsGateLogin() {
+    document.getElementById('ws-gate-overlay')?.remove();
+    this._userRole = 'looper';
+    this._showAuthGate('ingresar', () => {});
   },
 
   async _checkAdBlock() {
@@ -7563,6 +7727,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   _urepImgData: null,
 
   _openUrbanReport() {
+    if (this._isVisitante()) return this._wsGate('reporte');
     if (!this._user || this._uid === 'public') {
       this._showAuthGate('Reportar un problema', () => this._openUrbanReport());
       return;
@@ -9671,6 +9836,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   },
 
   async publishFotoLoop() {
+    if (this._isVisitante()) return this._wsGate('proponer');
     if (!this._checkVerified()) return;
     if (!document.getElementById('fl-no-personas')?.checked) {
       return this.toast('🚫 Confirmá que la foto no tiene personas antes de publicar');
@@ -11973,6 +12139,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   },
 
   async _cmSave() {
+    if (this._isVisitante()) return this._wsGate('proponer');
     if (!this._user) return this.toast('⚠️ Iniciá sesión para publicar');
     if (!this._checkVerified()) return;
     const name = document.getElementById('cm-name')?.value?.trim();
@@ -13419,6 +13586,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   },
 
   likeLoop(id) {
+    if (this._isVisitante()) return this._wsGate('like');
     if (!this._user) return this.toast('⚠️ Iniciá sesión para dar like');
     this.likes = this.likes || [];
     const r = this.routes.find(x => x.id === id);
@@ -13448,6 +13616,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   },
 
   likeFotoLoop(id) {
+    if (this._isVisitante()) return this._wsGate('like');
     if (!this._user) return this.toast('⚠️ Iniciá sesión para dar like');
     this.likes = this.likes || [];
     const post = (this._fotoPosts || []).find(x => x.id === id);
@@ -15319,6 +15488,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     document.querySelectorAll('.com-city-chip').forEach(c => {
       c.classList.toggle('on', c.dataset.city === this._crCity.name);
     });
+    if (this._isVisitante()) return this._wsGate('comunidad');
     this.go('comunidad');
   },
 
