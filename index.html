@@ -3575,9 +3575,9 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
         <h1 style="font-family:var(--fH);font-size:19px;font-weight:800;color:var(--dk);">Eventos</h1>
         <p style="font-size:11px;color:var(--gr);margin-top:1px;" id="ev-city-label">📍 La Paz, Entre Ríos</p>
       </div>
-      <button onclick="App.openCrearEvento()" style="background:var(--or);border:none;border-radius:10px;padding:8px 13px;color:white;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;">
+      <button onclick="App.openCrearEvento()" id="ev-crear-btn" style="background:var(--or);border:none;border-radius:10px;padding:8px 13px;color:white;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Crear
+        <span id="ev-crear-lbl">Proponer</span>
       </button>
     </div>
     <!-- Filtro tipo — botón FAB + menú desplegable -->
@@ -3627,7 +3627,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
   <div style="background:var(--wh);border-radius:20px 20px 0 0;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;padding:20px 18px 36px;">
     <div style="width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 16px;"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
-      <h2 style="font-family:var(--fH);font-size:18px;font-weight:800;color:var(--dk);">Crear Evento</h2>
+      <h2 style="font-family:var(--fH);font-size:18px;font-weight:800;color:var(--dk);" id="crear-evento-title">Proponer Evento</h2>
       <button onclick="App.closeCrearEvento()" style="background:var(--orL);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:18px;color:var(--or);display:flex;align-items:center;justify-content:center;">×</button>
     </div>
     <!-- Tipo de evento -->
@@ -13286,7 +13286,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   },
 
   openCrearEvento() {
-    if (!this._user) { this.toast('Iniciá sesión para crear eventos'); return; }
+    if (this._isVisitante()) return this._wsGate('proponer');
+    if (!this._user) { this._showAuthGate('proponer un evento', () => this.openCrearEvento()); return; }
+    // Actualizar título del modal según rol
+    const title = document.getElementById('crear-evento-title');
+    if (title) title.textContent = this._isAdmin() ? 'Crear Evento' : 'Proponer Evento';
     const m = document.getElementById('crear-evento-modal');
     if (!m) return;
     m.style.display = 'flex';
@@ -13450,7 +13454,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       try {
         await this._db.collection('eventos').doc(ev.id).set(ev);
         savedToCloud = true;
-        this._notifyEventCreated(ev);  // ← notificar a otros usuarios
+        if (ev.status === 'pending') {
+          this._notifyAdminEventPending(ev); // notificar al admin
+        } else {
+          this._notifyEventCreated(ev); // notificar a usuarios
+        }
       } catch(e) {
         console.warn('[saveEvento] Error Firestore:', e);
         if (btn) { btn.textContent = 'Publicar Evento 📅'; btn.disabled = false; }
@@ -13500,6 +13508,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   async _renderEventos() {
     const body = document.getElementById('eventos-body');
     if (!body) return;
+    // Actualizar label del botón según rol
+    const lbl = document.getElementById('ev-crear-lbl');
+    if (lbl) lbl.textContent = this._isAdmin() ? 'Crear' : 'Proponer';
     const filter = this._evFilter || 'all';
 
     // Mostrar spinner mientras carga
@@ -13516,8 +13527,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         this._eventos = [];
         snap.forEach(d => {
           const ev = {...d.data(), id:d.id};
-          // Filtro moderación: pendientes y rechazados visibles para admin y para el propio autor
-          if ((ev.status === 'pending' || ev.status === 'rejected') && !this._isAdmin() && ev.authorId !== this._uid) return;
+          // Solo approved visible para todos; pending solo para admin y autor
+          if (ev.status === 'rejected') { if (!this._isAdmin()) return; }
+          if (ev.status === 'pending'  && !this._isAdmin() && ev.authorId !== this._uid) return;
           this._eventos.push(ev);
         });
         console.log(`[eventos] Cargados ${this._eventos.length} eventos`);
@@ -13619,14 +13631,23 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
             </div>
           </div>` : ''}
           <div style="font-size:11px;color:var(--gr);margin-bottom:8px;">Organiza: <strong>${ev.authorName||'Looper'}</strong></div>
+          ${ev.status === 'pending' ? `
+            <div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px;padding:7px 10px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <span style="font-size:11px;font-weight:600;color:#92400E;">⏳ Propuesta pendiente de aprobación</span>
+            </div>` : ''}
           <div class="ev-card-actions">
-            ${!past ? `<button class="ev-action-btn ${joined?'':'primary'}" onclick="App._joinEvento('${ev.id}')">
+            ${ev.status === 'pending' && App._isAdmin() ? `
+              <button onclick="App._evAprobar('${ev.id}')" style="flex:1;background:#16A34A;border:none;border-radius:10px;padding:9px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">✅ Aprobar</button>
+              <button onclick="App._evRechazar('${ev.id}')" style="flex:1;background:transparent;border:1.5px solid #EF4444;border-radius:10px;padding:9px;color:#EF4444;font-size:12px;font-weight:700;cursor:pointer;">🗑 Rechazar</button>
+            ` : `
+            ${!past && ev.status === 'approved' ? `<button class="ev-action-btn ${joined?'':'primary'}" onclick="App._joinEvento('${ev.id}')">
               ${joined ? '✓ Me sumé' : (full ? 'Lista de espera' : '+ Sumarme')}
             </button>` : ''}
             ${ev.lat ? `<button class="ev-action-btn" onclick="App._eventoIrAlMapa(${ev.lat},${ev.lng})" style="display:flex;align-items:center;gap:5px;">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/></svg> Cómo llegar
             </button>` : ''}
-            ${ev.authorId === this._uid ? `<button class="ev-action-btn" onclick="App._deleteEvento('${ev.id}')" style="color:var(--err);border-color:var(--err)20;">Cancelar</button>` : ''}
+            ${ev.authorId === App._uid ? `<button class="ev-action-btn" onclick="App._deleteEvento('${ev.id}')" style="color:var(--err);border-color:var(--err)20;">Cancelar</button>` : ''}
+            `}
           </div>
         </div>
       </div>`;
@@ -17789,6 +17810,33 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
         });
         this._notifLastCheck = Date.now();
       });
+  },
+
+  _notifyAdminEventPending(ev) {
+    if (!this._db) return;
+    this._db.collection('admin_notifs').add({
+      type: 'evento_pending',
+      msg: `📅 Propuesta de evento: "${ev.name}" por ${ev.authorName}`,
+      eventId: ev.id,
+      ciudad: ev.ciudad || '',
+      ts: Date.now(),
+      read: false,
+    }).catch(e => console.warn('notif evento pending:', e));
+  },
+
+  async _evAprobar(id) {
+    if (!this._isAdmin()) return;
+    await this._db.collection('eventos').doc(id).update({ status: 'approved', approvedAt: Date.now() });
+    this.toast('✅ Evento aprobado y publicado');
+    this._renderEventos();
+  },
+
+  async _evRechazar(id) {
+    if (!this._isAdmin()) return;
+    if (!confirm('¿Rechazar esta propuesta de evento?')) return;
+    await this._db.collection('eventos').doc(id).update({ status: 'rejected' });
+    this.toast('🗑 Propuesta rechazada');
+    this._renderEventos();
   },
 
   _notifyEventCreated(ev) {
