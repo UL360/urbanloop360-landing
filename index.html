@@ -4557,10 +4557,13 @@ const App = {
   },
 
   _wsComercial() {
-    this._userRole = 'turismo';
+    this._userRole = 'comercial';
+    this._fromLooperFlow = true; // volver a welcome si cierra sin loguearse
     this._hideWelcome(() => {
       this._enterApp();
-      setTimeout(() => this._showAuthGate('ingresar', () => {}), 400);
+      setTimeout(() => this._showAuthGate('ingresar', () => {
+        this._fromLooperFlow = false;
+      }), 400);
     });
   },
 
