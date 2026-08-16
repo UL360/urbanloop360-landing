@@ -7254,7 +7254,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const thumbHtml = allImgs.length > 0 ? `
       <div style="position:relative;width:100%;height:110px;border-radius:10px 10px 0 0;overflow:hidden;">
         <div id="${galeriaId}" style="display:flex;width:${allImgs.length*100}%;height:100%;transition:transform .3s ease;">
-          ${allImgs.map(src => `<img src="${src}" style="width:${100/allImgs.length}%;height:100%;object-fit:cover;flex-shrink:0;" loading="lazy">`).join('')}
+          ${allImgs.map(src => `<img src="${src}" style="width:${100/allImgs.length}%;height:100%;object-fit:cover;object-position:center;flex-shrink:0;" loading="lazy">`).join('')}
         </div>
         ${allImgs.length > 1 ? `
         <button onclick="App._negGaleriaNav('${galeriaId}',${allImgs.length},-1)"
@@ -18663,7 +18663,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
             </div>
             <!-- Galería extra -->
             <div>
-              <div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Galería de fotos (hasta 5)</div>
+              <div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Galería de fotos (hasta 15)</div>
               <div id="neg-galeria-wrap" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
               <button onclick="App._negocioGaleriaAgregar()" style="margin-top:8px;width:100%;padding:9px;border-radius:10px;border:1.5px dashed var(--bd);background:transparent;color:var(--gr);font-size:12px;cursor:pointer;">+ Agregar foto</button>
               <input type="file" id="neg-galeria-input" accept="image/*" style="display:none" onchange="App._negocioHandleGaleria(this)">
@@ -18966,29 +18966,67 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   _negocioGaleriaData: [], // array de base64
 
   _negocioGaleriaAgregar() {
-    if (this._negocioGaleriaData.length >= 5) return this.toast('Máximo 5 fotos en la galería');
+    if (this._negocioGaleriaData.length >= 15) return this.toast('Máximo 15 fotos en la galería');
     document.getElementById('neg-galeria-input')?.click();
   },
 
   _negocioHandleGaleria(input) {
     const file = input.files?.[0];
     if (!file) return;
-    this._compressImg(file, b64 => {
-      this._negocioGaleriaData.push(b64);
-      this._negocioGaleriaRender();
-    });
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const isLandscape = img.width >= img.height;
+        // horizontal: más ancho; vertical: más alto
+        const maxW = isLandscape ? 900 : 500;
+        const maxH = isLandscape ? 500 : 900;
+        let w = img.width, h = img.height;
+        if (w > maxW || h > maxH) {
+          const ratio = Math.min(maxW/w, maxH/h);
+          w = Math.round(w*ratio); h = Math.round(h*ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const maxBytes = 50 * 1024;
+        let q = 0.82, b64 = canvas.toDataURL('image/jpeg', q);
+        while (b64.length * 0.75 > maxBytes && q > 0.25) {
+          q = Math.max(q - 0.08, 0.25);
+          b64 = canvas.toDataURL('image/jpeg', q);
+        }
+        if (b64.length * 0.75 > maxBytes) {
+          const scale = Math.sqrt(maxBytes / (b64.length * 0.75));
+          canvas.width  = Math.round(w * scale);
+          canvas.height = Math.round(h * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          b64 = canvas.toDataURL('image/jpeg', 0.7);
+        }
+        const kb = Math.round(b64.length * 0.75 / 1024);
+        const orient = isLandscape ? '🖼️ horizontal' : '📱 vertical';
+        this._negocioGaleriaData.push({ b64, landscape: isLandscape });
+        this._negocioGaleriaRender();
+        this.toast(`📷 Foto ${orient} agregada (${kb} KB)`);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
     input.value = '';
   },
 
   _negocioGaleriaRender() {
     const wrap = document.getElementById('neg-galeria-wrap');
     if (!wrap) return;
-    wrap.innerHTML = this._negocioGaleriaData.map((b64, i) => `
-      <div style="position:relative;width:72px;height:72px;border-radius:10px;overflow:hidden;flex-shrink:0;">
-        <img src="${b64}" style="width:100%;height:100%;object-fit:cover;">
+    wrap.innerHTML = this._negocioGaleriaData.map((item, i) => {
+      const src = typeof item === 'string' ? item : item.b64;
+      const isLand = typeof item === 'object' ? item.landscape : true;
+      return `<div style="position:relative;width:${isLand?'96px':'60px'};height:72px;border-radius:10px;overflow:hidden;flex-shrink:0;border:2px solid ${isLand?'#FF5F00':'#7B8CDE'};">
+        <img src="${src}" style="width:100%;height:100%;object-fit:cover;">
+        <div style="position:absolute;bottom:2px;left:3px;font-size:9px;">${isLand?'🖼️':'📱'}</div>
         <button onclick="App._negocioGaleriaEliminar(${i})"
           style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.6);border:none;color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">✕</button>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   },
 
   _negocioGaleriaEliminar(i) {
@@ -19034,7 +19072,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     }
     // Galería extra
     if (this._negocioGaleriaData && this._negocioGaleriaData.length > 0) {
-      data.imgs = this._negocioGaleriaData;
+      data.imgs = this._negocioGaleriaData.map(item => typeof item === 'string' ? item : item.b64);
     } else if (this._negocioEditId) {
       const existing = (this._negociosCache||[]).find(x => x.id === this._negocioEditId);
       if (existing?.imgs) data.imgs = existing.imgs;
