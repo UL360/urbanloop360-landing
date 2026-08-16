@@ -7245,9 +7245,27 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         : await this._resolveImg(n.img).catch(() => '');
     }
 
-    const thumbHtml = imgSrc
-      ? `<img src="${imgSrc}" style="width:100%;height:100px;object-fit:cover;border-radius:10px 10px 0 0;display:block;" loading="lazy">`
-      : `<div style="width:100%;height:70px;background:linear-gradient(135deg,#FF5F0025,#FF5F0055);display:flex;align-items:center;justify-content:center;font-size:34px;border-radius:10px 10px 0 0;">${emoji}</div>`;
+    // Galería: foto principal + imgs extra
+    const allImgs = [];
+    if (imgSrc) allImgs.push(imgSrc);
+    if (n.imgs && n.imgs.length) allImgs.push(...n.imgs);
+
+    const galeriaId = 'neg-gal-' + n.id;
+    const thumbHtml = allImgs.length > 0 ? `
+      <div style="position:relative;width:100%;height:110px;border-radius:10px 10px 0 0;overflow:hidden;">
+        <div id="${galeriaId}" style="display:flex;width:${allImgs.length*100}%;height:100%;transition:transform .3s ease;">
+          ${allImgs.map(src => `<img src="${src}" style="width:${100/allImgs.length}%;height:100%;object-fit:cover;flex-shrink:0;" loading="lazy">`).join('')}
+        </div>
+        ${allImgs.length > 1 ? `
+        <button onclick="App._negGaleriaNav('${galeriaId}',${allImgs.length},-1)"
+          style="position:absolute;left:6px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,0.5);border:none;color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;">‹</button>
+        <button onclick="App._negGaleriaNav('${galeriaId}',${allImgs.length},1)"
+          style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,0.5);border:none;color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;">›</button>
+        <div style="position:absolute;bottom:5px;left:50%;transform:translateX(-50%);display:flex;gap:4px;" id="${galeriaId}-dots">
+          ${allImgs.map((_,i) => `<div style="width:${i===0?'8px':'6px'};height:${i===0?'8px':'6px'};border-radius:50%;background:${i===0?'#FF5F00':'rgba(255,255,255,0.5)'};transition:all .2s;"></div>`).join('')}
+        </div>` : ''}
+      </div>` :
+      `<div style="width:100%;height:70px;background:linear-gradient(135deg,#FF5F0025,#FF5F0055);display:flex;align-items:center;justify-content:center;font-size:34px;border-radius:10px 10px 0 0;">${emoji}</div>`;
 
     const telBtn = n.tel
       ? `<a href="https://wa.me/54${n.tel.replace(/\D/g,'')}" target="_blank"
@@ -7304,6 +7322,25 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     this._negocioPopup.on('close', () => { this._negocioPopup = null; });
     this._wirePopupCloseBtn(this._negocioPopup);
+  },
+
+  // ── Navegación galería comercio ──
+  _negGaleriaIdx: {},
+  _negGaleriaNav(id, total, dir) {
+    if (!this._negGaleriaIdx[id]) this._negGaleriaIdx[id] = 0;
+    this._negGaleriaIdx[id] = (this._negGaleriaIdx[id] + dir + total) % total;
+    const idx = this._negGaleriaIdx[id];
+    const el = document.getElementById(id);
+    if (el) el.style.transform = `translateX(-${idx * (100/total)}%)`;
+    // actualizar dots
+    const dots = document.getElementById(id+'-dots');
+    if (dots) {
+      dots.querySelectorAll('div').forEach((d,i) => {
+        d.style.width = i===idx ? '8px' : '6px';
+        d.style.height = i===idx ? '8px' : '6px';
+        d.style.background = i===idx ? '#FF5F00' : 'rgba(255,255,255,0.5)';
+      });
+    }
   },
 
   // ── Popup liviano al pasar el mouse por un fotoloop (solo desktop/hover) ──
@@ -18624,6 +18661,13 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
               </div>
               <input type="file" id="neg-foto-input" accept="image/*" style="display:none" onchange="App._negocioHandleImg(this)">
             </div>
+            <!-- Galería extra -->
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Galería de fotos (hasta 5)</div>
+              <div id="neg-galeria-wrap" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+              <button onclick="App._negocioGaleriaAgregar()" style="margin-top:8px;width:100%;padding:9px;border-radius:10px;border:1.5px dashed var(--bd);background:transparent;color:var(--gr);font-size:12px;cursor:pointer;">+ Agregar foto</button>
+              <input type="file" id="neg-galeria-input" accept="image/*" style="display:none" onchange="App._negocioHandleGaleria(this)">
+            </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Nombre del negocio *</div>
               <input type="text" id="neg-nombre" placeholder="Ej: La Posta del Pescador" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg2);color:var(--dk);font-size:13px;font-family:var(--fH);box-sizing:border-box;">
@@ -18821,6 +18865,8 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const set = (eid, val) => { const e = document.getElementById(eid); if (!e) return; if (e.type === 'checkbox') e.checked = val === true; else e.value = val || ''; };
     if (n) {
       set('neg-nombre', n.nombre); set('neg-rubro', n.rubro); set('neg-ciudad', n.ciudad);
+      this._negocioGaleriaData = [...(n.imgs || [])];
+      setTimeout(() => this._negocioGaleriaRender(), 100);
       set('neg-provincia', n.provincia);
       set('neg-direccion', n.direccion); set('neg-tel', n.tel); set('neg-web', n.web);
       set('neg-horario', n.horario); set('neg-desc', n.desc); set('neg-plan', n.plan); set('neg-notas', n.notas);
@@ -18835,6 +18881,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       if (cd && n.lat && n.lng) cd.textContent = `📍 ${parseFloat(n.lat).toFixed(5)}, ${parseFloat(n.lng).toFixed(5)}`;
     } else {
       ['neg-nombre','neg-provincia','neg-direccion','neg-tel','neg-web','neg-horario','neg-desc','neg-notas'].forEach(fid => { const e = document.getElementById(fid); if (e) e.value = ''; });
+      this._negocioGaleriaData = []; this._negocioGaleriaRender();
       // BUG FIX: pre-llenar ciudad con el municipio activo del selector global
       const ciudadEl = document.getElementById('neg-ciudad');
       if (ciudadEl) ciudadEl.value = this._admCity || '';
@@ -18915,6 +18962,40 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     this._negocioImgData = null;
   },
 
+  // ── Galería admin negocio ──
+  _negocioGaleriaData: [], // array de base64
+
+  _negocioGaleriaAgregar() {
+    if (this._negocioGaleriaData.length >= 5) return this.toast('Máximo 5 fotos en la galería');
+    document.getElementById('neg-galeria-input')?.click();
+  },
+
+  _negocioHandleGaleria(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    this._compressImg(file, b64 => {
+      this._negocioGaleriaData.push(b64);
+      this._negocioGaleriaRender();
+    });
+    input.value = '';
+  },
+
+  _negocioGaleriaRender() {
+    const wrap = document.getElementById('neg-galeria-wrap');
+    if (!wrap) return;
+    wrap.innerHTML = this._negocioGaleriaData.map((b64, i) => `
+      <div style="position:relative;width:72px;height:72px;border-radius:10px;overflow:hidden;flex-shrink:0;">
+        <img src="${b64}" style="width:100%;height:100%;object-fit:cover;">
+        <button onclick="App._negocioGaleriaEliminar(${i})"
+          style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.6);border:none;color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">✕</button>
+      </div>`).join('');
+  },
+
+  _negocioGaleriaEliminar(i) {
+    this._negocioGaleriaData.splice(i, 1);
+    this._negocioGaleriaRender();
+  },
+
   _negocioHandleImg(input) {
     const file = input.files?.[0];
     if (!file) return;
@@ -18950,6 +19031,13 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     } else if (this._negocioEditId) {
       const existing = (this._negociosCache||[]).find(x => x.id === this._negocioEditId);
       if (existing?.img) data.img = existing.img;
+    }
+    // Galería extra
+    if (this._negocioGaleriaData && this._negocioGaleriaData.length > 0) {
+      data.imgs = this._negocioGaleriaData;
+    } else if (this._negocioEditId) {
+      const existing = (this._negociosCache||[]).find(x => x.id === this._negocioEditId);
+      if (existing?.imgs) data.imgs = existing.imgs;
     }
     if (!this._db) return this.toast('❌ Firebase no disponible');
     try {
