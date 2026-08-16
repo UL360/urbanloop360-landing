@@ -17262,27 +17262,72 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     } else {
       list = this._eventos || [];
     }
-    // Filtro geográfico en cascada: Ciudad > Departamento > Provincia > País
     list = list.filter(ev => this._admMatchesGeoFilter(ev));
-    if (list.length === 0) { el.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">Sin eventos</div>`; return; }
+
+    const pending   = list.filter(ev => ev.status === 'pending');
+    const approved  = list.filter(ev => ev.status === 'approved' || !ev.status);
+    const rejected  = list.filter(ev => ev.status === 'rejected');
     const now = new Date().toISOString().split('T')[0];
-    el.innerHTML = list.map(ev => {
+
+    const renderCard = (ev, showActions) => {
       const past = ev.fecha < now;
-      return `<div class="adm-item">
+      const statusBadge = {
+        pending:  `<span style="background:#FEF3C7;color:#92400E;border:1px solid #F59E0B;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;">⏳ Pendiente</span>`,
+        approved: `<span style="background:#D1FAE5;color:#065F46;border:1px solid #10B981;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;">✅ Aprobado</span>`,
+        rejected: `<span style="background:#FEE2E2;color:#991B1B;border:1px solid #EF4444;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;">❌ Rechazado</span>`,
+      }[ev.status||'approved'] || '';
+
+      return `<div class="adm-item" style="${ev.status==='pending'?'border-left:3px solid #F59E0B;':''}">
         <div class="adm-item-row">
           <div class="adm-item-thumb" style="display:flex;align-items:center;justify-content:center;font-size:22px;background:${ev.color||'var(--or)'}22;">${ev.emoji||'📅'}</div>
-          <div class="adm-item-info">
-            <div class="adm-item-name">${App._esc(ev.name)}</div>
-            <div class="adm-item-meta">📅 ${ev.fecha} ${ev.hora} · ${App._esc(ev.city)||'—'} · ${ev.authorName||'Anónimo'}</div>
-            <div class="adm-item-meta">👥 ${(ev.attendees||[]).length}${ev.cupo?'/'+ev.cupo:''} · ${past?'<span style="color:var(--gr)">Finalizado</span>':'<span style="color:#10B981">Activo</span>'}</div>
+          <div class="adm-item-info" style="flex:1;min-width:0;">
+            <div class="adm-item-name">${App._esc(ev.name)} ${statusBadge}</div>
+            <div class="adm-item-meta">📅 ${ev.fecha} ${ev.hora||''} · ${App._esc(ev.city||ev.ciudad)||'—'}</div>
+            <div class="adm-item-meta">👤 ${ev.authorName||'Anónimo'} · 👥 ${(ev.attendees||[]).length}${ev.cupo?'/'+ev.cupo:''}</div>
+            ${ev.lugar ? `<div class="adm-item-meta">📍 ${App._esc(ev.lugar)}</div>` : ''}
           </div>
         </div>
-        ${ev.desc ? `<div style="font-size:12px;color:var(--md);">${App._esc(ev.desc)}</div>` : ''}
+        ${ev.desc ? `<div style="font-size:12px;color:var(--md);margin:6px 0;">${App._esc(ev.desc)}</div>` : ''}
         <div class="adm-item-actions">
-          <button class="adm-btn adm-btn-red" onclick="App._admDeleteEvento('${ev.id}','${(ev.name||'').replace(/'/g,'')}')">🗑️ Cancelar evento</button>
+          ${ev.status === 'pending' ? `
+            <button class="adm-btn" onclick="App._evAprobar('${ev.id}')" style="background:#16A34A;color:#fff;border:none;flex:1;">✅ Aprobar</button>
+            <button class="adm-btn adm-btn-red" onclick="App._evRechazar('${ev.id}')">❌ Rechazar</button>
+          ` : `
+            ${ev.status === 'rejected' ? `<button class="adm-btn" onclick="App._evAprobar('${ev.id}')" style="background:#16A34A;color:#fff;border:none;">↩️ Aprobar igual</button>` : ''}
+            <button class="adm-btn adm-btn-red" onclick="App._admDeleteEvento('${ev.id}','${(ev.name||'').replace(/'/g,'')}')">🗑️ Eliminar</button>
+          `}
         </div>
       </div>`;
-    }).join('');
+    };
+
+    let html = '';
+
+    // Sección propuestas pendientes
+    if (pending.length > 0) {
+      html += `<div style="font-size:11px;font-weight:700;color:#92400E;background:#FEF3C7;border-radius:10px;padding:8px 12px;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+        ⏳ PROPUESTAS PENDIENTES <span style="background:#F59E0B;color:#fff;border-radius:20px;padding:1px 8px;font-size:11px;">${pending.length}</span>
+      </div>`;
+      html += pending.map(ev => renderCard(ev)).join('');
+      html += `<div style="height:1px;background:var(--bd);margin:12px 0;"></div>`;
+    } else {
+      html += `<div style="background:#D1FAE5;border-radius:10px;padding:8px 12px;font-size:12px;color:#065F46;margin-bottom:8px;">✅ Sin propuestas pendientes</div>`;
+    }
+
+    // Sección eventos aprobados
+    if (approved.length > 0) {
+      html += `<div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:8px;letter-spacing:.5px;">EVENTOS PUBLICADOS (${approved.length})</div>`;
+      html += approved.map(ev => renderCard(ev)).join('');
+    }
+
+    // Sección rechazados (colapsado)
+    if (rejected.length > 0) {
+      html += `<div style="margin-top:12px;"><details><summary style="font-size:11px;font-weight:700;color:var(--gr);cursor:pointer;padding:6px 0;">RECHAZADOS (${rejected.length})</summary>
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px;">${rejected.map(ev => renderCard(ev)).join('')}</div>
+      </details></div>`;
+    }
+
+    if (!html) html = `<div style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">Sin eventos</div>`;
+    el.innerHTML = html;
   },
 
   async _admDeleteEvento(id, name) {
@@ -17829,14 +17874,16 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     await this._db.collection('eventos').doc(id).update({ status: 'approved', approvedAt: Date.now() });
     this.toast('✅ Evento aprobado y publicado');
     this._renderEventos();
+    this._admRenderEventos();
   },
 
   async _evRechazar(id) {
     if (!this._isAdmin()) return;
     if (!confirm('¿Rechazar esta propuesta de evento?')) return;
     await this._db.collection('eventos').doc(id).update({ status: 'rejected' });
-    this.toast('🗑 Propuesta rechazada');
+    this.toast('❌ Propuesta rechazada');
     this._renderEventos();
+    this._admRenderEventos();
   },
 
   _notifyEventCreated(ev) {
