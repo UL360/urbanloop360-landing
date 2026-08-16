@@ -6594,7 +6594,8 @@ const App = {
       if (this._navLine && this._navLine.length && this._voiceNavRoute && !this._loopStarted) {
         const r = this._voiceNavRoute;
         if (r.pts && r.pts.length) {
-          const startPt = r.pts[0];
+          const startPtIdx = this._loopStartPtIdx || 0;
+          const startPt = r.pts[startPtIdx] || r.pts[0];
           const sLat = Array.isArray(startPt) ? startPt[0] : startPt.lat;
           const sLng = Array.isArray(startPt) ? startPt[1] : startPt.lng;
           const dlat = (lat - sLat) * Math.PI / 180;
@@ -8515,9 +8516,44 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     await this._calcAndDrawNav(r);
   },
 
+  // Encontrar el punto del loop más cercano al usuario
+  _nearestLoopPoint(r) {
+    if (!r.pts || !r.pts.length || !this._locMarker) return { idx: 0, dist: Infinity };
+    const uLL = this._locMarker.getLngLat();
+    let minDist = Infinity, minIdx = 0;
+    r.pts.forEach((p, i) => {
+      const lat = Array.isArray(p) ? p[0] : p.lat;
+      const lng = Array.isArray(p) ? p[1] : p.lng;
+      const dlat = (uLL.lat - lat) * Math.PI / 180;
+      const dlng = (uLL.lng - lng) * Math.PI / 180;
+      const a = Math.sin(dlat/2)**2 + Math.cos(lat*Math.PI/180)*Math.cos(uLL.lat*Math.PI/180)*Math.sin(dlng/2)**2;
+      const d = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      if (d < minDist) { minDist = d; minIdx = i; }
+    });
+    return { idx: minIdx, dist: minDist };
+  },
+
   _showTransportPicker(r) {
     let picker = document.getElementById('transport-picker');
     if (picker) picker.remove();
+
+    // Detectar si el usuario está más cerca de un punto intermedio que del inicio
+    const nearest = this._nearestLoopPoint(r);
+    const startPt = r.pts[0];
+    const startLat = Array.isArray(startPt) ? startPt[0] : startPt.lat;
+    const startLng = Array.isArray(startPt) ? startPt[1] : startPt.lng;
+    const uLL = this._locMarker ? this._locMarker.getLngLat() : null;
+    let distToStart = Infinity;
+    if (uLL) {
+      const dlat = (uLL.lat - startLat) * Math.PI / 180;
+      const dlng = (uLL.lng - startLng) * Math.PI / 180;
+      const a = Math.sin(dlat/2)**2 + Math.cos(startLat*Math.PI/180)*Math.cos(uLL.lat*Math.PI/180)*Math.sin(dlng/2)**2;
+      distToStart = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    // Si está más cerca de un punto intermedio (>100m del inicio y punto más cercano no es el 0)
+    const isNearMiddle = nearest.idx > 0 && nearest.dist < distToStart * 0.7 && nearest.dist < 500;
+    const pct = Math.round((nearest.idx / (r.pts.length - 1)) * 100);
 
     picker = document.createElement('div');
     picker.id = 'transport-picker';
@@ -8537,12 +8573,24 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
             <span>${m.label.split(' ').slice(1).join(' ')}</span>
           </button>`).join('')}
       </div>
+      ${isNearMiddle ? `
+      <div style="background:var(--orL);border:1px solid var(--or);border-radius:12px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;gap:10px;">
+        <div style="font-size:22px;">📍</div>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:700;color:var(--or);">Estás en el ${pct}% del recorrido</div>
+          <div style="font-size:11px;color:var(--md);margin-top:2px;">¿Querés arrancar desde acá?</div>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+          <input type="checkbox" id="start-from-here" style="width:16px;height:16px;accent-color:var(--or);" checked>
+        </label>
+      </div>` : ''}
       <button onclick="App._confirmTransport()" style="width:100%;padding:11px;border-radius:12px;border:none;background:var(--or);color:white;font-size:14px;font-weight:700;cursor:pointer;">
         Calcular ruta →
       </button>
       <button onclick="document.getElementById('transport-picker').remove()" style="width:100%;padding:8px;border-radius:12px;border:none;background:transparent;color:var(--gr);font-size:12px;cursor:pointer;margin-top:4px;">Cancelar</button>`;
 
     this._pendingNavRoute = r;
+    this._pendingNearestIdx = isNearMiddle ? nearest.idx : 0;
     document.body.appendChild(picker);
   },
 
@@ -8558,6 +8606,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
   async _confirmTransport() {
     const picker = document.getElementById('transport-picker');
+    // Leer si quiere arrancar desde el punto más cercano
+    const startFromHere = document.getElementById('start-from-here');
+    this._navStartIdx = (startFromHere && startFromHere.checked) ? (this._pendingNearestIdx || 0) : 0;
     if (picker) picker.remove();
     const r = this._pendingNavRoute;
     if (r) await this._calcAndDrawNav(r);
@@ -8593,8 +8644,13 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     }
     this._loopStarted = false;  // reset flag de inicio de loop
     this._visitedPois = new Set(); // reset POIs visitados para guía IA
-    const loopStart = r.pts[0];
+    // Usar el punto de inicio seleccionado (0 = inicio, o punto más cercano)
+    const startIdx = this._navStartIdx || 0;
+    this._navStartIdx = 0; // reset
+    const loopStart = r.pts[startIdx] || r.pts[0];
     const loopStartCoord = Array.isArray(loopStart) ? [loopStart[1],loopStart[0]] : [loopStart.lng,loopStart.lat];
+    // Si arranca desde el medio, marcar el índice de inicio para el progreso
+    this._loopStartPtIdx = startIdx;
     const uLL = this._locMarker.getLngLat();
 
     const mode = this._navModes[this._navMode] || this._navModes.foot;
