@@ -474,6 +474,22 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
 .ws-btn-title { font-size:17px;font-weight:700;display:block; }
 .ws-btn-sub { font-size:12px;display:block;margin-top:3px; }
 
+/* ── Banner instrucción navegación tipo Waze ── */
+#nav-instruction-banner {
+  position:fixed;top:0;left:50%;transform:translateX(-50%);
+  z-index:9980;width:100%;max-width:430px;
+  background:#1C1C1E;color:#fff;
+  padding:48px 16px 14px;
+  display:none;flex-direction:column;gap:4px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.5);
+  font-family:var(--fB);
+}
+#nav-instruction-banner.nib-show { display:flex; }
+#nib-arrow { font-size:36px;line-height:1; }
+#nib-dist { font-size:28px;font-weight:800;color:#FF5F00; }
+#nib-dir { font-size:14px;color:rgba(255,255,255,0.8);margin-top:2px; }
+#nib-street { font-size:12px;color:rgba(255,255,255,0.5);margin-top:1px; }
+
 /* ── Animaciones splash recorrido ── */
 @keyframes drawRoute {
   0%   { stroke-dashoffset: 600; }
@@ -2237,6 +2253,22 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     </div>
   </div>
 
+</div>
+
+<!-- ════════════ BANNER NAVEGACIÓN ════════════ -->
+<div id="nav-instruction-banner">
+  <div style="display:flex;align-items:center;gap:14px;">
+    <div id="nib-arrow">↑</div>
+    <div style="flex:1;">
+      <div id="nib-dist">—</div>
+      <div id="nib-dir">Seguí recto</div>
+      <div id="nib-street"></div>
+    </div>
+    <div id="nib-loop-dist" style="text-align:right;">
+      <div style="font-size:11px;color:rgba(255,255,255,0.5);">Loop</div>
+      <div style="font-size:14px;font-weight:700;color:#FF5F00;" id="nib-loop-dist-txt">—</div>
+    </div>
+  </div>
 </div>
 
 <!-- ════════════ WELCOME SCREEN ════════════ -->
@@ -6570,6 +6602,18 @@ const App = {
           const a = Math.sin(dlat/2)**2 + Math.cos(sLat*Math.PI/180)*Math.cos(lat*Math.PI/180)*Math.sin(dlng/2)**2;
           const distToStart = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
+          // Actualizar distancia en banner y panel
+          if (this._voiceNavRouteCoords && !this._loopStarted) {
+            const distBanner = document.getElementById('nib-dist');
+            const navPanel = document.querySelector('#nav-panel .rc-mi:first-child, #nav-panel div[style*="font-size:12px"]');
+            if (distBanner && distToStart > 5) {
+              const distStr = distToStart < 1000 ? `${Math.round(distToStart)} m` : `${(distToStart/1000).toFixed(1)} km`;
+              // Actualizar distancia restante al inicio del loop en el panel
+              const loopDistEl = document.getElementById('nib-loop-dist-txt');
+              if (loopDistEl) loopDistEl.textContent = distStr;
+            }
+          }
+
           if (distToStart < 5) {
             // ¡Llegó a 5m del inicio! Iniciar modo loop
             this._loopStarted = true;
@@ -6577,6 +6621,11 @@ const App = {
             this._removeNavLine();
             const panel = document.getElementById('nav-panel');
             if (panel) panel.remove();
+
+            // ── Redibujar el trazado del loop (se borraba con _removeNavLine) ──
+            this._drawRoute(r);
+            this._showOnlyRoute(r.id);
+
             const allCoords = r.pts.map(p => Array.isArray(p)?[p[1],p[0]]:[p.lng,p.lat]);
             const lngs = allCoords.map(c=>c[0]), lts = allCoords.map(c=>c[1]);
             this.mainMap.fitBounds(
@@ -6591,6 +6640,7 @@ const App = {
               }
               this._speak(startMsg);
             }
+            this._hideNavBanner();
             this._showLoopStartPanel(r);
           }
         }
@@ -8689,6 +8739,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
   // Cancelar navegación
   _stopNav() {
+    const r = this._voiceNavRoute || (this.selId ? this.routes.find(x => x.id === this.selId) : null);
     this._removeNavLine();
     const panel = document.getElementById('nav-panel');
     if (panel) panel.remove();
@@ -8700,6 +8751,12 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     this._lastReroute = null;
     this._voiceNavRouteCoords = null;
     this._visitedPois = new Set();
+    // Redibujar el loop para que quede visible al cancelar
+    if (r) {
+      this._drawRoute(r);
+      this._showOnlyRoute(r.id);
+    }
+    this._hideNavBanner();
     this.toast('Navegación cancelada');
   },
 
@@ -8799,17 +8856,54 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     }
     const step = this._voiceSteps[this._voiceIdx++];
     const distM = Math.round(step.distance);
-    const distTxt = distM < 100 ? `en ${distM} metros` : distM < 1000 ? `en ${distM} metros` : `en ${(distM/1000).toFixed(1)} kilómetros`;
+    const distTxt = distM < 100 ? `en ${distM} m` : distM < 1000 ? `en ${distM} m` : `en ${(distM/1000).toFixed(1)} km`;
+    const distVoz = distM < 100 ? `en ${distM} metros` : distM < 1000 ? `en ${distM} metros` : `en ${(distM/1000).toFixed(1)} kilómetros`;
     const dir = this._voiceStepDir(step.maneuver.type, step.maneuver.modifier);
-    // Incluir nombre de calle si está disponible
-    const street = step.name && step.name.trim() && step.name !== '' ? ` por ${step.name}` : '';
-    const msg = `${distTxt}, ${dir}${street}.`;
+    const street = step.name && step.name.trim() && step.name !== '' ? step.name : '';
+    const msg = `${distVoz}, ${dir}${street ? ' por ' + street : ''}.`;
     const delay = (this._voiceIdx === 1) ? 3000 : Math.max(4000, distM * 80);
+
+    // Actualizar banner visual
+    this._updateNavBanner(distTxt, dir, street, step.maneuver.type, step.maneuver.modifier);
+
     setTimeout(() => {
       if (this._voiceOn) {
         this._speak(msg, () => this._scheduleNextVoiceStep());
+      } else {
+        this._scheduleNextVoiceStep();
       }
     }, delay);
+  },
+
+  _navArrowIcon(type, modifier) {
+    const key = modifier ? `${type} ${modifier}` : type;
+    const arrows = {
+      'turn left':'←', 'turn right':'→',
+      'turn sharp left':'↙', 'turn sharp right':'↘',
+      'turn slight left':'↖', 'turn slight right':'↗',
+      'continue straight':'↑', 'roundabout':'↻',
+      'depart':'↑', 'arrive':'🏁',
+    };
+    return arrows[key] || arrows[type] || '↑';
+  },
+
+  _updateNavBanner(distTxt, dir, street, type, modifier) {
+    const banner = document.getElementById('nav-instruction-banner');
+    if (!banner) return;
+    banner.classList.add('nib-show');
+    const arrow = document.getElementById('nib-arrow');
+    const distEl = document.getElementById('nib-dist');
+    const dirEl = document.getElementById('nib-dir');
+    const streetEl = document.getElementById('nib-street');
+    if (arrow) arrow.textContent = this._navArrowIcon(type, modifier);
+    if (distEl) distEl.textContent = distTxt;
+    if (dirEl) dirEl.textContent = dir;
+    if (streetEl) streetEl.textContent = street ? `por ${street}` : '';
+  },
+
+  _hideNavBanner() {
+    const banner = document.getElementById('nav-instruction-banner');
+    if (banner) banner.classList.remove('nib-show');
   },
 
   _speak(text, onEnd) {
