@@ -6646,6 +6646,9 @@ const App = {
           }
         }
 
+        // ── Actualizar métricas del loop en tiempo real ──
+        if (this._loopStarted) this._updateLoopMetrics(lat, lng);
+
         // ── Guía turístico IA: detectar POIs cercanos durante el loop activo ──
         if (this._loopStarted && this._voiceNavRoute) {
           const activeLoop = this._voiceNavRoute;
@@ -8813,6 +8816,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       this._showOnlyRoute(r.id);
     }
     this._hideNavBanner();
+    if (this._loopTimer) { clearInterval(this._loopTimer); this._loopTimer = null; }
+    this._loopActiveRoute = null;
+    this._loopDistRecorrida = 0;
+    this._loopStartTime = null;
     this.toast('Navegación cancelada');
   },
 
@@ -8821,35 +8828,245 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     let panel = document.getElementById('loop-active-panel');
     if (panel) panel.remove();
 
+    // Inicializar métricas del loop
+    this._loopDistRecorrida = 0;
+    this._loopLastPos = null;
+    this._loopStartTime = Date.now();
+    this._loopPoisVisitados = new Set();
+    this._loopActiveRoute = r;
+
     panel = document.createElement('div');
     panel.id = 'loop-active-panel';
-    panel.style.cssText = 'position:fixed;bottom:120px;left:50%;transform:translateX(-50%);z-index:40;background:var(--wh);border-radius:18px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,.55);min-width:280px;max-width:calc(100vw - 32px);border:1px solid var(--bd);animation:fadeUp .3s ease;';
+    panel.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:40;background:var(--wh);border-radius:18px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,.55);min-width:280px;max-width:calc(100vw - 32px);border:1px solid var(--bd);animation:fadeUp .3s ease;';
 
-    const poisHtml = r.pois && r.pois.length
-      ? r.pois.map((p, i) => `
-        <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--bd);">
-          <div style="width:22px;height:22px;border-radius:50%;background:var(--orL);border:1.5px solid var(--or);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--or);flex-shrink:0;">${i+1}</div>
-          <div>
-            <div style="font-size:13px;font-weight:600;color:var(--dk);">${p.em?p.em+' ':''}${p.name}</div>
-            ${p.desc?`<div style="font-size:11px;color:var(--gr);">${p.desc}</div>`:''}
-          </div>
-        </div>`).join('')
-      : '<div style="font-size:12px;color:var(--gr);padding:6px 0;">Sin paradas registradas.</div>';
+    const totalPois = r.pois ? r.pois.length : 0;
 
     panel.innerHTML = `
+      <!-- Header -->
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
         <div style="width:36px;height:36px;border-radius:50%;background:var(--orL);border:2px solid var(--or);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">${r.emoji}</div>
         <div style="flex:1;min-width:0;">
           <div style="font-family:var(--fH);font-size:14px;font-weight:700;color:var(--dk);">${App._esc(r.name)}</div>
-          <div style="font-size:11px;color:var(--or);font-weight:600;">▶ Loop activo · ${r.dist||'—'}</div>
+          <div style="font-size:11px;color:var(--or);font-weight:600;">▶ Loop activo</div>
         </div>
         <button onclick="App._stopNav()" style="width:32px;height:32px;border-radius:9px;border:1.5px solid var(--bd);background:var(--lt);cursor:pointer;display:flex;align-items:center;justify-content:center;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--md)" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
-      <div style="max-height:160px;overflow-y:auto;">${poisHtml}</div>`;
+
+      <!-- Métricas en tiempo real -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px;">
+        <div style="background:var(--bg2);border-radius:10px;padding:8px;text-align:center;">
+          <div id="lap-dist" style="font-size:15px;font-weight:800;color:var(--or);">0 m</div>
+          <div style="font-size:9px;color:var(--gr);margin-top:1px;">Recorrido</div>
+        </div>
+        <div style="background:var(--bg2);border-radius:10px;padding:8px;text-align:center;">
+          <div id="lap-time" style="font-size:15px;font-weight:800;color:var(--dk);">0:00</div>
+          <div style="font-size:9px;color:var(--gr);margin-top:1px;">Tiempo</div>
+        </div>
+        <div style="background:var(--bg2);border-radius:10px;padding:8px;text-align:center;">
+          <div id="lap-pois" style="font-size:15px;font-weight:800;color:var(--dk);">0/${totalPois}</div>
+          <div style="font-size:9px;color:var(--gr);margin-top:1px;">Paradas</div>
+        </div>
+      </div>
+
+      <!-- Barra de progreso -->
+      <div style="height:4px;background:var(--bg2);border-radius:4px;margin-bottom:10px;overflow:hidden;">
+        <div id="lap-progress-bar" style="height:100%;width:0%;background:var(--or);border-radius:4px;transition:width .5s ease;"></div>
+      </div>
+
+      <!-- Próxima parada -->
+      <div id="lap-next-poi" style="display:none;background:var(--orL);border:1px solid var(--or);border-radius:10px;padding:8px 10px;margin-bottom:8px;">
+        <div style="font-size:10px;color:var(--or);font-weight:700;margin-bottom:2px;">📍 PRÓXIMA PARADA</div>
+        <div id="lap-next-name" style="font-size:13px;font-weight:600;color:var(--dk);"></div>
+        <div id="lap-next-dist" style="font-size:11px;color:var(--gr);margin-top:1px;"></div>
+      </div>
+
+      <!-- Lista de paradas -->
+      <div style="max-height:120px;overflow-y:auto;">
+        ${r.pois && r.pois.length ? r.pois.map((p, i) => `
+          <div id="lap-poi-${i}" style="display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--bd);">
+            <div style="width:20px;height:20px;border-radius:50%;background:var(--orL);border:1.5px solid var(--or);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--or);flex-shrink:0;">${i+1}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:12px;font-weight:600;color:var(--dk);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.em?p.em+' ':''}${p.name}</div>
+            </div>
+            <div id="lap-poi-check-${i}" style="display:none;color:#10B981;font-size:14px;">✓</div>
+          </div>`).join('')
+        : '<div style="font-size:12px;color:var(--gr);padding:6px 0;">Sin paradas registradas.</div>'}
+      </div>`;
 
     document.body.appendChild(panel);
+
+    // Iniciar cronómetro
+    this._loopTimer = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - this._loopStartTime) / 1000);
+      const m = Math.floor(elapsed / 60), s = elapsed % 60;
+      const timeEl = document.getElementById('lap-time');
+      if (timeEl) timeEl.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    }, 1000);
+  },
+
+  // Actualizar métricas del loop desde el GPS
+  _updateLoopMetrics(lat, lng) {
+    if (!this._loopStarted || !this._loopActiveRoute) return;
+    const r = this._loopActiveRoute;
+
+    // Distancia recorrida
+    if (this._loopLastPos) {
+      const dlat = (lat - this._loopLastPos.lat) * Math.PI / 180;
+      const dlng = (lng - this._loopLastPos.lng) * Math.PI / 180;
+      const a = Math.sin(dlat/2)**2 + Math.cos(this._loopLastPos.lat*Math.PI/180)*Math.cos(lat*Math.PI/180)*Math.sin(dlng/2)**2;
+      const d = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      if (d < 50) { // ignorar saltos GPS
+        this._loopDistRecorrida = (this._loopDistRecorrida || 0) + d;
+      }
+    }
+    this._loopLastPos = { lat, lng };
+
+    // Actualizar UI distancia
+    const distEl = document.getElementById('lap-dist');
+    if (distEl) {
+      const dm = Math.round(this._loopDistRecorrida || 0);
+      distEl.textContent = dm < 1000 ? `${dm} m` : `${(dm/1000).toFixed(1)} km`;
+    }
+
+    // Progreso en la barra (basado en distancia vs total del loop)
+    const totalM = parseFloat((r.dist||'0').replace(/[^0-9.]/g,'')) * (r.dist && r.dist.includes('km') ? 1000 : 1);
+    if (totalM > 0) {
+      const pct = Math.min(100, Math.round(((this._loopDistRecorrida||0) / totalM) * 100));
+      const bar = document.getElementById('lap-progress-bar');
+      if (bar) bar.style.width = pct + '%';
+    }
+
+    // Detectar paradas cercanas
+    if (r.pois && r.pois.length) {
+      let nextPoiIdx = -1, nextPoiDist = Infinity;
+      r.pois.forEach((p, i) => {
+        if (this._loopPoisVisitados.has(i)) return;
+        if (!p.lat || !p.lng) return;
+        const dlat2 = (lat - p.lat) * Math.PI / 180;
+        const dlng2 = (lng - p.lng) * Math.PI / 180;
+        const a2 = Math.sin(dlat2/2)**2 + Math.cos(p.lat*Math.PI/180)*Math.cos(lat*Math.PI/180)*Math.sin(dlng2/2)**2;
+        const dist = 6371000 * 2 * Math.atan2(Math.sqrt(a2), Math.sqrt(1-a2));
+
+        // Si está a menos de 30m → visitar
+        if (dist < 30) {
+          this._loopPoisVisitados.add(i);
+          const check = document.getElementById(`lap-poi-check-${i}`);
+          const row = document.getElementById(`lap-poi-${i}`);
+          if (check) check.style.display = 'block';
+          if (row) row.style.opacity = '0.5';
+          const total = r.pois.length;
+          const visitados = this._loopPoisVisitados.size;
+          const poisEl = document.getElementById('lap-pois');
+          if (poisEl) poisEl.textContent = `${visitados}/${total}`;
+          // Voz
+          if (this._voiceOn) this._speak(`Parada ${i+1}: ${p.name}. ${p.desc||''}`);
+          this.toast(`📍 ${p.em||'📍'} ${p.name}`);
+        } else if (dist < nextPoiDist) {
+          nextPoiDist = dist;
+          nextPoiIdx = i;
+        }
+      });
+
+      // Mostrar próxima parada
+      const nextEl = document.getElementById('lap-next-poi');
+      const nextName = document.getElementById('lap-next-name');
+      const nextDist = document.getElementById('lap-next-dist');
+      if (nextEl && nextPoiIdx >= 0 && nextPoiDist < 300) {
+        nextEl.style.display = 'block';
+        if (nextName) nextName.textContent = `${r.pois[nextPoiIdx].em||'📍'} ${r.pois[nextPoiIdx].name}`;
+        if (nextDist) nextDist.textContent = `A ${Math.round(nextPoiDist)} m`;
+      } else if (nextEl) {
+        nextEl.style.display = 'none';
+      }
+
+      // Si todas las paradas visitadas → completar loop
+      if (r.pois.length > 0 && this._loopPoisVisitados.size >= r.pois.length) {
+        this._completarLoop(r);
+      }
+    }
+  },
+
+  // ── Completar loop — pantalla de logro ──
+  _completarLoop(r) {
+    if (this._loopCompletado) return; // evitar doble disparo
+    this._loopCompletado = true;
+    clearInterval(this._loopTimer);
+
+    const elapsed = Math.floor((Date.now() - (this._loopStartTime||Date.now())) / 1000);
+    const m = Math.floor(elapsed / 60), s = elapsed % 60;
+    const tiempoTxt = m > 0 ? `${m} min ${s} seg` : `${s} seg`;
+    const dm = Math.round(this._loopDistRecorrida || 0);
+    const distTxt = dm < 1000 ? `${dm} m` : `${(dm/1000).toFixed(1)} km`;
+    const visitados = this._loopPoisVisitados ? this._loopPoisVisitados.size : 0;
+    const totalPois = r.pois ? r.pois.length : 0;
+    const pts = r.pts_reward || 50;
+
+    // Voz de completado
+    if (this._voiceOn) this._speak(`¡Felicitaciones! Completaste ${r.name} en ${tiempoTxt}. Ganaste ${pts} puntos.`);
+
+    // Pantalla de logro
+    const overlay = document.createElement('div');
+    overlay.id = 'loop-logro-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeIn .4s ease;';
+    overlay.innerHTML = `
+      <div style="background:var(--wh);border-radius:24px;padding:28px 22px;width:100%;max-width:340px;text-align:center;position:relative;">
+        <div style="font-size:56px;margin-bottom:8px;">🏆</div>
+        <div style="font-family:var(--fH);font-size:22px;font-weight:800;color:var(--dk);margin-bottom:4px;">¡Loop completado!</div>
+        <div style="font-size:14px;color:var(--gr);margin-bottom:20px;">${App._esc(r.name)}</div>
+
+        <!-- Stats -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+          <div style="background:var(--bg2);border-radius:14px;padding:14px;">
+            <div style="font-size:24px;font-weight:800;color:var(--or);">${distTxt}</div>
+            <div style="font-size:11px;color:var(--gr);margin-top:3px;">Distancia</div>
+          </div>
+          <div style="background:var(--bg2);border-radius:14px;padding:14px;">
+            <div style="font-size:24px;font-weight:800;color:var(--dk);">${tiempoTxt}</div>
+            <div style="font-size:11px;color:var(--gr);margin-top:3px;">Tiempo</div>
+          </div>
+          <div style="background:var(--bg2);border-radius:14px;padding:14px;">
+            <div style="font-size:24px;font-weight:800;color:var(--dk);">${visitados}/${totalPois}</div>
+            <div style="font-size:11px;color:var(--gr);margin-top:3px;">Paradas</div>
+          </div>
+          <div style="background:var(--orL);border:1.5px solid var(--or);border-radius:14px;padding:14px;">
+            <div style="font-size:24px;font-weight:800;color:var(--or);">+${pts}</div>
+            <div style="font-size:11px;color:var(--or);margin-top:3px;">Puntos</div>
+          </div>
+        </div>
+
+        <button onclick="App._logroCompartir('${r.id}')" style="width:100%;padding:13px;border-radius:14px;border:none;background:var(--or);color:#fff;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;">
+          📸 Compartir mi recorrido
+        </button>
+        <button onclick="document.getElementById('loop-logro-overlay').remove();App._stopNav();App._loopCompletado=false;" style="width:100%;padding:11px;border-radius:14px;border:1.5px solid var(--bd);background:transparent;color:var(--dk);font-size:13px;font-weight:600;cursor:pointer;">
+          Cerrar
+        </button>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    // Otorgar puntos
+    this._hwCompletarActividad && this._hwCompletarActividad(r.id, pts);
+  },
+
+  // ── Compartir foto del recorrido ──
+  _logroCompartir(routeId) {
+    this.toast('📸 Generando imagen del recorrido...');
+    try {
+      const canvas = this.mainMap.getCanvas();
+      canvas.toBlob(blob => {
+        if (!blob) { this.toast('No se pudo generar la imagen'); return; }
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `loop-${routeId}-${Date.now()}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.toast('✅ Imagen guardada');
+      }, 'image/png');
+    } catch(e) {
+      this.toast('No se pudo capturar el mapa');
+    }
   },
 
   // ── VOZ DE NAVEGACIÓN ──
