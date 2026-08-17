@@ -430,6 +430,40 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
 .sp-loading span { width:8px; height:8px; border-radius:50%; background:var(--or); animation:dotAnim 1.2s ease-in-out infinite; }
 .sp-loading span:nth-child(2){animation-delay:.2s;} .sp-loading span:nth-child(3){animation-delay:.4s;}
 
+/* ── Panel navegación estilo Waze (abajo) ── */
+#nav-panel, #loop-active-panel {
+  position:fixed !important;
+  bottom:0 !important;
+  left:50% !important;
+  transform:translateX(-50%) !important;
+  width:100% !important;
+  max-width:430px !important;
+  border-radius:20px 20px 0 0 !important;
+  padding:0 !important;
+  box-shadow:0 -4px 24px rgba(0,0,0,0.35) !important;
+  z-index:40 !important;
+  animation:slideUp .3s ease !important;
+  transition:transform .3s ease !important;
+}
+#nav-panel.nav-minimized {
+  transform:translateX(-50%) translateY(calc(100% - 52px)) !important;
+}
+#loop-active-panel.nav-minimized {
+  transform:translateX(-50%) translateY(calc(100% - 52px)) !important;
+}
+@keyframes slideUp {
+  from { transform:translateX(-50%) translateY(100%); }
+  to   { transform:translateX(-50%) translateY(0); }
+}
+.nav-handle-bar {
+  width:36px;height:4px;background:var(--bd);border-radius:4px;
+  margin:10px auto 0;cursor:pointer;
+}
+.nav-minimized-bar {
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px 10px;cursor:pointer;
+}
+
 /* ── Pantalla bienvenida ── */
 /* Pin animado welcome */
 @keyframes wsPinBounce { 0%,100%{transform:translateY(0)} 40%{transform:translateY(-12px)} 60%{transform:translateY(-6px)} }
@@ -476,19 +510,19 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
 
 /* ── Banner instrucción navegación tipo Waze ── */
 #nav-instruction-banner {
-  position:fixed;top:0;left:50%;transform:translateX(-50%);
-  z-index:9980;width:100%;max-width:430px;
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  z-index:9979;width:100%;max-width:430px;
   background:#1C1C1E;color:#fff;
-  padding:48px 16px 14px;
-  display:none;flex-direction:column;gap:4px;
-  box-shadow:0 4px 20px rgba(0,0,0,0.5);
+  padding:14px 16px 14px;
+  display:none;flex-direction:column;gap:0;
   font-family:var(--fB);
+  transition:bottom .3s ease;
 }
 #nav-instruction-banner.nib-show { display:flex; }
-#nib-arrow { font-size:36px;line-height:1; }
-#nib-dist { font-size:28px;font-weight:800;color:#FF5F00; }
-#nib-dir { font-size:14px;color:rgba(255,255,255,0.8);margin-top:2px; }
-#nib-street { font-size:12px;color:rgba(255,255,255,0.5);margin-top:1px; }
+#nib-arrow { font-size:28px;line-height:1;flex-shrink:0; }
+#nib-dist { font-size:26px;font-weight:800;color:#FF5F00; }
+#nib-dir { font-size:13px;color:rgba(255,255,255,0.85);margin-top:1px; }
+#nib-street { font-size:11px;color:rgba(255,255,255,0.45);margin-top:1px; }
 
 /* ── Animaciones splash recorrido ── */
 @keyframes drawRoute {
@@ -2258,15 +2292,18 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 <!-- ════════════ BANNER NAVEGACIÓN ════════════ -->
 <div id="nav-instruction-banner">
   <div style="display:flex;align-items:center;gap:14px;">
-    <div id="nib-arrow">↑</div>
-    <div style="flex:1;">
-      <div id="nib-dist">—</div>
-      <div id="nib-dir">Seguí recto</div>
-      <div id="nib-street"></div>
+    <!-- Flecha dirección -->
+    <div id="nib-arrow" style="font-size:32px;min-width:36px;text-align:center;">→</div>
+    <!-- Info principal -->
+    <div style="flex:1;min-width:0;">
+      <div id="nib-dist" style="font-size:26px;font-weight:800;color:#FF5F00;line-height:1.1;">—</div>
+      <div id="nib-dir" style="font-size:13px;color:rgba(255,255,255,0.85);margin-top:2px;">Seguí recto</div>
+      <div id="nib-street" style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:1px;"></div>
     </div>
-    <div id="nib-loop-dist" style="text-align:right;">
-      <div style="font-size:11px;color:rgba(255,255,255,0.5);">Loop</div>
-      <div style="font-size:14px;font-weight:700;color:#FF5F00;" id="nib-loop-dist-txt">—</div>
+    <!-- Info loop a la derecha -->
+    <div style="text-align:right;flex-shrink:0;">
+      <div style="font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:.5px;">LOOP</div>
+      <div id="nib-loop-dist-txt" style="font-size:13px;font-weight:700;color:#FF5F00;">—</div>
     </div>
   </div>
 </div>
@@ -2735,6 +2772,10 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <button onclick="App._verEnMapa()" style="flex:0 0 auto;padding:0 16px;height:52px;border-radius:14px;border:2px solid var(--or);background:var(--orL);color:var(--or);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;font-family:var(--fH);">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
       Ver mapa
+    </button>
+    <button onclick="App._cachearLoopOffline()" title="Guardar mapa para usar sin internet"
+      style="width:40px;height:40px;border-radius:12px;border:1.5px solid var(--bd);background:var(--lt);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--md)" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     </button>
     <button class="btn-go" style="flex:1;" onclick="App.startLoop()">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -8773,27 +8814,121 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if (!panel) {
       panel = document.createElement('div');
       panel.id = 'nav-panel';
-      panel.style.cssText = 'position:fixed;bottom:120px;left:50%;transform:translateX(-50%);z-index:40;background:var(--wh);border-radius:16px;padding:12px 16px;box-shadow:0 8px 32px rgba(0,0,0,.55);display:flex;align-items:center;gap:12px;min-width:270px;max-width:calc(100vw - 32px);border:1px solid var(--bd);animation:fadeUp .3s ease;';
+      panel.style.background = 'var(--wh)';
       document.body.appendChild(panel);
     }
     const voiceActive = this._voiceOn;
     panel.innerHTML = `
-      <div style="width:40px;height:40px;border-radius:50%;background:var(--or);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;">${mode.emoji}</div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-family:var(--fH);font-size:13px;font-weight:700;color:var(--dk);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.emoji} ${App._esc(r.name)}</div>
-        <div style="font-size:12px;color:var(--gr);margin-top:2px;">${mode.label} · ${dist} · ~${durMin} min</div>
-      </div>
-      <button onclick="App._toggleVoice()" id="voice-btn" title="${voiceActive?'Silenciar voz':'Activar voz'}"
-        style="width:36px;height:36px;border-radius:10px;border:1.5px solid ${voiceActive?'var(--or)':'var(--bd)'};background:${voiceActive?'var(--orL)':'var(--lt)'};cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;">
-        ${voiceActive
-          ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2.2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>'
-          : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--md)" stroke-width="2.2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>'}
-      </button>
-      <button onclick="App._stopNav()" title="Cancelar ruta"
-        style="width:36px;height:36px;border-radius:10px;border:1.5px solid var(--bd);background:var(--lt);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--md)" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>`;
-    panel.style.display = 'flex';
+      <!-- Handle para minimizar -->
+      <div class="nav-handle-bar" onclick="App._toggleNavMinimize('nav-panel', '${r.emoji} ${App._esc(r.name)}', '${dist} · ~${durMin} min')"></div>
+
+      <!-- Contenido completo -->
+      <div id="nav-panel-content" style="padding:12px 16px 20px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:44px;height:44px;border-radius:50%;background:var(--or);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px;">${mode.emoji}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-family:var(--fH);font-size:14px;font-weight:700;color:var(--dk);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.emoji} ${App._esc(r.name)}</div>
+            <div style="font-size:12px;color:var(--gr);margin-top:2px;">${mode.label} · ${dist} · ~${durMin} min</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button onclick="App._toggleVoice()" id="voice-btn"
+              style="width:38px;height:38px;border-radius:11px;border:1.5px solid ${voiceActive?'var(--or)':'var(--bd)'};background:${voiceActive?'var(--orL)':'var(--lt)'};cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              ${voiceActive
+                ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2.2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>'
+                : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--md)" stroke-width="2.2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>'}
+            </button>
+            <button onclick="App._stopNav()"
+              style="width:38px;height:38px;border-radius:11px;border:1.5px solid var(--bd);background:var(--lt);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--md)" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>`;
+    panel.style.display = 'block';
+  },
+
+  // ── Modo sin internet: cachear tiles del loop ──
+  async _cachearLoopOffline() {
+    const r = this.routes.find(x => x.id === this.selId);
+    if (!r || !r.pts || !r.pts.length) return this.toast('No hay loop seleccionado');
+
+    if (!('caches' in window)) return this.toast('Tu navegador no soporta caché offline');
+
+    this.toast('📥 Guardando mapa para uso sin internet...');
+
+    // Calcular bbox del loop
+    const lats = r.pts.map(p => Array.isArray(p) ? p[0] : p.lat);
+    const lngs = r.pts.map(p => Array.isArray(p) ? p[1] : p.lng);
+    const minLat = Math.min(...lats) - 0.005;
+    const maxLat = Math.max(...lats) + 0.005;
+    const minLng = Math.min(...lngs) - 0.005;
+    const maxLng = Math.max(...lngs) + 0.005;
+
+    // Generar URLs de tiles para zoom 14, 15, 16
+    const tileUrls = [];
+    for (let z = 14; z <= 16; z++) {
+      const x1 = Math.floor((minLng + 180) / 360 * Math.pow(2, z));
+      const x2 = Math.floor((maxLng + 180) / 360 * Math.pow(2, z));
+      const y1 = Math.floor((1 - Math.log(Math.tan(maxLat * Math.PI / 180) + 1 / Math.cos(maxLat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, z));
+      const y2 = Math.floor((1 - Math.log(Math.tan(minLat * Math.PI / 180) + 1 / Math.cos(minLat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, z));
+      for (let x = x1; x <= x2; x++) {
+        for (let y = y1; y <= y2; y++) {
+          tileUrls.push(`https://tile.openstreetmap.org/${z}/${x}/${y}.png`);
+        }
+      }
+    }
+
+    // Limitar a 200 tiles para no sobrecargar
+    const urlsToCache = tileUrls.slice(0, 200);
+    let cached = 0, failed = 0;
+
+    try {
+      const cache = await caches.open(`loop-offline-${r.id}`);
+      for (const url of urlsToCache) {
+        try {
+          await cache.add(url);
+          cached++;
+        } catch(e) { failed++; }
+      }
+      this.toast(`✅ ${cached} tiles guardados${failed ? ` (${failed} fallaron)` : ''}. Loop disponible sin internet.`);
+    } catch(e) {
+      this.toast('❌ Error al guardar el mapa offline');
+    }
+  },
+
+  _toggleNavMinimize(panelId, title, subtitle) {
+    const panel = document.getElementById(panelId);
+    if (!panel) return;
+    const isMin = panel.classList.toggle('nav-minimized');
+    setTimeout(() => this._adjustBannerPosition(), 320); // después de la animación
+    if (isMin) {
+      // Mostrar barra mínima
+      let minBar = document.getElementById(panelId + '-minbar');
+      if (!minBar) {
+        minBar = document.createElement('div');
+        minBar.id = panelId + '-minbar';
+        minBar.className = 'nav-minimized-bar';
+        minBar.innerHTML = `
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--or);animation:pulse 1.5s infinite;"></div>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--dk);">${title}</div>
+              <div style="font-size:11px;color:var(--gr);">${subtitle}</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--or);font-weight:600;">Expandir ↑</div>`;
+        minBar.onclick = () => App._toggleNavMinimize(panelId, title, subtitle);
+        panel.insertBefore(minBar, panel.firstChild);
+      }
+      minBar.style.display = 'flex';
+      const content = document.getElementById(panelId + '-content');
+      if (content) content.style.display = 'none';
+    } else {
+      const minBar = document.getElementById(panelId + '-minbar');
+      if (minBar) minBar.style.display = 'none';
+      const content = document.getElementById(panelId + '-content');
+      if (content) content.style.display = 'block';
+    }
   },
 
   // Cancelar navegación
@@ -8837,11 +8972,17 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     panel = document.createElement('div');
     panel.id = 'loop-active-panel';
-    panel.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:40;background:var(--wh);border-radius:18px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,.55);min-width:280px;max-width:calc(100vw - 32px);border:1px solid var(--bd);animation:fadeUp .3s ease;';
+    panel.style.background = 'var(--wh)';
 
     const totalPois = r.pois ? r.pois.length : 0;
 
+    const loopTitle = `${r.emoji} ${App._esc(r.name)}`;
     panel.innerHTML = `
+      <!-- Handle para minimizar -->
+      <div class="nav-handle-bar" onclick="App._toggleNavMinimize('loop-active-panel', '${loopTitle}', 'Loop activo')"></div>
+
+      <!-- Contenido completo -->
+      <div id="loop-active-panel-content" style="padding:12px 16px 20px;">
       <!-- Header -->
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
         <div style="width:36px;height:36px;border-radius:50%;background:var(--orL);border:2px solid var(--or);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">${r.emoji}</div>
@@ -8893,6 +9034,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
             <div id="lap-poi-check-${i}" style="display:none;color:#10B981;font-size:14px;">✓</div>
           </div>`).join('')
         : '<div style="font-size:12px;color:var(--gr);padding:6px 0;">Sin paradas registradas.</div>'}
+      </div>
       </div>`;
 
     document.body.appendChild(panel);
@@ -9172,6 +9314,24 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if (distEl) distEl.textContent = distTxt;
     if (dirEl) dirEl.textContent = dir;
     if (streetEl) streetEl.textContent = street ? `por ${street}` : '';
+    // Posicionar encima del panel inferior
+    this._adjustBannerPosition();
+  },
+
+  _adjustBannerPosition() {
+    const banner = document.getElementById('nav-instruction-banner');
+    if (!banner) return;
+    const navPanel = document.getElementById('nav-panel');
+    const loopPanel = document.getElementById('loop-active-panel');
+    const activePanel = loopPanel || navPanel;
+    if (activePanel && !activePanel.classList.contains('nav-minimized')) {
+      const h = activePanel.offsetHeight;
+      banner.style.bottom = h + 'px';
+    } else if (activePanel && activePanel.classList.contains('nav-minimized')) {
+      banner.style.bottom = '52px';
+    } else {
+      banner.style.bottom = '0px';
+    }
   },
 
   _hideNavBanner() {
