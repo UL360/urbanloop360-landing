@@ -6664,9 +6664,17 @@ const App = {
             const panel = document.getElementById('nav-panel');
             if (panel) panel.remove();
 
-            // ── Redibujar el trazado del loop (se borraba con _removeNavLine) ──
-            this._drawRoute(r);
-            this._showOnlyRoute(r.id);
+            // ── Restaurar visibilidad del loop sin redibujar ──
+            const layerIds2 = ['line-' + r.id, 'line-' + r.id + '-border', 'line-' + r.id + '-glow'];
+            layerIds2.forEach(lid => {
+              try { if (this.mainMap.getLayer(lid)) this.mainMap.setLayoutProperty(lid, 'visibility', 'visible'); } catch(e) {}
+            });
+            if (this._startMarkers && this._startMarkers[r.id]) {
+              try { this._startMarkers[r.id].getElement().style.display = ''; } catch(e) {}
+            }
+            if (this._poiMarkers && this._poiMarkers[r.id]) {
+              this._poiMarkers[r.id].forEach(m => { try { m.getElement().style.display = ''; } catch(e) {} });
+            }
 
             const allCoords = r.pts.map(p => Array.isArray(p)?[p[1],p[0]]:[p.lng,p.lat]);
             const lngs = allCoords.map(c=>c[0]), lts = allCoords.map(c=>c[1]);
@@ -8945,10 +8953,20 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     this._lastReroute = null;
     this._voiceNavRouteCoords = null;
     this._visitedPois = new Set();
-    // Redibujar el loop para que quede visible al cancelar
+    // Restaurar visibilidad del loop sin redibujar (evita pins duplicados)
     if (r) {
-      this._drawRoute(r);
-      this._showOnlyRoute(r.id);
+      // Mostrar capas del loop si estaban ocultas
+      const layerIds = ['line-' + r.id, 'line-' + r.id + '-border', 'line-' + r.id + '-glow'];
+      layerIds.forEach(lid => {
+        try { if (this.mainMap.getLayer(lid)) this.mainMap.setLayoutProperty(lid, 'visibility', 'visible'); } catch(e) {}
+      });
+      // Mostrar markers del loop
+      if (this._startMarkers && this._startMarkers[r.id]) {
+        try { this._startMarkers[r.id].getElement().style.display = ''; } catch(e) {}
+      }
+      if (this._poiMarkers && this._poiMarkers[r.id]) {
+        this._poiMarkers[r.id].forEach(m => { try { m.getElement().style.display = ''; } catch(e) {} });
+      }
     }
     this._hideNavBanner();
     if (this._loopTimer) { clearInterval(this._loopTimer); this._loopTimer = null; }
