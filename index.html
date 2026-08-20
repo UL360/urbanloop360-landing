@@ -8780,6 +8780,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
         this._showNavPanel(r, distTxt, durMin, mode);
 
+        // ── Modo navegación: UI limpia ──
+        this._enterNavMode();
+
         // ── Waze-style: arrancar desde el pin del usuario ──
         // Calcular bearing inicial: desde tu posición apuntando al inicio del loop
         const navBearing = Math.atan2(
@@ -8978,6 +8981,109 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     }
   },
 
+  // ── Entrar en modo navegación: UI limpia estilo Waze ──
+  _enterNavMode() {
+    if (this._navModeActive) return; // ya activo
+    this._navModeActive = true;
+
+    // 1. Guardar estado del sidebar y cerrarlo
+    this._navPrevSbState = this._sbState;
+    this._sbApply(0); // sidebar completamente oculto
+
+    // 2. Ocultar botón hamburguesa (menu-btn)
+    const menuBtn = document.getElementById('menu-btn');
+    if (menuBtn) { menuBtn.style.opacity = '0'; menuBtn.style.pointerEvents = 'none'; }
+
+    // 3. Ocultar controles del mapa no esenciales
+    const hideIds = ['btn-3d', 'btn-report-urban', 'sat-toggle-btn', 'btn-vistas', 'map-theme-toggle-btn', 'main-compass'];
+    hideIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.dataset.navHidden = '1'; el.style.opacity = '0'; el.style.pointerEvents = 'none'; el.style.transition = 'opacity .3s'; }
+    });
+
+    // 4. Ocultar markers de TODOS los loops excepto el que se navega
+    const activeId = this._voiceNavRoute && this._voiceNavRoute.id;
+    if (this._startMarkers) {
+      Object.entries(this._startMarkers).forEach(([id, m]) => {
+        if (id !== activeId) try { m.getElement().style.display = 'none'; } catch(e) {}
+      });
+    }
+    if (this._poiMarkers) {
+      Object.entries(this._poiMarkers).forEach(([id, arr]) => {
+        if (id !== activeId) arr.forEach(m => { try { m.getElement().style.display = 'none'; } catch(e) {} });
+      });
+    }
+
+    // 5. Ocultar capas de otros loops en el mapa
+    if (this.routes) {
+      this.routes.forEach(r => {
+        if (r.id === activeId) return;
+        ['line-'+r.id, 'line-'+r.id+'-border', 'line-'+r.id+'-glow'].forEach(lid => {
+          try { if (this.mainMap.getLayer(lid)) this.mainMap.setLayoutProperty(lid, 'visibility', 'none'); } catch(e) {}
+        });
+      });
+    }
+
+    // 6. Agregar botón "salir del modo nav" flotante (esquina superior derecha)
+    if (!document.getElementById('nav-exit-btn')) {
+      const btn = document.createElement('button');
+      btn.id = 'nav-exit-btn';
+      btn.innerHTML = '✕ Salir';
+      btn.style.cssText = [
+        'position:fixed','top:14px','right:14px','z-index:300',
+        'background:rgba(30,30,38,.88)','color:#fff',
+        'border:1.5px solid var(--bd)','border-radius:12px',
+        'padding:8px 14px','font-size:13px','font-weight:700',
+        'cursor:pointer','backdrop-filter:blur(8px)',
+        'font-family:var(--fH)','letter-spacing:.2px',
+        'display:flex','align-items:center','gap:6px',
+        'box-shadow:0 4px 16px rgba(0,0,0,.4)',
+        'transition:background .2s'
+      ].join(';');
+      btn.onclick = () => App._stopNav();
+      document.body.appendChild(btn);
+    }
+  },
+
+  // ── Salir del modo navegación: restaurar UI ──
+  _exitNavMode() {
+    if (!this._navModeActive) return;
+    this._navModeActive = false;
+
+    // 1. Restaurar sidebar al estado previo
+    this._sbApply(this._navPrevSbState !== undefined ? this._navPrevSbState : 1);
+
+    // 2. Restaurar menu-btn
+    const menuBtn = document.getElementById('menu-btn');
+    if (menuBtn) { menuBtn.style.opacity = ''; menuBtn.style.pointerEvents = ''; }
+
+    // 3. Restaurar controles del mapa
+    document.querySelectorAll('[data-nav-hidden="1"]').forEach(el => {
+      el.style.opacity = ''; el.style.pointerEvents = ''; el.removeAttribute('data-nav-hidden');
+    });
+
+    // 4. Restaurar markers de todos los loops
+    if (this._startMarkers) {
+      Object.values(this._startMarkers).forEach(m => { try { m.getElement().style.display = ''; } catch(e) {} });
+    }
+    if (this._poiMarkers) {
+      Object.values(this._poiMarkers).flat().forEach(m => { try { m.getElement().style.display = ''; } catch(e) {} });
+    }
+
+    // 5. Restaurar capas de todos los loops
+    if (this.routes) {
+      this.routes.forEach(r => {
+        ['line-'+r.id, 'line-'+r.id+'-border', 'line-'+r.id+'-glow'].forEach(lid => {
+          try { if (this.mainMap.getLayer(lid)) this.mainMap.setLayoutProperty(lid, 'visibility', 'visible'); } catch(e) {}
+        });
+      });
+    }
+
+    // 6. Quitar botón de salida
+    const exitBtn = document.getElementById('nav-exit-btn');
+    if (exitBtn) exitBtn.remove();
+  },
+
   // Cancelar navegación
   _stopNav() {
     const r = this._voiceNavRoute || (this.selId ? this.routes.find(x => x.id === this.selId) : null);
@@ -9012,6 +9118,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     this._loopActiveRoute = null;
     this._loopDistRecorrida = 0;
     this._loopStartTime = null;
+    this._exitNavMode();
     this.toast('Navegación cancelada');
   },
 
@@ -9192,6 +9299,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if (this._loopCompletado) return; // evitar doble disparo
     this._loopCompletado = true;
     clearInterval(this._loopTimer);
+    this._exitNavMode(); // restaurar UI al completar el loop
 
     const elapsed = Math.floor((Date.now() - (this._loopStartTime||Date.now())) / 1000);
     const m = Math.floor(elapsed / 60), s = elapsed % 60;
