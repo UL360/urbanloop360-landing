@@ -6636,6 +6636,16 @@ const App = {
         this._trimNavLine(lng, lat);
       }
 
+      // ── Instrucciones de voz por GPS real (reemplaza setTimeout) ──
+      if (this._voiceSteps && !this._loopStarted) {
+        this._checkVoiceStepsGPS(lat, lng);
+      }
+
+      // ── ETA y distancia restante en vivo en el panel ──
+      if (this._navLine && this._navLine.length && this._voiceNavRouteCoords && !this._loopStarted) {
+        this._updateNavETA(lat, lng);
+      }
+
       // ── Detectar llegada al POI de inicio del loop ──
       if (this._navLine && this._navLine.length && this._voiceNavRoute && !this._loopStarted) {
         const r = this._voiceNavRoute;
@@ -8839,12 +8849,14 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       <div class="nav-handle-bar" onclick="App._toggleNavMinimize('nav-panel', '${r.emoji} ${App._esc(r.name)}', '${dist} · ~${durMin} min')"></div>
 
       <!-- Contenido completo -->
-      <div id="nav-panel-content" style="padding:12px 16px 20px;">
-        <div style="display:flex;align-items:center;gap:12px;">
+      <div id="nav-panel-content" style="padding:12px 16px 16px;">
+
+        <!-- Fila principal: modo + nombre + botones -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
           <div style="width:44px;height:44px;border-radius:50%;background:var(--or);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px;">${mode.emoji}</div>
           <div style="flex:1;min-width:0;">
             <div style="font-family:var(--fH);font-size:14px;font-weight:700;color:var(--dk);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.emoji} ${App._esc(r.name)}</div>
-            <div style="font-size:12px;color:var(--gr);margin-top:2px;">${mode.label} · ${dist} · ~${durMin} min</div>
+            <div style="font-size:12px;color:var(--gr);margin-top:2px;">${mode.label}</div>
           </div>
           <div style="display:flex;gap:6px;">
             <button onclick="App._toggleVoice()" id="voice-btn"
@@ -8859,6 +8871,25 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
             </button>
           </div>
         </div>
+
+        <!-- Fila ETA en vivo -->
+        <div style="display:flex;gap:8px;">
+          <div style="flex:1;background:var(--bg2);border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <div>
+              <div id="nav-eta-min" style="font-family:var(--fH);font-size:15px;font-weight:700;color:var(--dk);">~${durMin} min</div>
+              <div style="font-size:10px;color:var(--gr);margin-top:1px;">tiempo estimado</div>
+            </div>
+          </div>
+          <div style="flex:1;background:var(--bg2);border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--or)" stroke-width="2.2"><path d="M3 12h18M3 6l9-3 9 3M3 18l9 3 9-3"/></svg>
+            <div>
+              <div id="nav-eta-dist" style="font-family:var(--fH);font-size:15px;font-weight:700;color:var(--dk);">${dist}</div>
+              <div style="font-size:10px;color:var(--gr);margin-top:1px;">distancia restante</div>
+            </div>
+          </div>
+        </div>
+
       </div>`;
     panel.style.display = 'block';
   },
@@ -8929,7 +8960,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
             <div style="width:8px;height:8px;border-radius:50%;background:var(--or);animation:pulse 1.5s infinite;"></div>
             <div>
               <div style="font-size:13px;font-weight:700;color:var(--dk);">${title}</div>
-              <div style="font-size:11px;color:var(--gr);">${subtitle}</div>
+              <div class="nav-min-sub" style="font-size:11px;color:var(--gr);">${subtitle}</div>
             </div>
           </div>
           <div style="font-size:11px;color:var(--or);font-weight:600;">Expandir ↑</div>`;
@@ -9246,19 +9277,31 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     mode = mode || this._navModes[this._navMode] || this._navModes.foot;
     this._voiceOn = true;
     this._voiceNavRoute = r;
+    this._navMode = this._navMode || 'foot';
+    this._navModeSpeed = (mode.speed || 5) / 3.6; // km/h → m/s para ETA
 
-    // Mensaje de inicio completo
+    // Mensaje de inicio
     const poiCount = r.pois && r.pois.length ? r.pois.length : 0;
-    const firstPoi = r.pois && r.pois.length ? r.pois[0].name : null;
     let msg = `Iniciando ${App._esc(r.name)}. `;
     msg += `A ${dist}, aproximadamente ${durMin} minuto${durMin !== 1 ? 's' : ''}.`;
     if (poiCount > 0) msg += ` ${poiCount} parada${poiCount !== 1 ? 's' : ''} en el recorrido.`;
     this._speak(msg);
 
     if (steps && steps.length) {
-      this._voiceSteps = steps.filter(s => s.maneuver && s.maneuver.type !== 'arrive' && s.distance > 15);
+      // Guardar steps con coordenadas del giro (maneuver.location = [lng,lat])
+      this._voiceSteps = steps
+        .filter(s => s.maneuver && s.maneuver.type !== 'arrive' && s.distance > 15)
+        .map(s => ({
+          type:     s.maneuver.type,
+          modifier: s.maneuver.modifier || '',
+          distance: s.distance,
+          name:     s.name || '',
+          // Coordenada exacta donde ocurre el giro
+          loc:      s.maneuver.location // [lng, lat]
+        }));
       this._voiceIdx = 0;
-      this._scheduleNextVoiceStep();
+      // Fase por step: 0 = pendiente pre-anuncio, 1 = pre-anunciado, 2 = anunciado "ahora"
+      this._voiceStepPhase = new Array(this._voiceSteps.length).fill(0);
     }
   },
 
@@ -9274,39 +9317,114 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     return dirs[key] || dirs[type] || 'Continuá';
   },
 
-  _scheduleNextVoiceStep() {
-    if (!this._voiceOn || !this._voiceSteps) return;
-    if (this._voiceIdx >= this._voiceSteps.length) {
-      // Se terminaron los steps de navegación: NO anunciar llegada aquí.
-      // El mensaje "¡Llegaste! ¡Que lo disfrutes!" lo dispara el GPS
-      // cuando distToStart < 5m (línea de detección de llegada real).
-      // Evitamos el mensaje prematuro que se adelantaba a la realidad.
-      return;
-    }
-    const step = this._voiceSteps[this._voiceIdx++];
-    const distM = Math.round(step.distance);
-    const distTxt = distM < 100 ? `en ${distM} m` : distM < 1000 ? `en ${distM} m` : `en ${(distM/1000).toFixed(1)} km`;
-    const distVoz = distM < 100 ? `en ${distM} metros` : distM < 1000 ? `en ${distM} metros` : `en ${(distM/1000).toFixed(1)} kilómetros`;
-    const dir = this._voiceStepDir(step.maneuver.type, step.maneuver.modifier);
-    const street = step.name && step.name.trim() && step.name !== '' ? step.name : '';
-    const msg = `${distVoz}, ${dir}${street ? ' por ' + street : ''}.`;
-    // Delay basado en velocidad peatonal (~1.3 m/s) más margen de reacción.
-    // Anunciamos la instrucción cuando el usuario está a ~15 segundos del giro,
-    // pero nunca antes de 5 segundos ni después de 30.
-    const walkTimeSec = distM / 1.3;
-    const announceSec = Math.max(5, Math.min(30, walkTimeSec - 12));
-    const delay = (this._voiceIdx === 1) ? 3000 : announceSec * 1000;
+  // ── Motor de voz basado en GPS real (se llama en cada ping de posición) ──
+  // Reemplaza el sistema de setTimeout — ahora las instrucciones se disparan
+  // cuando el usuario realmente está a distancia del giro, no por tiempo fijo.
+  _checkVoiceStepsGPS(userLat, userLng) {
+    if (!this._voiceOn || !this._voiceSteps || !this._voiceStepPhase) return;
+    if (this._loopStarted) return; // el loop ya empezó, no seguir con pasos de nav
 
-    // Actualizar banner visual
-    this._updateNavBanner(distTxt, dir, street, step.maneuver.type, step.maneuver.modifier);
+    // Distancia haversine entre dos coordenadas
+    const haverDist = (lat1, lng1, lat2, lng2) => {
+      const R = 6371000;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLng = (lng2 - lng1) * Math.PI / 180;
+      const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    };
 
-    setTimeout(() => {
-      if (this._voiceOn) {
-        this._speak(msg, () => this._scheduleNextVoiceStep());
-      } else {
-        this._scheduleNextVoiceStep();
+    for (let i = this._voiceIdx; i < this._voiceSteps.length; i++) {
+      const step = this._voiceSteps[i];
+      if (!step.loc) continue;
+      const phase = this._voiceStepPhase[i];
+      if (phase >= 2) { // ya completado este step
+        if (i === this._voiceIdx) this._voiceIdx++;
+        continue;
       }
-    }, delay);
+
+      const distToTurn = haverDist(userLat, userLng, step.loc[1], step.loc[0]);
+      const dir   = this._voiceStepDir(step.type, step.modifier);
+      const street = step.name ? ` por ${step.name}` : '';
+
+      // PRE-ANUNCIO: entre 150m y 250m del giro (solo si no fue anunciado)
+      if (phase === 0 && distToTurn <= 200 && distToTurn > 35) {
+        this._voiceStepPhase[i] = 1;
+        const distVoz = distToTurn < 1000
+          ? `En ${Math.round(distToTurn)} metros`
+          : `En ${(distToTurn/1000).toFixed(1)} kilómetros`;
+        const msg = `${distVoz}, ${dir}${street}.`;
+        const distTxt = distToTurn < 1000 ? `${Math.round(distToTurn)} m` : `${(distToTurn/1000).toFixed(1)} km`;
+        this._updateNavBanner(distTxt, dir, step.name, step.type, step.modifier);
+        this._speak(msg);
+        break; // un anuncio por ciclo GPS
+      }
+
+      // ANUNCIO FINAL: a menos de 35m del giro — "ahora"
+      if (phase <= 1 && distToTurn <= 35) {
+        this._voiceStepPhase[i] = 2;
+        if (i === this._voiceIdx) this._voiceIdx++;
+        const msg = `${dir} ahora${street}.`;
+        this._updateNavBanner('ya', dir, step.name, step.type, step.modifier);
+        this._speak(msg);
+        break;
+      }
+
+      // Si aún está lejos, solo actualizar el banner con la distancia (sin hablar)
+      if (phase === 0 && distToTurn > 200) {
+        const distTxt = distToTurn < 1000 ? `${Math.round(distToTurn)} m` : `${(distToTurn/1000).toFixed(1)} km`;
+        this._updateNavBanner(distTxt, dir, step.name, step.type, step.modifier);
+      }
+      break; // procesar solo el step más próximo
+    }
+  },
+
+  // ── Calcular distancia restante al destino desde polilínea ──
+  _navDistRestante(userLat, userLng) {
+    const coords = this._voiceNavRouteCoords;
+    if (!coords || coords.length < 2) return null;
+
+    const haverDist = (lat1, lng1, lat2, lng2) => {
+      const R = 6371000;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLng = (lng2 - lng1) * Math.PI / 180;
+      const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    };
+
+    // Encontrar punto más cercano en la polilínea
+    let closestIdx = 0, closestDist = Infinity;
+    for (let i = 0; i < coords.length; i++) {
+      const d = haverDist(userLat, userLng, coords[i][1], coords[i][0]);
+      if (d < closestDist) { closestDist = d; closestIdx = i; }
+    }
+
+    // Sumar segmentos restantes
+    let total = 0;
+    for (let i = closestIdx; i < coords.length - 1; i++) {
+      total += haverDist(coords[i][1], coords[i][0], coords[i+1][1], coords[i+1][0]);
+    }
+    return total; // en metros
+  },
+
+  // ── Actualizar ETA y distancia en el panel de navegación ──
+  _updateNavETA(userLat, userLng) {
+    const dist = this._navDistRestante(userLat, userLng);
+    if (dist === null) return;
+    const speed = this._navModeSpeed || 1.4; // m/s
+    const etaSec = dist / speed;
+    const etaMin = Math.round(etaSec / 60);
+    const distTxt = dist < 1000 ? `${Math.round(dist)} m` : `${(dist/1000).toFixed(1)} km`;
+    const etaTxt  = etaMin <= 1 ? 'menos de 1 min' : `~${etaMin} min`;
+
+    // Actualizar elementos del panel
+    const elDist = document.getElementById('nav-eta-dist');
+    const elEta  = document.getElementById('nav-eta-min');
+    if (elDist) elDist.textContent = distTxt;
+    if (elEta)  elEta.textContent  = etaTxt;
+
+    // También actualizar la barra minimizada si existe
+    const minSub = document.querySelector('#nav-panel-minbar .nav-min-sub');
+    if (minSub) minSub.textContent = `${distTxt} · ${etaTxt}`;
   },
 
   _navArrowIcon(type, modifier) {
