@@ -6596,31 +6596,33 @@ const App = {
           this._lastMapMove = now;
 
           // Bearing del mapa:
-          // - Con brújula activa: bearing = compassHeading (la dirección que mirás
-          //   queda arriba en pantalla — ver fix de inversión Este/Oeste)
-          // - Sin brújula: el mapa mantiene su orientación actual (norte fijo arriba),
-          //   "Mi ubicación" solo centra y marca dónde estás parado, no rota.
+          // - En modo navegación activa: usar gpsHeading (dirección de movimiento)
+          //   para que la ruta quede siempre "hacia arriba" como Waze/Google Maps.
+          //   Si gpsHeading no está disponible (quieto), mantener el bearing actual.
+          // - Con brújula activa (sin nav): bearing = compassHeading
+          // - Sin nada: mantener orientación actual
           let bearing = this.mainMap.getBearing();
-          if (this._mapRotating && this._compassHeading != null) {
-            bearing = this._compassHeading;  // dirección real que mirás queda arriba
+          if (this._navModeActive && gpsHeading != null && !isNaN(gpsHeading)) {
+            bearing = gpsHeading; // dirección de movimiento real queda arriba
+          } else if (this._mapRotating && this._compassHeading != null) {
+            bearing = this._compassHeading;
           }
-          // (el auto-rotate por gpsHeading fue removido — solo la brújula puede rotar el mapa)
 
-          // Pitch: 50 en 3D, 0 en followMe normal (sin inclinar de más)
-          const followPitch3d = this._is3D ? 50 : (this._followMe ? 0 : this.mainMap.getPitch());
+          // Pitch: 45 en navegación activa, 50 en 3D, 0 en followMe normal
+          const followPitch3d = this._navModeActive ? 45 : (this._is3D ? 50 : (this._followMe ? 0 : this.mainMap.getPitch()));
           this.mainMap.easeTo({
             center: [lng, lat],
             bearing,
             pitch: followPitch3d,
             zoom: Math.max(this.mainMap.getZoom(), 16),
             duration: 1200,
-            easing: t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t  // ease in-out suave
+            easing: t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t
           });
 
-          // SVG brújula: mostrar hacia dónde está el norte real
-          // Si bearing del mapa = -compassHeading, entonces la aguja apunta a -bearing
+          // SVG brújula principal y brújula de nav
           const svgMain = document.getElementById('main-compass-svg');
           if (svgMain) svgMain.style.transform = `rotate(${-bearing}deg)`;
+          // nav-compass-svg se actualiza por RAF en _enterNavMode
         }
       }
 
@@ -8818,11 +8820,13 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         this._enterNavMode();
 
         // ── Waze-style: arrancar desde el pin del usuario ──
-        // Calcular bearing inicial: desde tu posición apuntando al inicio del loop
-        const navBearing = Math.atan2(
-          loopStartCoord[0] - uLL.lng,
-          loopStartCoord[1] - uLL.lat
-        ) * 180 / Math.PI;
+        // Bearing geodésico correcto: desde tu posición al inicio del loop
+        const _toRad = d => d * Math.PI / 180;
+        const _φ1 = _toRad(uLL.lat), _φ2 = _toRad(loopStartCoord[1]);
+        const _Δλ = _toRad(loopStartCoord[0] - uLL.lng);
+        const _y = Math.sin(_Δλ) * Math.cos(_φ2);
+        const _x = Math.cos(_φ1) * Math.sin(_φ2) - Math.sin(_φ1) * Math.cos(_φ2) * Math.cos(_Δλ);
+        const navBearing = (Math.atan2(_y, _x) * 180 / Math.PI + 360) % 360;
 
         // Activar followMe automáticamente si no está activo
         if (!this._followMe) {
@@ -9029,11 +9033,50 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if (menuBtn) { menuBtn.style.opacity = '0'; menuBtn.style.pointerEvents = 'none'; }
 
     // 3. Ocultar controles del mapa no esenciales
+    // locate-btn y una brújula dedicada de navegación se mantienen visibles
     const hideIds = ['btn-3d', 'btn-report-urban', 'sat-toggle-btn', 'btn-vistas', 'map-theme-toggle-btn', 'main-compass'];
     hideIds.forEach(id => {
       const el = document.getElementById(id);
       if (el) { el.dataset.navHidden = '1'; el.style.opacity = '0'; el.style.pointerEvents = 'none'; el.style.transition = 'opacity .3s'; }
     });
+
+    // Asegurar que locate-btn sea visible y activo durante la navegación
+    const locBtn = document.getElementById('locate-btn');
+    if (locBtn) { locBtn.style.opacity = '1'; locBtn.style.pointerEvents = 'auto'; }
+
+    // Brújula compacta dedicada a la navegación (norte fijo o rotativo con el mapa)
+    if (!document.getElementById('nav-compass-btn')) {
+      const cmp = document.createElement('button');
+      cmp.id = 'nav-compass-btn';
+      cmp.title = 'Orientar norte';
+      cmp.style.cssText = [
+        'position:fixed','top:68px','right:14px','z-index:300',
+        'width:44px','height:44px','border-radius:14px',
+        'background:rgba(28,28,30,.92)','border:1.5px solid var(--or)',
+        'color:#fff','cursor:pointer',
+        'display:flex','align-items:center','justify-content:center',
+        'box-shadow:0 4px 12px rgba(0,0,0,.4)',
+        'backdrop-filter:blur(8px)',
+        'transition:background .2s'
+      ].join(';');
+      cmp.innerHTML = `<svg id="nav-compass-svg" width="22" height="22" viewBox="0 0 24 24" style="transition:transform .3s;transform-origin:12px 12px;">
+        <path d="M12 2L8 10h8L12 2z" fill="#EF4444" stroke="none"/>
+        <path d="M12 22L8 14h8L12 22z" fill="#9CA3AF" stroke="none"/>
+        <circle cx="12" cy="12" r="2" fill="white"/>
+      </svg>`;
+      cmp.onclick = () => App._toggleMapRotation();
+      document.body.appendChild(cmp);
+
+      // Sincronizar rotación del SVG con el mapa en tiempo real
+      this._navCompassRAF = () => {
+        const svg = document.getElementById('nav-compass-svg');
+        if (svg && this.mainMap) {
+          svg.style.transform = `rotate(${-this.mainMap.getBearing()}deg)`;
+        }
+        if (this._navModeActive) requestAnimationFrame(this._navCompassRAF);
+      };
+      requestAnimationFrame(this._navCompassRAF);
+    }
 
     // 4. Ocultar markers de TODOS los loops excepto el que se navega
     const activeId = this._voiceNavRoute && this._voiceNavRoute.id;
@@ -9113,7 +9156,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       });
     }
 
-    // 6. Quitar botón de salida
+    // 6. Quitar brújula de navegación y botón de salida
+    const navCmp = document.getElementById('nav-compass-btn');
+    if (navCmp) navCmp.remove();
+    this._navModeActive = false; // detiene el RAF del compass
     const exitBtn = document.getElementById('nav-exit-btn');
     if (exitBtn) exitBtn.remove();
   },
