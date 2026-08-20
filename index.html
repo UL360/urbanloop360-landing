@@ -6671,6 +6671,40 @@ const App = {
             }
           }
 
+          // ── FIX 7: Alerta de aproximación a 100m del inicio del loop ──
+          if (distToStart < 100 && !this._loop100mAlerted) {
+            this._loop100mAlerted = true;
+            const r100 = this._voiceNavRoute;
+            // Voz suave de aviso
+            if (this._voiceOn) {
+              const msg = `Estás a ${Math.round(distToStart)} metros del punto de partida de ${App._esc(r100.name)}. Preparate para comenzar.`;
+              this._speak(msg);
+            }
+            // Banner visual parpadeante naranja
+            const alertEl = document.createElement('div');
+            alertEl.id = 'nav-proximity-alert';
+            alertEl.style.cssText = [
+              'position:fixed','bottom:130px','left:50%','transform:translateX(-50%)',
+              'z-index:310','background:var(--or)','color:#fff',
+              'border-radius:14px','padding:10px 18px',
+              'font-family:var(--fH)','font-size:14px','font-weight:700',
+              'box-shadow:0 4px 20px rgba(255,95,0,.5)',
+              'display:flex','align-items:center','gap:8px',
+              'animation:navProxPulse 1s ease-in-out 3',
+              'pointer-events:none'
+            ].join(';');
+            alertEl.innerHTML = `<span style="font-size:18px;">📍</span> Estás llegando al inicio del loop`;
+            // Agregar keyframe si no existe
+            if (!document.getElementById('nav-prox-style')) {
+              const st = document.createElement('style');
+              st.id = 'nav-prox-style';
+              st.textContent = '@keyframes navProxPulse{0%,100%{opacity:1;transform:translateX(-50%) scale(1)}50%{opacity:.75;transform:translateX(-50%) scale(1.04)}}';
+              document.head.appendChild(st);
+            }
+            document.body.appendChild(alertEl);
+            setTimeout(() => { if (alertEl.parentNode) alertEl.remove(); }, 5000);
+          }
+
           if (distToStart < 5) {
             // ¡Llegó a 5m del inicio! Iniciar modo loop
             this._loopStarted = true;
@@ -9118,6 +9152,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     this._loopActiveRoute = null;
     this._loopDistRecorrida = 0;
     this._loopStartTime = null;
+    this._loop100mAlerted = false;
     this._exitNavMode();
     this.toast('Navegación cancelada');
   },
@@ -9441,6 +9476,16 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     };
 
+    // ── FIX 6: limpieza de nombre de calle ──
+    // OSRM a veces devuelve nombres vacíos, "-", o strings de solo espacios.
+    // Esta función los normaliza y devuelve null si no hay nombre útil.
+    const cleanStreet = (name) => {
+      if (!name) return null;
+      const s = name.trim();
+      if (!s || s === '-' || s === '--' || s.length < 2) return null;
+      return s;
+    };
+
     for (let i = this._voiceIdx; i < this._voiceSteps.length; i++) {
       const step = this._voiceSteps[i];
       if (!step.loc) continue;
@@ -9451,38 +9496,40 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       }
 
       const distToTurn = haverDist(userLat, userLng, step.loc[1], step.loc[0]);
-      const dir   = this._voiceStepDir(step.type, step.modifier);
-      const street = step.name ? ` por ${step.name}` : '';
+      const dir    = this._voiceStepDir(step.type, step.modifier);
+      const street = cleanStreet(step.name);
+      // Siempre incluir calle si existe — " por Calle San Martín"
+      const streetVoz = street ? ` por ${street}` : '';
 
-      // PRE-ANUNCIO: entre 150m y 250m del giro (solo si no fue anunciado)
+      // PRE-ANUNCIO: entre 35m y 200m del giro
       if (phase === 0 && distToTurn <= 200 && distToTurn > 35) {
         this._voiceStepPhase[i] = 1;
         const distVoz = distToTurn < 1000
           ? `En ${Math.round(distToTurn)} metros`
           : `En ${(distToTurn/1000).toFixed(1)} kilómetros`;
-        const msg = `${distVoz}, ${dir}${street}.`;
+        const msg = `${distVoz}, ${dir}${streetVoz}.`;
         const distTxt = distToTurn < 1000 ? `${Math.round(distToTurn)} m` : `${(distToTurn/1000).toFixed(1)} km`;
-        this._updateNavBanner(distTxt, dir, step.name, step.type, step.modifier);
-        this._speak(msg);
-        break; // un anuncio por ciclo GPS
-      }
-
-      // ANUNCIO FINAL: a menos de 35m del giro — "ahora"
-      if (phase <= 1 && distToTurn <= 35) {
-        this._voiceStepPhase[i] = 2;
-        if (i === this._voiceIdx) this._voiceIdx++;
-        const msg = `${dir} ahora${street}.`;
-        this._updateNavBanner('ya', dir, step.name, step.type, step.modifier);
+        this._updateNavBanner(distTxt, dir, street || '', step.type, step.modifier);
         this._speak(msg);
         break;
       }
 
-      // Si aún está lejos, solo actualizar el banner con la distancia (sin hablar)
+      // ANUNCIO FINAL: a menos de 35m — "ahora"
+      if (phase <= 1 && distToTurn <= 35) {
+        this._voiceStepPhase[i] = 2;
+        if (i === this._voiceIdx) this._voiceIdx++;
+        const msg = `${dir} ahora${streetVoz}.`;
+        this._updateNavBanner('ya', dir, street || '', step.type, step.modifier);
+        this._speak(msg);
+        break;
+      }
+
+      // Lejos aún: solo actualizar banner en silencio
       if (phase === 0 && distToTurn > 200) {
         const distTxt = distToTurn < 1000 ? `${Math.round(distToTurn)} m` : `${(distToTurn/1000).toFixed(1)} km`;
-        this._updateNavBanner(distTxt, dir, step.name, step.type, step.modifier);
+        this._updateNavBanner(distTxt, dir, street || '', step.type, step.modifier);
       }
-      break; // procesar solo el step más próximo
+      break;
     }
   },
 
