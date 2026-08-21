@@ -4695,6 +4695,36 @@ const App = {
     this._sbApply(isMobile ? 0 : 1);
     this._checkAdBlock();
     setTimeout(() => this._onbShow(), 600);
+    // GPS Warmup silencioso: pide posicion al entrar para calentar el chip
+    // y reducir el error inicial (que puede ser 40-80m en el primer fix).
+    this._gpsWarmupDone = false;
+    if (navigator.geolocation) {
+      const tryFix = (attempt) => {
+        navigator.geolocation.getCurrentPosition(
+          pos => {
+            const acc = pos.coords.accuracy;
+            console.log('[GPS warmup] fix ' + attempt + ' - precision ' + acc.toFixed(0) + 'm');
+            this._warmLat = pos.coords.latitude;
+            this._warmLng = pos.coords.longitude;
+            this._warmAcc = acc;
+            if (acc > 30 && attempt < 3) {
+              setTimeout(() => tryFix(attempt + 1), 2500);
+            } else {
+              this._gpsWarmupDone = true;
+              console.log('[GPS warmup] listo - precision final ' + acc.toFixed(0) + 'm');
+              // Si el mapa cargado y el usuario no centró manualmente -> centrar
+              if (this.mainMap && this._locCentered !== false) {
+                this.mainMap.flyTo({ center: [this._warmLng, this._warmLat], zoom: 15, speed: 1.2 });
+              }
+            }
+          },
+          err => { console.warn('[GPS warmup] error:', err.message); },
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+        );
+      };
+      // Delay para no competir con la carga del mapa
+      setTimeout(() => tryFix(1), 1500);
+    }
   },
 
   _wsTogglePopup() {
@@ -6804,19 +6834,23 @@ const App = {
               { padding:80, maxZoom:17, duration:900 }
             );
             if (this._voiceOn) {
-              let startMsg = `¡Llegaste al punto de partida! Comenzá ${App._esc(r.name)}. `;
+              // Cancelar cualquier utterance pendiente para evitar que speechSynthesis quede bloqueado
+              if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+              let startMsg = '¡Llegaste al punto de partida! Comenzá ' + App._esc(r.name) + '. ';
               if (r.pois && r.pois.length) {
                 const names = r.pois.slice(0, 3).map(p => p.name).join(', ');
-                const extra = r.pois.length > 3 ? ` y ${r.pois.length - 3} paradas más` : '';
-                startMsg += `Las primeras paradas son: ${names}${extra}. `;
+                const extra = r.pois.length > 3 ? ' y ' + (r.pois.length - 3) + ' paradas más' : '';
+                startMsg += 'Las primeras paradas son: ' + names + extra + '. ';
               }
-              if (r.dist) startMsg += `Recorrido total: ${r.dist}. `;
+              if (r.dist) startMsg += 'Recorrido total: ' + r.dist + '. ';
               startMsg += '¡Que lo disfrutes!';
-              this._speak(startMsg);
+              // Pequeño delay para que el cancel() se procese
+              setTimeout(() => this._speak(startMsg), 300);
             }
             this._hideNavBanner();
             // ── Iniciar guía de giros dentro del loop ──
-            setTimeout(() => this._initLoopVoiceNav(r), 4000); // esperar que termine el speak de bienvenida
+            // Aumentamos el delay a 6s para que no solape con el mensaje de bienvenida
+            setTimeout(() => this._initLoopVoiceNav(r), 6000);
             this._showLoopStartPanel(r);
           }
         }
@@ -9717,7 +9751,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   // rumbo es confiable sin importar cuán densa sea la muestra de puntos.
   _initLoopVoiceNav(r) {
     if (!r || !r.pts || r.pts.length < 3) return;
-    if (!this._voiceOn) return;
+    // NO cortamos aqui si _voiceOn es false: igual calculamos los pasos de giro
+    // para que _checkLoopVoiceGPS funcione. Solo silenciamos el speak si esta off.
 
     const toRad = d => d * Math.PI / 180;
     const haverDist = (lat1, lng1, lat2, lng2) => {
@@ -9801,13 +9836,18 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     this._loopVoiceGeocodeStreets(loopSteps);
 
     // Anuncio de inicio del loop
-    const totalDist = r.dist || '';
-    const pois = r.pois && r.pois.length ? r.pois.length : 0;
-    let startMsg = `¡Arrancamos! `;
-    if (totalDist) startMsg += `El recorrido tiene ${totalDist}. `;
-    if (pois > 0) startMsg += `Hay ${pois} parada${pois !== 1 ? 's' : ''} en el camino. `;
-    startMsg += loopSteps.length > 0 ? `Seguí recto por ahora, te aviso cuando doblar.` : `Es un tramo derecho, sin giros marcados.`;
-    this._speak(startMsg);
+    // Cancelar speechSynthesis colgado antes de hablar (fix: voz que desaparece)
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (this._voiceOn) {
+      const totalDist = r.dist || '';
+      const pois = r.pois && r.pois.length ? r.pois.length : 0;
+      let startMsg = '¡Arrancamos! ';
+      if (totalDist) startMsg += 'El recorrido tiene ' + totalDist + '. ';
+      if (pois > 0) startMsg += 'Hay ' + pois + ' parada' + (pois !== 1 ? 's' : '') + ' en el camino. ';
+      startMsg += loopSteps.length > 0 ? 'Seguí recto por ahora, te aviso cuando doblar.' : 'Es un tramo derecho, sin giros marcados.';
+      // Delay de 500ms para que el cancel() anterior se procese antes de hablar
+      setTimeout(() => this._speak(startMsg), 500);
+    }
   },
 
   // ── Reverse geocoding (uno por vez, respetando el límite de Nominatim) para
