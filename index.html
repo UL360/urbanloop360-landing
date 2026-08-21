@@ -3427,6 +3427,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <h2>Grabar Loop</h2>
     <div style="width:60px"></div>
   </div>
+  <!-- Selector de tipo -->
   <div style="padding:10px 14px 10px;background:#1C1C1E;border-bottom:0.5px solid #2C2C2E;flex-shrink:0;">
     <div style="font-size:10px;font-weight:700;color:var(--gr);letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px;">Tipo de loop</div>
     <select id="grab-type-select" class="fi" aria-label="Tipo de loop" style="width:100%;">
@@ -3451,7 +3452,10 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       <option value="otro">✳️ Otro Loop</option>
       <option value="accesibilidad">♿ Accesibilidad Loop</option>
     </select>
-    <div id="grab-map" style="width:100%;height:100%;"></div>
+  </div>
+  <!-- Mapa con controles superpuestos -->
+  <div class="grab-map-wrap">
+    <div id="grab-map"></div>
     <div class="grab-map-hdr">
       <div class="grab-state-badge idle" id="grab-state-badge">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
