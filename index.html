@@ -9129,51 +9129,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const menuBtn = document.getElementById('menu-btn');
     if (menuBtn) { menuBtn.style.opacity = '0'; menuBtn.style.pointerEvents = 'none'; }
 
-    // 3. Ocultar controles del mapa no esenciales
-    // locate-btn y una brújula dedicada de navegación se mantienen visibles
-    const hideIds = ['btn-3d', 'btn-report-urban', 'sat-toggle-btn', 'btn-vistas', 'map-theme-toggle-btn', 'main-compass'];
-    hideIds.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) { el.dataset.navHidden = '1'; el.style.opacity = '0'; el.style.pointerEvents = 'none'; el.style.transition = 'opacity .3s'; }
-    });
-
-    // Asegurar que locate-btn sea visible y activo durante la navegación
-    const locBtn = document.getElementById('locate-btn');
-    if (locBtn) { locBtn.style.opacity = '1'; locBtn.style.pointerEvents = 'auto'; }
-
-    // Brújula compacta dedicada a la navegación (norte fijo o rotativo con el mapa)
-    if (!document.getElementById('nav-compass-btn')) {
-      const cmp = document.createElement('button');
-      cmp.id = 'nav-compass-btn';
-      cmp.title = 'Orientar norte';
-      cmp.style.cssText = [
-        'position:fixed','top:68px','right:14px','z-index:300',
-        'width:44px','height:44px','border-radius:14px',
-        'background:rgba(28,28,30,.92)','border:1.5px solid var(--or)',
-        'color:#fff','cursor:pointer',
-        'display:flex','align-items:center','justify-content:center',
-        'box-shadow:0 4px 12px rgba(0,0,0,.4)',
-        'backdrop-filter:blur(8px)',
-        'transition:background .2s'
-      ].join(';');
-      cmp.innerHTML = `<svg id="nav-compass-svg" width="22" height="22" viewBox="0 0 24 24" style="transition:transform .3s;transform-origin:12px 12px;">
-        <path d="M12 2L8 10h8L12 2z" fill="#EF4444" stroke="none"/>
-        <path d="M12 22L8 14h8L12 22z" fill="#9CA3AF" stroke="none"/>
-        <circle cx="12" cy="12" r="2" fill="white"/>
-      </svg>`;
-      cmp.onclick = () => App._toggleMapRotation();
-      document.body.appendChild(cmp);
-
-      // Sincronizar rotación del SVG con el mapa en tiempo real
-      this._navCompassRAF = () => {
-        const svg = document.getElementById('nav-compass-svg');
-        if (svg && this.mainMap) {
-          svg.style.transform = `rotate(${-this.mainMap.getBearing()}deg)`;
-        }
-        if (this._navModeActive) requestAnimationFrame(this._navCompassRAF);
-      };
-      requestAnimationFrame(this._navCompassRAF);
-    }
+    // 3. Todas las demás herramientas del mapa (3D, ubicación, brújula, satelital,
+    //    vistas, tema) se mantienen visibles y funcionando igual que siempre.
 
     // 4. Ocultar markers de TODOS los loops excepto el que se navega
     const activeId = this._voiceNavRoute && this._voiceNavRoute.id;
@@ -9198,52 +9155,21 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       });
     }
 
-    // 6. Botones flotantes: "✕ Salir" + brújula, en fila en la esquina superior derecha
+    // 6. Único botón flotante nuevo: "✕ Salir" (sin brújula duplicada; la
+    //    brújula/rotación de siempre ya está disponible en sus botones habituales)
     if (!document.getElementById('nav-exit-btn')) {
-      // Contenedor fila
-      const row = document.createElement('div');
-      row.id = 'nav-top-row';
-      row.style.cssText = 'position:fixed;top:14px;right:14px;z-index:300;display:flex;align-items:center;gap:8px;';
-
-      // Brújula compacta
-      const cmp = document.createElement('button');
-      cmp.id = 'nav-compass-btn';
-      cmp.title = 'Orientar norte';
-      cmp.style.cssText = 'width:40px;height:40px;border-radius:12px;background:rgba(28,28,30,.92);border:1.5px solid var(--or);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.4);backdrop-filter:blur(8px);flex-shrink:0;';
-      cmp.innerHTML = `<svg id="nav-compass-svg" width="22" height="22" viewBox="0 0 24 24" style="transition:transform .3s;transform-origin:12px 12px;">
-        <path d="M12 2L8 10h8L12 2z" fill="#EF4444" stroke="none"/>
-        <path d="M12 22L8 14h8L12 22z" fill="#9CA3AF" stroke="none"/>
-        <circle cx="12" cy="12" r="2" fill="white"/>
-      </svg>`;
-      cmp.onclick = () => App._toggleMapRotation();
-
-      // Botón salir
       const btn = document.createElement('button');
       btn.id = 'nav-exit-btn';
       btn.innerHTML = '✕ Salir';
-      btn.style.cssText = 'background:rgba(30,30,38,.88);color:#fff;border:1.5px solid var(--bd);border-radius:12px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;backdrop-filter:blur(8px);font-family:var(--fH);letter-spacing:.2px;display:flex;align-items:center;gap:6px;box-shadow:0 4px 16px rgba(0,0,0,.4);white-space:nowrap;';
+      btn.style.cssText = 'position:fixed;top:14px;right:14px;z-index:300;background:rgba(30,30,38,.88);color:#fff;border:1.5px solid var(--bd);border-radius:12px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;backdrop-filter:blur(8px);font-family:var(--fH);letter-spacing:.2px;display:flex;align-items:center;gap:6px;box-shadow:0 4px 16px rgba(0,0,0,.4);white-space:nowrap;';
       btn.onclick = () => App._stopNav();
-
-      row.appendChild(cmp);
-      row.appendChild(btn);
-      document.body.appendChild(row);
-
-      // RAF para sincronizar brújula con el mapa
-      this._navCompassRAF = () => {
-        const svg = document.getElementById('nav-compass-svg');
-        if (svg && this.mainMap) {
-          svg.style.transform = `rotate(${-this.mainMap.getBearing()}deg)`;
-        }
-        if (this._navModeActive) requestAnimationFrame(this._navCompassRAF);
-      };
-      requestAnimationFrame(this._navCompassRAF);
+      document.body.appendChild(btn);
     }
   },
 
   // ── Salir del modo navegación: restaurar UI ──
   _exitNavMode() {
     if (!this._navModeActive) return;
-    this._navModeActive = false;
 
     // 1. Restaurar sidebar al estado previo
     this._sbApply(this._navPrevSbState !== undefined ? this._navPrevSbState : 1);
@@ -9252,12 +9178,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const menuBtn = document.getElementById('menu-btn');
     if (menuBtn) { menuBtn.style.opacity = ''; menuBtn.style.pointerEvents = ''; }
 
-    // 3. Restaurar controles del mapa
-    document.querySelectorAll('[data-nav-hidden="1"]').forEach(el => {
-      el.style.opacity = ''; el.style.pointerEvents = ''; el.removeAttribute('data-nav-hidden');
-    });
-
-    // 4. Restaurar markers de todos los loops
+    // 3. Restaurar markers de todos los loops
     if (this._startMarkers) {
       Object.values(this._startMarkers).forEach(m => { try { m.getElement().style.display = ''; } catch(e) {} });
     }
@@ -9265,7 +9186,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       Object.values(this._poiMarkers).flat().forEach(m => { try { m.getElement().style.display = ''; } catch(e) {} });
     }
 
-    // 5. Restaurar capas de todos los loops
+    // 4. Restaurar capas de todos los loops
     if (this.routes) {
       this.routes.forEach(r => {
         ['line-'+r.id, 'line-'+r.id+'-border', 'line-'+r.id+'-glow'].forEach(lid => {
@@ -9274,12 +9195,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       });
     }
 
-    // 6. Quitar fila superior (brújula + salir)
-    const navTopRow = document.getElementById('nav-top-row');
-    if (navTopRow) navTopRow.remove();
-    const navCmp = document.getElementById('nav-compass-btn');
-    if (navCmp) navCmp.remove();
-    this._navModeActive = false; // detiene el RAF del compass
+    // 5. Quitar botón "Salir"
+    this._navModeActive = false;
     const exitBtn = document.getElementById('nav-exit-btn');
     if (exitBtn) exitBtn.remove();
   },
@@ -9705,6 +9622,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   // Una vez que _loopStarted = true, OSRM ya no guía. Este sistema detecta
   // cambios de dirección en los puntos del loop (r.pts) y avisa cuando el
   // usuario está próximo a cada giro, igual que en la navegación previa.
+  // Funciona tanto con loops grabados por GPS (muchos puntos muy juntos)
+  // como con loops trazados a mano (pocos puntos, bien separados): en vez de
+  // mirar una "ventana" de N puntos fijos, busca hacia atrás/adelante hasta
+  // acumular una distancia mínima real (MIN_SEG metros), así el cálculo del
+  // rumbo es confiable sin importar cuán densa sea la muestra de puntos.
   _initLoopVoiceNav(r) {
     if (!r || !r.pts || r.pts.length < 3) return;
     if (!this._voiceOn) return;
@@ -9732,26 +9654,52 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       return 'Mantenete levemente a la izquierda';
     };
 
-    // Normalizar puntos a [{lat, lng}]
-    const pts = r.pts.map(p => Array.isArray(p) ? { lat: p[0], lng: p[1] } : p);
+    // Normalizar puntos a [{lat, lng}] y quitar duplicados/casi-duplicados
+    // (puntos a menos de 1m, típicos de GPS detenido) que rompen el cálculo de rumbo.
+    const rawPts = r.pts.map(p => Array.isArray(p) ? { lat: p[0], lng: p[1] } : p);
+    const pts = rawPts.filter((p, i) => i === 0 || haverDist(p.lat, p.lng, rawPts[i-1].lat, rawPts[i-1].lng) > 1);
+    if (pts.length < 3) { this._loopVoiceSteps = []; this._loopVoiceIdx = 0; return; }
 
-    // Detectar giros: cambios de bearing > 20° entre segmentos consecutivos
+    const MIN_SEG = 12; // metros mínimos hacia atrás/adelante para medir el rumbo sin ruido
+
+    // Busca el índice más cercano hacia atrás cuya distancia acumulada a pts[i] sea >= minDist
+    const idxBefore = (i, minDist) => {
+      let d = 0;
+      for (let j = i; j > 0; j--) {
+        d += haverDist(pts[j].lat, pts[j].lng, pts[j-1].lat, pts[j-1].lng);
+        if (d >= minDist) return j - 1;
+      }
+      return 0;
+    };
+    // Busca el índice más cercano hacia adelante cuya distancia acumulada a pts[i] sea >= minDist
+    const idxAfter = (i, minDist) => {
+      let d = 0;
+      for (let j = i; j < pts.length - 1; j++) {
+        d += haverDist(pts[j].lat, pts[j].lng, pts[j+1].lat, pts[j+1].lng);
+        if (d >= minDist) return j + 1;
+      }
+      return pts.length - 1;
+    };
+
+    // Detectar giros recorriendo TODO el trazado, de punta a punta
     const loopSteps = [];
-    const WINDOW = 3; // promediar sobre 3 puntos para suavizar ruido GPS
-    for (let i = WINDOW; i < pts.length - WINDOW; i++) {
-      const bPrev = bearing(pts[i-WINDOW].lat, pts[i-WINDOW].lng, pts[i].lat, pts[i].lng);
-      const bNext = bearing(pts[i].lat, pts[i].lng, pts[i+WINDOW].lat, pts[i+WINDOW].lng);
+    for (let i = 1; i < pts.length - 1; i++) {
+      const bi = idxBefore(i, MIN_SEG), ai = idxAfter(i, MIN_SEG);
+      if (bi === i || ai === i) continue; // sin distancia suficiente a un lado
+      const bPrev = bearing(pts[bi].lat, pts[bi].lng, pts[i].lat, pts[i].lng);
+      const bNext = bearing(pts[i].lat, pts[i].lng, pts[ai].lat, pts[ai].lng);
       const diff = angleDiff(bPrev, bNext);
       if (Math.abs(diff) >= 22) {
-        // Es un giro — agregar solo si está a >30m del giro anterior
+        // Es un giro — agregar solo si está a >25m del giro anterior detectado
         const last = loopSteps[loopSteps.length - 1];
         const distFromLast = last ? haverDist(last.lat, last.lng, pts[i].lat, pts[i].lng) : Infinity;
-        if (distFromLast > 30) {
+        if (distFromLast > 25) {
           loopSteps.push({
             lat: pts[i].lat,
             lng: pts[i].lng,
             dir: dirLabel(diff),
             diff,
+            street: null,
             phase: 0, // 0=pendiente, 1=pre-anunciado, 2=anunciado
           });
         }
@@ -9761,14 +9709,31 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     this._loopVoiceSteps = loopSteps;
     this._loopVoiceIdx = 0;
 
+    // Nombre de calle de cada giro (reverse geocoding, uno por vez, sin bloquear la voz)
+    this._loopVoiceGeocodeStreets(loopSteps);
+
     // Anuncio de inicio del loop
     const totalDist = r.dist || '';
     const pois = r.pois && r.pois.length ? r.pois.length : 0;
     let startMsg = `¡Arrancamos! `;
     if (totalDist) startMsg += `El recorrido tiene ${totalDist}. `;
     if (pois > 0) startMsg += `Hay ${pois} parada${pois !== 1 ? 's' : ''} en el camino. `;
-    if (loopSteps.length > 0) startMsg += `Seguí recto por ahora, te aviso cuando doblar.`;
+    startMsg += loopSteps.length > 0 ? `Seguí recto por ahora, te aviso cuando doblar.` : `Es un tramo derecho, sin giros marcados.`;
     this._speak(startMsg);
+  },
+
+  // ── Reverse geocoding (uno por vez, respetando el límite de Nominatim) para
+  // saber en qué calle/esquina está cada giro del loop y poder anunciarla ──
+  async _loopVoiceGeocodeStreets(steps) {
+    for (const step of steps) {
+      try {
+        const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${step.lat}&lon=${step.lng}&format=json&zoom=18&addressdetails=1`);
+        const data = await resp.json();
+        const addr = data && data.address;
+        step.street = addr ? (addr.road || addr.pedestrian || addr.footway || addr.street || null) : null;
+      } catch(e) { step.street = null; }
+      await new Promise(res => setTimeout(res, 1100)); // 1 req/seg máx (política de Nominatim)
+    }
   },
 
   // ── Se llama en cada GPS ping cuando el loop está activo ──
@@ -9790,15 +9755,16 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       }
 
       const dist = haverDist(userLat, userLng, step.lat, step.lng);
+      const streetVoz = step.street ? ` por ${step.street}` : '';
 
       // PRE-ANUNCIO: entre 35m y 200m
       if (step.phase === 0 && dist <= 200 && dist > 35) {
         step.phase = 1;
         const distVoz = `En ${Math.round(dist)} metros`;
-        this._speak(`${distVoz}, ${step.dir}.`);
+        this._speak(`${distVoz}, ${step.dir}${streetVoz}.`);
         // Actualizar banner de nav si está visible
         const distTxt = `${Math.round(dist)} m`;
-        this._updateNavBanner && this._updateNavBanner(distTxt, step.dir, '', 'turn', step.diff > 0 ? 'right' : 'left');
+        this._updateNavBanner && this._updateNavBanner(distTxt, step.dir, step.street || '', 'turn', step.diff > 0 ? 'right' : 'left');
         break;
       }
 
@@ -9806,15 +9772,15 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       if (step.phase <= 1 && dist <= 35) {
         step.phase = 2;
         if (i === this._loopVoiceIdx) this._loopVoiceIdx++;
-        this._speak(`${step.dir} ahora.`);
-        this._updateNavBanner && this._updateNavBanner('ya', step.dir, '', 'turn', step.diff > 0 ? 'right' : 'left');
+        this._speak(`${step.dir} ahora${streetVoz}.`);
+        this._updateNavBanner && this._updateNavBanner('ya', step.dir, step.street || '', 'turn', step.diff > 0 ? 'right' : 'left');
         break;
       }
 
       // Lejos: actualizar banner en silencio con el próximo giro
       if (step.phase === 0 && dist > 200) {
         const distTxt = dist < 1000 ? `${Math.round(dist)} m` : `${(dist/1000).toFixed(1)} km`;
-        this._updateNavBanner && this._updateNavBanner(distTxt, step.dir, '', 'turn', step.diff > 0 ? 'right' : 'left');
+        this._updateNavBanner && this._updateNavBanner(distTxt, step.dir, step.street || '', 'turn', step.diff > 0 ? 'right' : 'left');
       }
       break; // solo procesar el próximo giro
     }
