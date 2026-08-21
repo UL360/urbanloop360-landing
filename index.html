@@ -9155,16 +9155,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       });
     }
 
-    // 6. Único botón flotante nuevo: "✕ Salir" (sin brújula duplicada; la
-    //    brújula/rotación de siempre ya está disponible en sus botones habituales)
-    if (!document.getElementById('nav-exit-btn')) {
-      const btn = document.createElement('button');
-      btn.id = 'nav-exit-btn';
-      btn.innerHTML = '✕ Salir';
-      btn.style.cssText = 'position:fixed;top:14px;right:14px;z-index:300;background:rgba(30,30,38,.88);color:#fff;border:1.5px solid var(--bd);border-radius:12px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;backdrop-filter:blur(8px);font-family:var(--fH);letter-spacing:.2px;display:flex;align-items:center;gap:6px;box-shadow:0 4px 16px rgba(0,0,0,.4);white-space:nowrap;';
-      btn.onclick = () => App._stopNav();
-      document.body.appendChild(btn);
-    }
+    // 6. Sin botones flotantes nuevos: el nav-panel y el panel de loop activo
+    //    ya traen su propio botón de salir/cancelar.
+
+    // 7. Mantener la pantalla encendida durante toda la navegación (loop y fotoloop)
+    this._acquireWakeLock();
   },
 
   // ── Salir del modo navegación: restaurar UI ──
@@ -9195,10 +9190,13 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       });
     }
 
-    // 5. Quitar botón "Salir"
+    // 5. (ya no hay botón flotante "Salir" que quitar)
     this._navModeActive = false;
     const exitBtn = document.getElementById('nav-exit-btn');
     if (exitBtn) exitBtn.remove();
+
+    // 6. Liberar la pantalla — ya no hace falta mantenerla encendida
+    if (this.grabState !== 'recording') this._releaseWakeLock();
   },
 
   // Cancelar navegación
@@ -16781,7 +16779,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       console.log('[WakeLock] ✓ Pantalla bloqueada activa');
       // Re-adquirir si la página vuelve al foco (ej: al desbloquear el teléfono)
       this._wakeLockHandler = async () => {
-        if (this._wakeLock?.released && this.grabState === 'recording') {
+        if (this._wakeLock?.released && (this.grabState === 'recording' || this._navModeActive)) {
           try {
             this._wakeLock = await navigator.wakeLock.request('screen');
             console.log('[WakeLock] ✓ Re-adquirido');
