@@ -698,6 +698,30 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
 .dt-hero-info { position:absolute; bottom:18px; left:16px; right:16px; color:var(--wh); z-index:2; }
 .dt-hero-info h1 { font-family:var(--fH); font-size:26px; font-weight:800; color:#FFFFFF; text-shadow:0 1px 3px rgba(0,0,0,.9), 0 4px 16px rgba(0,0,0,.7); }
 .dt-hero-info p { font-size:13px; opacity:1; margin-top:4px; color:#F0F0F0; text-shadow:0 1px 4px rgba(0,0,0,.8); }
+/* ── Header sticky del detalle (aparece al scrollear) ── */
+.dt-sticky-hdr {
+  position:sticky; top:0; z-index:10;
+  display:flex; align-items:center; gap:10px;
+  padding:10px 14px;
+  background:var(--wh);
+  border-bottom:0.5px solid var(--bd);
+  box-shadow:0 2px 8px rgba(0,0,0,.07);
+  transform:translateY(-100%);
+  transition:transform .22s cubic-bezier(.4,0,.2,1);
+  pointer-events:none;
+}
+.dt-sticky-hdr.visible { transform:translateY(0); pointer-events:auto; }
+.dt-sticky-back {
+  width:34px; height:34px; border-radius:50%;
+  background:var(--bg0); border:1px solid var(--bd);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; flex-shrink:0;
+}
+.dt-sticky-title {
+  flex:1; min-width:0;
+  font-family:var(--fH); font-size:15px; font-weight:700;
+  color:var(--dk); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
 
 .dt-body { padding:18px 16px 110px; }
 
@@ -2780,6 +2804,16 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 
 <!-- ════════════ DETAIL ════════════ -->
 <div id="detail" class="screen">
+  <!-- Header sticky: visible solo cuando el hero scrollea fuera de vista -->
+  <div class="dt-sticky-hdr" id="dt-sticky-hdr">
+    <button class="dt-sticky-back" onclick="App.go(App._prevScreen||'explore')">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--md)" stroke-width="2.2"><path d="M19 12H5m0 0l7-7m-7 7l7 7"/></svg>
+    </button>
+    <div class="dt-sticky-title" id="dt-sticky-title"></div>
+    <button class="dt-fav" id="dt-sticky-fav-btn" onclick="App.toggleFav()" style="position:static;width:34px;height:34px;background:var(--bg0);border:1px solid var(--bd);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2.2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+    </button>
+  </div>
   <div class="dt-hero" id="dt-hero">
     <img id="dt-img" class="dt-hero-img" src="" alt="" style="cursor:pointer;" onclick="App.openDtGallery('cover')">
     <div class="dt-hero-grad"></div>
@@ -10327,6 +10361,31 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     }
 
     this.go('detail');
+
+    // ── Header sticky: aparece cuando el hero scrollea fuera de vista ──
+    const detailEl = document.getElementById('detail');
+    const stickyHdr = document.getElementById('dt-sticky-hdr');
+    const stickyTitle = document.getElementById('dt-sticky-title');
+    if (stickyTitle) stickyTitle.textContent = r.name;
+    // Resetear posición al abrir
+    if (stickyHdr) stickyHdr.classList.remove('visible');
+    // Scroll al top al abrir la pantalla
+    if (detailEl) detailEl.scrollTop = 0;
+    // Remover listener anterior si existe
+    if (this._dtScrollFn) detailEl.removeEventListener('scroll', this._dtScrollFn);
+    this._dtScrollFn = () => {
+      const hero = document.getElementById('dt-hero');
+      if (!hero || !stickyHdr) return;
+      // Mostrar el header sticky cuando el hero ya no es visible
+      const heroBottom = hero.getBoundingClientRect().bottom;
+      if (heroBottom <= 0) {
+        stickyHdr.classList.add('visible');
+      } else {
+        stickyHdr.classList.remove('visible');
+      }
+    };
+    if (detailEl) detailEl.addEventListener('scroll', this._dtScrollFn, { passive: true });
+
     // Cargar imágenes firestore: de las paradas (lazy)
     setTimeout(() => this._lazyLoadFsImgs(document.getElementById('detail')), 80);
   },
