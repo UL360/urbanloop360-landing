@@ -5978,6 +5978,7 @@ const App = {
   _PIN_INICIO_LOOP: 'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pin-inicio-loop.png',
   _PIN_FOTOLOOP:    'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pinfotolooplila.PNG',
   _PIN_COMERCIO:    'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pin-comercio.png',
+  _PIN_ACCESIBILIDAD: 'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pin-accesibilidad.png',
   // Pin para loops NO oficiales (comunidad): mismo formato que _PIN_INICIO_LOOP pero
   // con color/arte distinto para diferenciarlo de los oficiales y de FotoLoop.
   // TODO: reemplazar por el asset definitivo cuando esté listo.
@@ -20882,10 +20883,10 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     this._accPuntoMarkers = (this._accPuntosMapaCache || []).filter(p => p.lat && p.lng).map(p => {
       const info = this._accCatInfo(p.categoria);
       const el = document.createElement('div');
-      el.textContent = info.em;
-      el.style.cssText = 'font-size:24px;cursor:pointer;text-shadow:0 2px 6px rgba(0,0,0,.5);';
+      el.className = 'ul-pin-wrap ul-pin-comercio';
+      el.innerHTML = `<img src="${this._PIN_ACCESIBILIDAD}" style="filter:drop-shadow(0 3px 6px rgba(0,0,0,.45));" alt="${p.nombre || 'Punto accesible'}" draggable="false">`;
       el.title = `${p.nombre||''} — ${info.label}`;
-      return new maplibregl.Marker({ element: el, anchor:'bottom' }).setLngLat([p.lng, p.lat]).addTo(this.mainMap);
+      return new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([p.lng, p.lat]).addTo(this.mainMap);
     });
   },
 
