@@ -6748,12 +6748,19 @@ const App = {
               this._speak(startMsg);
             }
             this._hideNavBanner();
+            // ── Iniciar guía de giros dentro del loop ──
+            setTimeout(() => this._initLoopVoiceNav(r), 4000); // esperar que termine el speak de bienvenida
             this._showLoopStartPanel(r);
           }
         }
 
         // ── Actualizar métricas del loop en tiempo real ──
         if (this._loopStarted) this._updateLoopMetrics(lat, lng);
+
+        // ── Guía de giros dentro del loop (voz) ──
+        if (this._loopStarted && this._loopVoiceSteps) {
+          this._checkLoopVoiceGPS(lat, lng);
+        }
 
         // ── Guía turístico IA: detectar POIs cercanos durante el loop activo ──
         if (this._loopStarted && this._voiceNavRoute) {
@@ -9184,26 +9191,46 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       });
     }
 
-    // 6. Agregar botón "salir del modo nav" flotante (esquina superior derecha)
+    // 6. Botones flotantes: "✕ Salir" + brújula, en fila en la esquina superior derecha
     if (!document.getElementById('nav-exit-btn')) {
+      // Contenedor fila
+      const row = document.createElement('div');
+      row.id = 'nav-top-row';
+      row.style.cssText = 'position:fixed;top:14px;right:14px;z-index:300;display:flex;align-items:center;gap:8px;';
+
+      // Brújula compacta
+      const cmp = document.createElement('button');
+      cmp.id = 'nav-compass-btn';
+      cmp.title = 'Orientar norte';
+      cmp.style.cssText = 'width:40px;height:40px;border-radius:12px;background:rgba(28,28,30,.92);border:1.5px solid var(--or);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.4);backdrop-filter:blur(8px);flex-shrink:0;';
+      cmp.innerHTML = `<svg id="nav-compass-svg" width="22" height="22" viewBox="0 0 24 24" style="transition:transform .3s;transform-origin:12px 12px;">
+        <path d="M12 2L8 10h8L12 2z" fill="#EF4444" stroke="none"/>
+        <path d="M12 22L8 14h8L12 22z" fill="#9CA3AF" stroke="none"/>
+        <circle cx="12" cy="12" r="2" fill="white"/>
+      </svg>`;
+      cmp.onclick = () => App._toggleMapRotation();
+
+      // Botón salir
       const btn = document.createElement('button');
       btn.id = 'nav-exit-btn';
       btn.innerHTML = '✕ Salir';
-      btn.style.cssText = [
-        'position:fixed','top:14px','right:14px','z-index:300',
-        'background:rgba(30,30,38,.88)','color:#fff',
-        'border:1.5px solid var(--bd)','border-radius:12px',
-        'padding:8px 14px','font-size:13px','font-weight:700',
-        'cursor:pointer','backdrop-filter:blur(8px)',
-        'font-family:var(--fH)','letter-spacing:.2px',
-        'display:flex','align-items:center','gap:6px',
-        'box-shadow:0 4px 16px rgba(0,0,0,.4)',
-        'transition:background .2s'
-      ].join(';');
+      btn.style.cssText = 'background:rgba(30,30,38,.88);color:#fff;border:1.5px solid var(--bd);border-radius:12px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;backdrop-filter:blur(8px);font-family:var(--fH);letter-spacing:.2px;display:flex;align-items:center;gap:6px;box-shadow:0 4px 16px rgba(0,0,0,.4);white-space:nowrap;';
       btn.onclick = () => App._stopNav();
-      document.body.appendChild(btn);
+
+      row.appendChild(cmp);
+      row.appendChild(btn);
+      document.body.appendChild(row);
+
+      // RAF para sincronizar brújula con el mapa
+      this._navCompassRAF = () => {
+        const svg = document.getElementById('nav-compass-svg');
+        if (svg && this.mainMap) {
+          svg.style.transform = `rotate(${-this.mainMap.getBearing()}deg)`;
+        }
+        if (this._navModeActive) requestAnimationFrame(this._navCompassRAF);
+      };
+      requestAnimationFrame(this._navCompassRAF);
     }
-  },
 
   // ── Salir del modo navegación: restaurar UI ──
   _exitNavMode() {
@@ -9239,7 +9266,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       });
     }
 
-    // 6. Quitar brújula de navegación y botón de salida
+    // 6. Quitar fila superior (brújula + salir)
+    const navTopRow = document.getElementById('nav-top-row');
+    if (navTopRow) navTopRow.remove();
     const navCmp = document.getElementById('nav-compass-btn');
     if (navCmp) navCmp.remove();
     this._navModeActive = false; // detiene el RAF del compass
@@ -9282,6 +9311,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     this._loopDistRecorrida = 0;
     this._loopStartTime = null;
     this._loop100mAlerted = false;
+    this._loopVoiceSteps = null;
+    this._loopVoiceIdx = 0;
     this._exitNavMode();
     this.toast('Navegación cancelada');
   },
@@ -9662,7 +9693,124 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     }
   },
 
-  // ── Calcular distancia restante al destino desde polilínea ──
+  // ── Voz dentro del loop: construye pasos de giro desde los puntos del trazado ──
+  // Una vez que _loopStarted = true, OSRM ya no guía. Este sistema detecta
+  // cambios de dirección en los puntos del loop (r.pts) y avisa cuando el
+  // usuario está próximo a cada giro, igual que en la navegación previa.
+  _initLoopVoiceNav(r) {
+    if (!r || !r.pts || r.pts.length < 3) return;
+    if (!this._voiceOn) return;
+
+    const toRad = d => d * Math.PI / 180;
+    const haverDist = (lat1, lng1, lat2, lng2) => {
+      const R = 6371000;
+      const dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
+      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    };
+    const bearing = (lat1, lng1, lat2, lng2) => {
+      const φ1 = toRad(lat1), φ2 = toRad(lat2), Δλ = toRad(lng2 - lng1);
+      return (Math.atan2(Math.sin(Δλ)*Math.cos(φ2),
+        Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ)) * 180/Math.PI + 360) % 360;
+    };
+    const angleDiff = (a, b) => { let d = b - a; while (d > 180) d -= 360; while (d < -180) d += 360; return d; };
+    const dirLabel = (diff) => {
+      if (Math.abs(diff) < 20) return 'Continuá recto';
+      if (diff > 120)  return 'Girá fuerte a la derecha';
+      if (diff > 45)   return 'Girá a la derecha';
+      if (diff > 20)   return 'Mantenete levemente a la derecha';
+      if (diff < -120) return 'Girá fuerte a la izquierda';
+      if (diff < -45)  return 'Girá a la izquierda';
+      return 'Mantenete levemente a la izquierda';
+    };
+
+    // Normalizar puntos a [{lat, lng}]
+    const pts = r.pts.map(p => Array.isArray(p) ? { lat: p[0], lng: p[1] } : p);
+
+    // Detectar giros: cambios de bearing > 20° entre segmentos consecutivos
+    const loopSteps = [];
+    const WINDOW = 3; // promediar sobre 3 puntos para suavizar ruido GPS
+    for (let i = WINDOW; i < pts.length - WINDOW; i++) {
+      const bPrev = bearing(pts[i-WINDOW].lat, pts[i-WINDOW].lng, pts[i].lat, pts[i].lng);
+      const bNext = bearing(pts[i].lat, pts[i].lng, pts[i+WINDOW].lat, pts[i+WINDOW].lng);
+      const diff = angleDiff(bPrev, bNext);
+      if (Math.abs(diff) >= 22) {
+        // Es un giro — agregar solo si está a >30m del giro anterior
+        const last = loopSteps[loopSteps.length - 1];
+        const distFromLast = last ? haverDist(last.lat, last.lng, pts[i].lat, pts[i].lng) : Infinity;
+        if (distFromLast > 30) {
+          loopSteps.push({
+            lat: pts[i].lat,
+            lng: pts[i].lng,
+            dir: dirLabel(diff),
+            diff,
+            phase: 0, // 0=pendiente, 1=pre-anunciado, 2=anunciado
+          });
+        }
+      }
+    }
+
+    this._loopVoiceSteps = loopSteps;
+    this._loopVoiceIdx = 0;
+
+    // Anuncio de inicio del loop
+    const totalDist = r.dist || '';
+    const pois = r.pois && r.pois.length ? r.pois.length : 0;
+    let startMsg = `¡Arrancamos! `;
+    if (totalDist) startMsg += `El recorrido tiene ${totalDist}. `;
+    if (pois > 0) startMsg += `Hay ${pois} parada${pois !== 1 ? 's' : ''} en el camino. `;
+    if (loopSteps.length > 0) startMsg += `Seguí recto por ahora, te aviso cuando doblar.`;
+    this._speak(startMsg);
+  },
+
+  // ── Se llama en cada GPS ping cuando el loop está activo ──
+  _checkLoopVoiceGPS(userLat, userLng) {
+    if (!this._voiceOn || !this._loopVoiceSteps) return;
+
+    const haverDist = (lat1, lng1, lat2, lng2) => {
+      const R = 6371000;
+      const dLat = (lat2 - lat1) * Math.PI / 180, dLng = (lng2 - lng1) * Math.PI / 180;
+      const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    };
+
+    for (let i = this._loopVoiceIdx; i < this._loopVoiceSteps.length; i++) {
+      const step = this._loopVoiceSteps[i];
+      if (step.phase >= 2) {
+        if (i === this._loopVoiceIdx) this._loopVoiceIdx++;
+        continue;
+      }
+
+      const dist = haverDist(userLat, userLng, step.lat, step.lng);
+
+      // PRE-ANUNCIO: entre 35m y 200m
+      if (step.phase === 0 && dist <= 200 && dist > 35) {
+        step.phase = 1;
+        const distVoz = `En ${Math.round(dist)} metros`;
+        this._speak(`${distVoz}, ${step.dir}.`);
+        // Actualizar banner de nav si está visible
+        const distTxt = `${Math.round(dist)} m`;
+        this._updateNavBanner && this._updateNavBanner(distTxt, step.dir, '', 'turn', step.diff > 0 ? 'right' : 'left');
+        break;
+      }
+
+      // ANUNCIO FINAL: a menos de 35m
+      if (step.phase <= 1 && dist <= 35) {
+        step.phase = 2;
+        if (i === this._loopVoiceIdx) this._loopVoiceIdx++;
+        this._speak(`${step.dir} ahora.`);
+        this._updateNavBanner && this._updateNavBanner('ya', step.dir, '', 'turn', step.diff > 0 ? 'right' : 'left');
+        break;
+      }
+
+      // Lejos: actualizar banner en silencio con el próximo giro
+      if (step.phase === 0 && dist > 200) {
+        const distTxt = dist < 1000 ? `${Math.round(dist)} m` : `${(dist/1000).toFixed(1)} km`;
+        this._updateNavBanner && this._updateNavBanner(distTxt, step.dir, '', 'turn', step.diff > 0 ? 'right' : 'left');
+      }
+      break; // solo procesar el próximo giro
+    }
+  },
   _navDistRestante(userLat, userLng) {
     const coords = this._voiceNavRouteCoords;
     if (!coords || coords.length < 2) return null;
