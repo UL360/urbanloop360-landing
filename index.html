@@ -1952,6 +1952,7 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
   position: relative;
   width: 20px; height: 20px;
   display: flex; align-items: center; justify-content: center;
+  transition: width .3s ease, height .3s ease;
 }
 /* box-shadow animado en lugar de transform:scale() — evita capa GPU separada
    que causaba que el pin se moviera visualmente al hacer zoom en mobile */
@@ -1963,12 +1964,47 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
   box-shadow: 0 0 0 0 rgba(37,99,235,0.5);
   animation: locPulse 2s ease-out infinite;
   flex-shrink: 0;
+  transition: background .3s ease;
 }
 .user-loc-pulse { display: none; }
 @keyframes locPulse {
   0%   { box-shadow: 0 0 0 0    rgba(37,99,235,0.55); }
   60%  { box-shadow: 0 0 0 12px rgba(37,99,235,0);    }
   100% { box-shadow: 0 0 0 0    rgba(37,99,235,0);    }
+}
+
+/* ── Variante de navegación activa: flecha direccional naranja + anillo pulsante ── */
+.user-loc-wrap.nav-active {
+  width: 34px; height: 34px;
+}
+.user-loc-wrap.nav-active .user-loc-dot {
+  display: none; /* se reemplaza por la flecha */
+}
+.user-loc-nav-ring {
+  display: none;
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(255,95,0,.35);
+  animation: navRingPulse 1.6s ease-out infinite;
+}
+.user-loc-wrap.nav-active .user-loc-nav-ring { display: block; }
+.user-loc-wrap.nav-active .user-loc-nav-ring:nth-child(3) { animation-delay: .55s; }
+@keyframes navRingPulse {
+  0%   { transform: scale(.35); opacity: .8; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+.user-loc-nav-arrow {
+  display: none;
+  position: relative;
+  width: 22px; height: 22px;
+  z-index: 1;
+}
+.user-loc-wrap.nav-active .user-loc-nav-arrow { display: block; }
+.user-loc-nav-arrow svg {
+  width: 100%; height: 100%;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.5));
+  transition: transform .25s ease;
 }
 
 /* ═══ PINES DE LOGO (Inicio de Loop / FotoLoop / Comercio) ═══ */
@@ -6508,7 +6544,15 @@ const App = {
 
     const el = document.createElement('div');
     el.className = 'user-loc-wrap';
-    el.innerHTML = '<div class="user-loc-dot"></div>';
+    el.innerHTML = `
+      <div class="user-loc-dot"></div>
+      <div class="user-loc-nav-ring"></div>
+      <div class="user-loc-nav-ring"></div>
+      <div class="user-loc-nav-arrow" id="user-loc-nav-arrow">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 1.5 L21 20.5 L12 16 L3 20.5 Z" fill="#FF5F00" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+      </div>`;
 
     this._locMarker   = null;
     this._locCentered = true;
@@ -6546,6 +6590,13 @@ const App = {
       const rawLng = pos.coords.longitude;
       const acc = Math.min(pos.coords.accuracy, 300);
       const gpsHeading = pos.coords.heading; // null si está quieto
+
+      // ── Flecha direccional (modo navegación): siempre apunta hacia donde vas,
+      //    aunque el mapa ya esté rotado (compensa contra el bearing actual del mapa) ──
+      if (this._navModeActive && gpsHeading != null && !isNaN(gpsHeading)) {
+        const arrowSvg = document.querySelector('#user-loc-nav-arrow svg');
+        if (arrowSvg) arrowSvg.style.transform = `rotate(${gpsHeading - this.mainMap.getBearing()}deg)`;
+      }
 
       // ── Filtro de precisión: ignorar si la señal GPS es muy mala ──
       const accThreshold = (this._navLine && this._navLine.length) ? 20 : 40;
@@ -9166,6 +9217,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     // 7. Mantener la pantalla encendida durante toda la navegación (loop y fotoloop)
     this._acquireWakeLock();
 
+    // 7b. Pin de ubicación → flecha direccional naranja + anillo pulsante mientras se navega
+    if (this._locEl) this._locEl.classList.add('nav-active');
+
     // 8. Tocar la pantalla alterna entre vista cercana en 3D (~20m, tipo "voy caminando/manejando")
     //    y vista general — como el toggle de zoom de Waze/Google Maps al tocar el mapa.
     this._navZoomMode = 'far';
@@ -9219,6 +9273,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     // 6. Liberar la pantalla — ya no hace falta mantenerla encendida
     if (this.grabState !== 'recording') this._releaseWakeLock();
+
+    // 6b. Pin de ubicación → volver al puntito celeste normal
+    if (this._locEl) this._locEl.classList.remove('nav-active');
 
     // 7. Quitar el toggle de zoom por toque
     if (this._navTapZoomHandler) {
