@@ -16854,6 +16854,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 3000 }
       );
     } else { this._grabSimulate(); }
+    // Si ya hay línea dibujada (reanudando desde pausa), reactivar el pulso
+    if (this._grabLine) this._startGrabLinePulse();
     this._updateGrabUI();
     this.toast('🔴 Grabando tu loop...');
   },
@@ -16935,8 +16937,13 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         this.grabMap.getSource('grab-line-src').setData({type:'Feature',geometry:{type:'LineString',coordinates:coords}});
       } else if(this.grabPts.length>=2){
         this.grabMap.addSource('grab-line-src',{type:'geojson',data:{type:'Feature',geometry:{type:'LineString',coordinates:coords}}});
-        this.grabMap.addLayer({id:'grab-line-layer',type:'line',source:'grab-line-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':'#FF5F00','line-width':5,'line-opacity':0.92}});
+        // Capa glow (halo difuso naranja debajo)
+        this.grabMap.addLayer({id:'grab-line-glow',type:'line',source:'grab-line-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':'#FF5F00','line-width':18,'line-opacity':0.22,'line-blur':6}});
+        // Capa principal naranja
+        this.grabMap.addLayer({id:'grab-line-layer',type:'line',source:'grab-line-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':'#FF5F00','line-width':6,'line-opacity':0.95}});
         this._grabLine=true;
+        // Animación de pulso — late cada 1.2s mientras graba
+        this._startGrabLinePulse();
       }
       // Seguimiento 3D en el mapa de grabación
       const bearing = this._lastGrabBearing || 0;
@@ -16955,11 +16962,52 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const sEl=document.getElementById('grab-speed'); if(sEl) sEl.textContent=speed;
     const pEl=document.getElementById('grab-pts-ct'); if(pEl) pEl.textContent=this.grabPts.length+' puntos GPS';
   },
+  // ── Animación pulso + glow en la línea de grabación ──
+  _startGrabLinePulse() {
+    this._stopGrabLinePulse();
+    let phase = 0;
+    this._grabPulseInterval = setInterval(() => {
+      if (!this.grabMap || this.grabState !== 'recording') return;
+      try {
+        // Oscila entre ancho 5 y 8, glow entre opacidad 0.18 y 0.38
+        const t = (Math.sin(phase) + 1) / 2; // 0..1
+        const w = 5 + t * 3;          // 5 → 8
+        const go = 0.18 + t * 0.20;   // 0.18 → 0.38
+        const gw = 14 + t * 10;       // 14 → 24
+        if (this.grabMap.getLayer('grab-line-layer')) {
+          this.grabMap.setPaintProperty('grab-line-layer', 'line-width', w);
+        }
+        if (this.grabMap.getLayer('grab-line-glow')) {
+          this.grabMap.setPaintProperty('grab-line-glow', 'line-width', gw);
+          this.grabMap.setPaintProperty('grab-line-glow', 'line-opacity', go);
+        }
+        phase += 0.12; // velocidad del pulso
+      } catch(e) {}
+    }, 40); // ~25fps
+  },
+  _stopGrabLinePulse() {
+    if (this._grabPulseInterval) {
+      clearInterval(this._grabPulseInterval);
+      this._grabPulseInterval = null;
+    }
+    // Restaurar valores base
+    try {
+      if (this.grabMap && this.grabMap.getLayer('grab-line-layer')) {
+        this.grabMap.setPaintProperty('grab-line-layer', 'line-width', 5);
+        this.grabMap.setPaintProperty('grab-line-layer', 'line-opacity', 0.92);
+      }
+      if (this.grabMap && this.grabMap.getLayer('grab-line-glow')) {
+        this.grabMap.setPaintProperty('grab-line-glow', 'line-width', 18);
+        this.grabMap.setPaintProperty('grab-line-glow', 'line-opacity', 0.22);
+      }
+    } catch(e) {}
+  },
   _grabPause() {
     this.grabState='paused';
     clearInterval(this.grabTimer);
     if(this._grabSim){clearInterval(this._grabSim);this._grabSim=null;}
-    this._releaseWakeLock(); // liberar pantalla al pausar
+    this._releaseWakeLock();
+    this._stopGrabLinePulse(); // detener pulso al pausar
     this._updateGrabUI();
     this.toast('⏸ Loop pausado');
   },
@@ -16968,7 +17016,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     clearInterval(this.grabTimer);
     if(this._grabSim){clearInterval(this._grabSim);this._grabSim=null;}
     if(this.grabWatcher){ navigator.geolocation.clearWatch(this.grabWatcher); this.grabWatcher=null; }
-    this._releaseWakeLock(); // liberar pantalla al detener
+    this._releaseWakeLock();
+    this._stopGrabLinePulse(); // detener pulso al finalizar
     if(this.grabPts.length < 2){ this.toast('⚠️ Recorrido muy corto'); this.grabState='idle'; this._updateGrabUI(); return; }
     this.grabState='done';
     this._updateGrabUI();
@@ -17202,6 +17251,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   _cancelGrabSave() {
     // Descartar grabación
     this._releaseWakeLock();
+    this._stopGrabLinePulse();
     this.grabPts=[]; this.grabSecs=0; this.grabState='idle';
     this._grabStopPois=[]; this._grabCoverB64=null;
     this._closeGrabSaveModal();
@@ -17211,6 +17261,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const sEl=document.getElementById('grab-speed'); if(sEl) sEl.textContent='0.0';
     const pEl=document.getElementById('grab-pts-ct'); if(pEl) pEl.textContent='0 puntos GPS';
     if(this.grabMap){
+      try{ this.grabMap.removeLayer('grab-line-glow'); }catch(e){}
       try{ this.grabMap.removeLayer('grab-line-layer'); this.grabMap.removeSource('grab-line-src'); }catch(e){}
       this._grabLine=null;
     }
