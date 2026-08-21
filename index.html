@@ -20457,6 +20457,13 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
           </div>
           <div style="flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:12px;">
             <div>
+              <div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Foto del punto</div>
+              <div id="acc-foto-preview" style="width:100%;height:120px;border-radius:12px;border:1.5px dashed var(--bd);background:var(--bg2);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;" onclick="document.getElementById('acc-foto-input').click()">
+                <div style="text-align:center;color:var(--gr);"><div style="font-size:28px;">📷</div><div style="font-size:12px;margin-top:4px;">Tocar para agregar foto</div></div>
+              </div>
+              <input type="file" id="acc-foto-input" accept="image/*" style="display:none" onchange="App._accPuntoHandleImg(this)">
+            </div>
+            <div>
               <div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Nombre / referencia *</div>
               <input type="text" id="acc-nombre" placeholder="Ej: Baño accesible - Plaza San Martín" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg2);color:var(--dk);font-size:13px;font-family:var(--fH);box-sizing:border-box;">
             </div>
@@ -20507,10 +20514,13 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
 
   _accPuntoCard(n) {
     const info = this._accCatInfo(n.categoria);
+    const thumb = n.img
+      ? `<img src="${n.img}" style="width:52px;height:52px;object-fit:cover;border-radius:10px;flex-shrink:0;" loading="lazy">`
+      : `<div style="width:52px;height:52px;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">${info.em}</div>`;
     return `
       <div class="adm-item">
         <div class="adm-item-row" style="align-items:flex-start;gap:10px;">
-          <div style="width:52px;height:52px;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">${info.em}</div>
+          ${thumb}
           <div style="flex:1;min-width:0;">
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
               <div class="adm-item-name">${App._esc(n.nombre||'Sin nombre')}</div>
@@ -20522,6 +20532,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
           </div>
         </div>
         <div class="adm-item-actions" style="margin-top:8px;">
+          ${n.lat && n.lng ? `<button class="adm-btn" onclick="App._navToFotoLoop(${n.lat},${n.lng},'${App._esc(n.nombre||'Punto accesible').replace(/'/g,"\\'")}')" style="background:var(--bg2);border:1px solid var(--bd);color:var(--dk);">🧭 Cómo llegar</button>` : ''}
           <button class="adm-btn" onclick="App._accPuntoFormAbrir('${n.id}')" style="background:var(--bg2);border:1px solid var(--bd);color:var(--dk);">✏️ Editar</button>
           <button class="adm-btn adm-btn-red" onclick="App._accPuntoEliminar('${n.id}','${App._esc(n.nombre||'')}')">🗑 Eliminar</button>
         </div>
@@ -20541,6 +20552,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
 
   _accPuntoFormAbrir(id) {
     this._accPuntoEditId = id;
+    this._accPuntoImgData = null;
     const modal = document.getElementById('acc-modal-bg');
     if (!modal) return;
     modal.style.display = 'flex';
@@ -20548,6 +20560,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const title = document.getElementById('acc-form-title');
     if (title) title.textContent = n ? `Editar: ${n.nombre||'Punto'}` : 'Nuevo punto accesible';
     const set = (eid, val) => { const e = document.getElementById(eid); if (!e) return; if (e.type === 'checkbox') e.checked = val === true; else e.value = val || ''; };
+    const prev = document.getElementById('acc-foto-preview');
     if (n) {
       set('acc-nombre', n.nombre); set('acc-categoria', n.categoria); set('acc-ciudad', n.ciudad);
       set('acc-provincia', n.provincia); set('acc-desc', n.desc);
@@ -20556,6 +20569,9 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       const lngEl = document.getElementById('acc-lng'); if (lngEl) lngEl.value = n.lng || '';
       const cd = document.getElementById('acc-coords-display');
       if (cd && n.lat && n.lng) cd.textContent = `📍 ${parseFloat(n.lat).toFixed(5)}, ${parseFloat(n.lng).toFixed(5)}`;
+      if (prev) prev.innerHTML = n.img
+        ? `<img src="${n.img}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">`
+        : `<div style="text-align:center;color:var(--gr);"><div style="font-size:28px;">📷</div><div style="font-size:12px;margin-top:4px;">Tocar para agregar foto</div></div>`;
     } else {
       ['acc-nombre','acc-provincia','acc-desc'].forEach(fid => { const e = document.getElementById(fid); if (e) e.value = ''; });
       const ciudadEl = document.getElementById('acc-ciudad');
@@ -20566,8 +20582,19 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       const lngEl = document.getElementById('acc-lng'); if (lngEl) lngEl.value = '';
       const cd = document.getElementById('acc-coords-display');
       if (cd) cd.textContent = 'Sin ubicación seleccionada';
+      if (prev) prev.innerHTML = `<div style="text-align:center;color:var(--gr);"><div style="font-size:28px;">📷</div><div style="font-size:12px;margin-top:4px;">Tocar para agregar foto</div></div>`;
     }
     setTimeout(() => App._accMapInit(n ? n.lat : null, n ? n.lng : null), 220);
+  },
+
+  _accPuntoHandleImg(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    this._compressImg(file, b64 => {
+      this._accPuntoImgData = b64;
+      const prev = document.getElementById('acc-foto-preview');
+      if (prev) prev.innerHTML = `<img src="${b64}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">`;
+    });
   },
 
   _accMapInit(lat, lng) {
@@ -20631,6 +20658,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (modal) modal.style.display = 'none';
     if (this._accMap) { try { this._accMap.remove(); } catch(e){} this._accMap = null; this._accMarker = null; }
     this._accPuntoEditId = null;
+    this._accPuntoImgData = null;
   },
 
   async _accPuntoGuardar() {
@@ -20646,6 +20674,16 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       activo: document.getElementById('acc-activo')?.checked !== false,
       updatedAt: Date.now(),
     };
+    if (this._accPuntoImgData) {
+      try {
+        const docId = this._accPuntoEditId || ('acc-' + Date.now());
+        const ref = await this._uploadImg(this._accPuntoImgData, `accesibilidad_puntos/${docId}.jpg`);
+        data.img = ref;
+      } catch(e) { data.img = this._accPuntoImgData; }
+    } else if (this._accPuntoEditId) {
+      const existing = (this._accPuntosCache||[]).find(x => x.id === this._accPuntoEditId);
+      if (existing?.img) data.img = existing.img;
+    }
     if (!this._db) return this.toast('❌ Firebase no disponible');
     try {
       if (this._accPuntoEditId) {
@@ -20717,6 +20755,13 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
             </div>
             <div id="acc-loop-info" style="font-size:12px;color:var(--gr);text-align:center;">0 puntos · 0.0 km</div>
             <div>
+              <div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Foto del recorrido</div>
+              <div id="acc-loop-foto-preview" style="width:100%;height:120px;border-radius:12px;border:1.5px dashed var(--bd);background:var(--bg2);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;" onclick="document.getElementById('acc-loop-foto-input').click()">
+                <div style="text-align:center;color:var(--gr);"><div style="font-size:28px;">📷</div><div style="font-size:12px;margin-top:4px;">Tocar para agregar foto</div></div>
+              </div>
+              <input type="file" id="acc-loop-foto-input" accept="image/*" style="display:none" onchange="App._accLoopHandleImg(this)">
+            </div>
+            <div>
               <div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Nombre del recorrido *</div>
               <input type="text" id="acc-loop-nombre" placeholder="Ej: Costanera accesible" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg2);color:var(--dk);font-size:13px;font-family:var(--fH);box-sizing:border-box;">
             </div>
@@ -20745,10 +20790,14 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   },
 
   _accLoopCard(n) {
+    const thumb = n.img
+      ? `<img src="${n.img}" style="width:52px;height:52px;object-fit:cover;border-radius:10px;flex-shrink:0;" loading="lazy">`
+      : `<div style="width:52px;height:52px;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">♿</div>`;
+    const first = (n.pts && n.pts[0]) || null;
     return `
       <div class="adm-item">
         <div class="adm-item-row" style="align-items:flex-start;gap:10px;">
-          <div style="width:52px;height:52px;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">♿</div>
+          ${thumb}
           <div style="flex:1;min-width:0;">
             <div class="adm-item-name">${App._esc(n.nombre||'Sin nombre')}</div>
             <div class="adm-item-meta">${n.dist ? n.dist+' · ' : ''}${n.ciudad ? App._esc(n.ciudad) : ''}</div>
@@ -20756,6 +20805,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
           </div>
         </div>
         <div class="adm-item-actions" style="margin-top:8px;">
+          ${first ? `<button class="adm-btn" onclick="App._navToFotoLoop(${first[0]},${first[1]},'${App._esc(n.nombre||'Loop accesible').replace(/'/g,"\\'")}')" style="background:var(--bg2);border:1px solid var(--bd);color:var(--dk);">🧭 Cómo llegar</button>` : ''}
           <button class="adm-btn adm-btn-red" onclick="App._accLoopEliminar('${n.id}','${App._esc(n.nombre||'')}')">🗑 Eliminar</button>
         </div>
       </div>`;
@@ -20763,12 +20813,25 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
 
   _accLoopFormAbrir() {
     this._accLoopPts = [];
+    this._accLoopImgData = null;
     const modal = document.getElementById('acc-loop-modal-bg');
     if (!modal) return;
     modal.style.display = 'flex';
     ['acc-loop-nombre','acc-loop-desc'].forEach(fid => { const e = document.getElementById(fid); if (e) e.value = ''; });
     const ciudadEl = document.getElementById('acc-loop-ciudad'); if (ciudadEl) ciudadEl.value = this._admCity || '';
+    const prev = document.getElementById('acc-loop-foto-preview');
+    if (prev) prev.innerHTML = `<div style="text-align:center;color:var(--gr);"><div style="font-size:28px;">📷</div><div style="font-size:12px;margin-top:4px;">Tocar para agregar foto</div></div>`;
     setTimeout(() => App._accLoopMapInit(), 220);
+  },
+
+  _accLoopHandleImg(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    this._compressImg(file, b64 => {
+      this._accLoopImgData = b64;
+      const prev = document.getElementById('acc-loop-foto-preview');
+      if (prev) prev.innerHTML = `<img src="${b64}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">`;
+    });
   },
 
   _accLoopMapInit() {
@@ -20829,6 +20892,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     (this._accLoopMarkers || []).forEach(m => { try{ m.remove(); }catch(e){} });
     this._accLoopMarkers = [];
     this._accLoopPts = [];
+    this._accLoopImgData = null;
   },
 
   async _accLoopGuardar() {
@@ -20844,6 +20908,12 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       dist: `${dist.toFixed(2)} km`,
       createdAt: Date.now(),
     };
+    if (this._accLoopImgData) {
+      try {
+        const docId = 'accloop-' + Date.now();
+        data.img = await this._uploadImg(this._accLoopImgData, `accesibilidad_loops/${docId}.jpg`);
+      } catch(e) { data.img = this._accLoopImgData; }
+    }
     if (!this._db) return this.toast('❌ Firebase no disponible');
     try {
       await this._db.collection('accesibilidad_loops').doc().set(data);
@@ -20886,8 +20956,32 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       el.className = 'ul-pin-wrap ul-pin-comercio';
       el.innerHTML = `<img src="${this._PIN_ACCESIBILIDAD}" style="filter:drop-shadow(0 3px 6px rgba(0,0,0,.45));" alt="${p.nombre || 'Punto accesible'}" draggable="false">`;
       el.title = `${p.nombre||''} — ${info.label}`;
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', (e) => { e.stopPropagation(); this._showAccPuntoPopup(p); });
       return new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([p.lng, p.lat]).addTo(this.mainMap);
     });
+  },
+
+  _showAccPuntoPopup(p) {
+    if (this._accPopup) { try { this._accPopup.remove(); } catch(e){} }
+    const info = this._accCatInfo(p.categoria);
+    const imgHtml = p.img
+      ? `<img src="${p.img}" style="width:100%;height:110px;object-fit:cover;border-radius:10px 10px 0 0;">`
+      : `<div style="width:100%;height:70px;background:linear-gradient(135deg,#2563EB25,#2563EB55);display:flex;align-items:center;justify-content:center;font-size:34px;border-radius:10px 10px 0 0;">${info.em}</div>`;
+    const html = `
+      <div style="width:220px;font-family:var(--fH);background:#14141c;border-radius:10px;overflow:hidden;color:#fff;">
+        ${imgHtml}
+        <div style="padding:10px;">
+          <div style="font-size:13px;font-weight:700;margin-bottom:2px;">${this._esc(p.nombre||'Punto accesible')}</div>
+          <div style="font-size:11px;color:#9898B8;margin-bottom:8px;">${info.em} ${info.label}</div>
+          <button onclick="App._navToFotoLoop(${p.lat},${p.lng},'${this._esc(p.nombre||'Punto accesible').replace(/'/g,"\\'")}');App._accPopup&&App._accPopup.remove();"
+            style="width:100%;height:32px;background:#2563EB;color:white;border:none;border-radius:8px;font-family:var(--fH);font-size:12px;font-weight:700;cursor:pointer;">
+            🧭 Cómo llegar
+          </button>
+        </div>
+      </div>`;
+    this._accPopup = new maplibregl.Popup({ closeButton: true, closeOnClick: true, offset: 24, className: 'ul-popup-clean' })
+      .setLngLat([p.lng, p.lat]).setHTML(html).addTo(this.mainMap);
   },
 
   async _accLoadLoopsMapa(force) {
@@ -20913,8 +21007,33 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
         this.mainMap.addSource(srcId, { type:'geojson', data:{ type:'Feature', geometry:{ type:'LineString', coordinates: coords } } });
         this.mainMap.addLayer({ id: lyrId, type:'line', source: srcId,
           paint:{ 'line-color':'#22C55E', 'line-width':5, 'line-dasharray':[0.2,1.5] } });
+        this.mainMap.on('click', lyrId, () => this._showAccLoopPopup(loop));
+        this.mainMap.on('mouseenter', lyrId, () => { this.mainMap.getCanvas().style.cursor = 'pointer'; });
+        this.mainMap.on('mouseleave', lyrId, () => { this.mainMap.getCanvas().style.cursor = ''; });
       }
     });
+  },
+
+  _showAccLoopPopup(loop) {
+    if (this._accPopup) { try { this._accPopup.remove(); } catch(e){} }
+    const first = loop.pts[0];
+    const imgHtml = loop.img
+      ? `<img src="${loop.img}" style="width:100%;height:110px;object-fit:cover;border-radius:10px 10px 0 0;">`
+      : `<div style="width:100%;height:70px;background:linear-gradient(135deg,#22C55E25,#22C55E55);display:flex;align-items:center;justify-content:center;font-size:34px;border-radius:10px 10px 0 0;">♿</div>`;
+    const html = `
+      <div style="width:220px;font-family:var(--fH);background:#14141c;border-radius:10px;overflow:hidden;color:#fff;">
+        ${imgHtml}
+        <div style="padding:10px;">
+          <div style="font-size:13px;font-weight:700;margin-bottom:2px;">${this._esc(loop.nombre||'Loop accesible')}</div>
+          <div style="font-size:11px;color:#9898B8;margin-bottom:8px;">♿ ${loop.dist||''}</div>
+          <button onclick="App._navToFotoLoop(${first[0]},${first[1]},'${this._esc(loop.nombre||'Loop accesible').replace(/'/g,"\\'")}');App._accPopup&&App._accPopup.remove();"
+            style="width:100%;height:32px;background:#22C55E;color:white;border:none;border-radius:8px;font-family:var(--fH);font-size:12px;font-weight:700;cursor:pointer;">
+            🧭 Cómo llegar
+          </button>
+        </div>
+      </div>`;
+    this._accPopup = new maplibregl.Popup({ closeButton: true, closeOnClick: true, offset: 12, className: 'ul-popup-clean' })
+      .setLngLat([first[1], first[0]]).setHTML(html).addTo(this.mainMap);
   },
 
   // ── REGISTRO MODAL ──
