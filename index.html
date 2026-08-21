@@ -2573,6 +2573,8 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       onclick="App._setLayer('foto')" title="Solo fotos geolocalizadas">📸 Fotoloop</button>
     <button id="lbtn-shop" class="layer-chip" aria-pressed="false"
       onclick="App._setLayer('shop')" title="Solo comercios">🏪 Comercios</button>
+    <button id="lbtn-acc"  class="layer-chip" aria-pressed="false"
+      onclick="App._setLayer('acc')"  title="Lugares accesibles" style="border-color:#BFDBFE;color:#2563EB;">♿ Accesibilidad</button>
   </div>
 
   <!-- ── SEARCH BAR movida al menú lateral — se mantienen los ids para el JS ── -->
@@ -3407,9 +3409,8 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       <option value="deporte">⚽ Deporte Loop</option>
       <option value="nocturno">🌙 Noche Loop</option>
       <option value="otro">✳️ Otro Loop</option>
+      <option value="accesibilidad">♿ Accesibilidad Loop</option>
     </select>
-  </div>
-  <div class="grab-map-wrap">
     <div id="grab-map" style="width:100%;height:100%;"></div>
     <div class="grab-map-hdr">
       <div class="grab-state-badge idle" id="grab-state-badge">
@@ -3519,6 +3520,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
         <option value="salidas">🎉 Salidas Loop</option>
         <option value="perro">🐕 Vuelta al perro Loop</option>
         <option value="otra">🗺️ Otra Loop</option>
+        <option value="accesibilidad">♿ Accesibilidad Loop</option>
       </select>
     </div>
 
@@ -4322,6 +4324,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       <option value="bienestar">🧘 Bienestar Loop</option>
       <option value="eventos">📅 Eventos Loop</option>
       <option value="perro">🐕 Mascotas Loop</option>
+      <option value="accesibilidad">♿ Accesibilidad Loop</option>
     </select>
 
     <!-- Mapa de ubicación -->
@@ -7642,8 +7645,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const mapCityLbl = document.getElementById('map-city-label');
     if (mapCityLbl) mapCityLbl.textContent = (this._luCity||'La Paz') + (this._luProv ? ', '+this._luProv : '');
 
-    const TC = { running:'#EF4444',mtb:'#16A34A',ciclismo:'#2563EB',caminata:'#D97706',perro:'#DB2777',paseo:'#0891B2',pesca:'#0E7490',atardecer:'#7C3AED',gastro:'#B45309',trad:'#92400E',relax:'#6B7280' };
-    const TYPE_LBL  = {trad:'☕',pesca:'🎣',gastro:'🍽️',atardecer:'🌅',running:'🏃',mtb:'🚵',ciclismo:'🚴',caminata:'🥾',paseo:'🌳',relax:'🧘',trabajo:'💼',vacaciones:'🏖️',salidas:'🎉',otra:'🗺️'};
+    const TC = { running:'#EF4444',mtb:'#16A34A',ciclismo:'#2563EB',caminata:'#D97706',perro:'#DB2777',paseo:'#0891B2',pesca:'#0E7490',atardecer:'#7C3AED',gastro:'#B45309',trad:'#92400E',relax:'#6B7280',accesibilidad:'#2563EB' };
+    const TYPE_LBL  = {trad:'☕',pesca:'🎣',gastro:'🍽️',atardecer:'🌅',running:'🏃',mtb:'🚵',ciclismo:'🚴',caminata:'🥾',paseo:'🌳',relax:'🧘',trabajo:'💼',vacaciones:'🏖️',salidas:'🎉',otra:'🗺️',accesibilidad:'♿'};
 
     const loopItems = (this.routes||[])
       .filter(r => r.type !== 'fotostop' && (r.status||'approved') === 'approved' && normCity(r.ciudad||r.cityId) === uCity)
@@ -8494,10 +8497,18 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   _setLayer(mode) {
     this._layerMode = mode;
     // Actualizar estilos de chips
-    ['all','muni','com','foto','shop'].forEach(m => {
+    ['all','muni','com','foto','shop','acc'].forEach(m => {
       const btn = document.getElementById('lbtn-' + m);
       if (!btn) return;
       btn.className = 'layer-chip' + (m === mode ? ' ' + m : '');
+      // Mantener color azul al chip de accesibilidad cuando no está activo
+      if (m === 'acc' && mode !== 'acc') {
+        btn.style.borderColor = '#BFDBFE';
+        btn.style.color = '#2563EB';
+      } else if (m === 'acc' && mode === 'acc') {
+        btn.style.borderColor = '';
+        btn.style.color = '';
+      }
     });
     // Cerrar el mini-menú al elegir
     const menu = document.getElementById('layer-menu');
@@ -8505,7 +8516,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     this._pillCollapse();
 
     this._applyLayer();
-    const labels = { all:'🔀 Todos los loops y fotos', muni:'🏛 Loops oficiales', com:'👥 Loops de la comunidad', foto:'📸 Solo FotoLoops', shop:'🏪 Solo Comercios' };
+    const labels = { all:'🔀 Todos los loops y fotos', muni:'🏛 Loops oficiales', com:'👥 Loops de la comunidad', foto:'📸 Solo FotoLoops', shop:'🏪 Solo Comercios', acc:'♿ Solo Accesibilidad' };
     this.toast(labels[mode] || '');
   },
 
@@ -8536,6 +8547,13 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       if (!this._negocioMarkers || this._negocioMarkers.length === 0) {
         this._drawNegociosOnMap();
       }
+    } else if (mode === 'acc') {
+      // Accesibilidad: solo loops/fotoloops/negocios marcados como accesibles
+      visible = this.routes.filter(r => r.accesible === true);
+      showFotos = false;   // los fotoloops accesibles se muestran via _accMarkers
+      showNegocios = false; // los negocios accesibles ídem
+      // Mostrar markers de accesibilidad (fotostops y negocios accesibles)
+      this._drawAccMarkers();
     } else {
       visible = [...this.routes];
     }
@@ -8573,8 +8591,73 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       } catch(e) {}
     });
 
+    // Mostrar u ocultar markers de capa Accesibilidad
+    const showAcc = (mode === 'acc');
+    (this._accLayerMarkers || []).forEach(m => {
+      try { m.getElement().style.display = showAcc ? '' : 'none'; } catch(e) {}
+    });
+    if (!showAcc && this._accLayerMarkers) {
+      // Limpiar markers al salir de la capa acc
+      this._accLayerMarkers.forEach(m => { try { m.remove(); } catch(e) {} });
+      this._accLayerMarkers = [];
+    }
+
     // Refrescar cards con el subconjunto visible
     this._renderCards('', this._activeFilter || 'all', visible);
+  },
+
+  // ── Dibuja en el mapa los markers de contenido accesible ──
+  // Muestra: fotostops con cat='accesibilidad', negocios con accesible:true,
+  // y loops ya filtrados por visible[] en _applyLayer.
+  _drawAccMarkers() {
+    if (!this.mainMap) return;
+    // Limpiar markers anteriores de esta capa
+    (this._accLayerMarkers || []).forEach(m => { try { m.remove(); } catch(e) {} });
+    this._accLayerMarkers = [];
+
+    const ACC_TIPOS = {
+      accesibilidad: { emoji: '♿', label: 'Accesible', color: '#2563EB' },
+      banio:         { emoji: '🚻', label: 'Baño accesible', color: '#0891B2' },
+      rampa:         { emoji: '♿', label: 'Rampa', color: '#1D4ED8' },
+    };
+
+    // Fotostops marcados como accesibles (cat='accesibilidad' o accesible:true)
+    (this.routes || []).filter(r => r.type === 'fotostop' && (r.accesible || r.cat === 'accesibilidad')).forEach(r => {
+      const coord = r.pts && r.pts[0]
+        ? (Array.isArray(r.pts[0]) ? [r.pts[0][1], r.pts[0][0]] : [r.pts[0].lng, r.pts[0].lat])
+        : null;
+      if (!coord) return;
+      const info = ACC_TIPOS[r.cat] || ACC_TIPOS.accesibilidad;
+      const el = document.createElement('div');
+      el.style.cssText = `width:38px;height:38px;border-radius:50%;background:${info.color};
+        display:flex;align-items:center;justify-content:center;font-size:18px;
+        box-shadow:0 2px 10px rgba(37,99,235,.45);cursor:pointer;
+        border:2.5px solid #fff;`;
+      el.textContent = info.emoji;
+      el.title = r.name || info.label;
+      el.onclick = () => this._openFotostopPopup && this._openFotostopPopup(r);
+      const marker = new mapboxgl.Marker({ element: el })
+        .setLngLat(coord)
+        .addTo(this.mainMap);
+      this._accLayerMarkers.push(marker);
+    });
+
+    // Negocios marcados como accesibles
+    (this._negocios || []).filter(n => n.accesible).forEach(n => {
+      if (!n.lat || !n.lng) return;
+      const el = document.createElement('div');
+      el.style.cssText = `width:38px;height:38px;border-radius:50%;background:#2563EB;
+        display:flex;align-items:center;justify-content:center;font-size:18px;
+        box-shadow:0 2px 10px rgba(37,99,235,.45);cursor:pointer;
+        border:2.5px solid #fff;`;
+      el.textContent = '🏪';
+      el.title = n.nombre || 'Comercio accesible';
+      el.onclick = () => this._negocioVerDetalle && this._negocioVerDetalle(n.id);
+      const marker = new mapboxgl.Marker({ element: el })
+        .setLngLat([n.lng, n.lat])
+        .addTo(this.mainMap);
+      this._accLayerMarkers.push(marker);
+    });
   },
 
   _cmSetVis(vis, btn) {
@@ -19705,6 +19788,21 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Descripción breve</div>
               <textarea id="neg-desc" rows="3" placeholder="Contá qué ofrece el negocio…" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg2);color:var(--dk);font-size:13px;font-family:var(--fH);resize:vertical;box-sizing:border-box;"></textarea>
+            </div>
+            <!-- Accesibilidad -->
+            <div style="display:flex;align-items:center;gap:12px;background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:12px;padding:12px 14px;">
+              <div style="font-size:24px;">♿</div>
+              <div style="flex:1;">
+                <div style="font-size:13px;font-weight:700;color:#1D4ED8;margin-bottom:2px;">Comercio accesible</div>
+                <div style="font-size:11px;color:#3B82F6;">Tiene rampa, entrada sin escalón o baño adaptado</div>
+              </div>
+              <label style="position:relative;width:44px;height:24px;flex-shrink:0;">
+                <input type="checkbox" id="neg-accesible" style="opacity:0;width:0;height:0;position:absolute;">
+                <span onclick="this.previousElementSibling.checked=!this.previousElementSibling.checked;this.style.background=this.previousElementSibling.checked?'#2563EB':'var(--bd)'"
+                  style="position:absolute;inset:0;border-radius:12px;background:var(--bd);cursor:pointer;transition:background .2s;">
+                  <span style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;transform:translateX(0)" id="neg-acc-knob"></span>
+                </span>
+              </label>
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">📦 Plan</div>
