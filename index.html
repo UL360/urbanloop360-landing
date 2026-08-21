@@ -6618,13 +6618,18 @@ const App = {
             bearing = this._compassHeading;
           }
 
-          // Pitch: 45 en navegación activa, 50 en 3D, 0 en followMe normal
-          const followPitch3d = this._navModeActive ? 45 : (this._is3D ? 50 : (this._followMe ? 0 : this.mainMap.getPitch()));
+          // Pitch y zoom: en navegación activa dependen del nivel elegido con el
+          // toque en pantalla (_navZoomMode: 'close' = 3D bien cerca ~20m, 'far' = vista general)
+          const navClose = this._navModeActive && this._navZoomMode === 'close';
+          const followPitch3d = this._navModeActive ? (navClose ? 65 : 45) : (this._is3D ? 50 : (this._followMe ? 0 : this.mainMap.getPitch()));
+          const followZoom = this._navModeActive
+            ? (navClose ? 19 : 16.5)
+            : Math.max(this.mainMap.getZoom(), 16);
           this.mainMap.easeTo({
             center: [lng, lat],
             bearing,
             pitch: followPitch3d,
-            zoom: Math.max(this.mainMap.getZoom(), 16),
+            zoom: followZoom,
             duration: 1200,
             easing: t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t
           });
@@ -9160,6 +9165,23 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     // 7. Mantener la pantalla encendida durante toda la navegación (loop y fotoloop)
     this._acquireWakeLock();
+
+    // 8. Tocar la pantalla alterna entre vista cercana en 3D (~20m, tipo "voy caminando/manejando")
+    //    y vista general — como el toggle de zoom de Waze/Google Maps al tocar el mapa.
+    this._navZoomMode = 'far';
+    if (!this._navTapZoomHandler) {
+      this._navTapZoomHandler = (e) => {
+        if (!this._navModeActive || !this._followMe) return;
+        // Ignorar toques que en realidad son sobre un marker, popup o control (ya manejan su propio click)
+        const t = e.originalEvent && e.originalEvent.target;
+        if (t && t.closest && t.closest('.maplibregl-marker, .maplibregl-popup, .maplibregl-ctrl, button')) return;
+        this._navZoomMode = (this._navZoomMode === 'close') ? 'far' : 'close';
+        const close = this._navZoomMode === 'close';
+        this.mainMap.easeTo({ zoom: close ? 19 : 16.5, pitch: close ? 65 : 45, duration: 650 });
+        this.toast(close ? '🔍 Vista cercana' : '🗺️ Vista general');
+      };
+      this.mainMap.on('click', this._navTapZoomHandler);
+    }
   },
 
   // ── Salir del modo navegación: restaurar UI ──
@@ -9197,6 +9219,13 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     // 6. Liberar la pantalla — ya no hace falta mantenerla encendida
     if (this.grabState !== 'recording') this._releaseWakeLock();
+
+    // 7. Quitar el toggle de zoom por toque
+    if (this._navTapZoomHandler) {
+      this.mainMap.off('click', this._navTapZoomHandler);
+      this._navTapZoomHandler = null;
+    }
+    this._navZoomMode = 'far';
   },
 
   // Cancelar navegación
