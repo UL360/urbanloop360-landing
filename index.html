@@ -676,8 +676,8 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
 /* ═══════════════════════
    DETAIL
 ═══════════════════════ */
-#detail { overflow-y:auto; }
-.dt-hero { position:relative; width:100%; height:270px; overflow:hidden; background:var(--bd); }
+#detail { overflow:hidden; }
+.dt-hero { position:relative; width:100%; height:270px; overflow:hidden; background:var(--bd); flex-shrink:0; }
 .dt-hero-img { width:100%; height:100%; object-fit:cover; display:block; }
 .dt-hero-grad { position:absolute; inset:0; background:linear-gradient(to bottom, rgba(0,0,0,.08) 0%, rgba(0,0,0,.30) 50%, rgba(0,0,0,.75) 100%); }
 .dt-back {
@@ -698,19 +698,19 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
 .dt-hero-info { position:absolute; bottom:18px; left:16px; right:16px; color:var(--wh); z-index:2; }
 .dt-hero-info h1 { font-family:var(--fH); font-size:26px; font-weight:800; color:#FFFFFF; text-shadow:0 1px 3px rgba(0,0,0,.9), 0 4px 16px rgba(0,0,0,.7); }
 .dt-hero-info p { font-size:13px; opacity:1; margin-top:4px; color:#F0F0F0; text-shadow:0 1px 4px rgba(0,0,0,.8); }
-/* ── Header sticky del detalle (aparece al scrollear) ── */
+/* ── Header fijo del detalle (aparece al scrollear el hero) ── */
 .dt-sticky-hdr {
-  position:sticky; top:0; z-index:10;
+  position:fixed; top:0; left:0; right:0; z-index:20;
   display:flex; align-items:center; gap:10px;
   padding:10px 14px;
   background:var(--wh);
   border-bottom:0.5px solid var(--bd);
   box-shadow:0 2px 8px rgba(0,0,0,.07);
-  transform:translateY(-100%);
-  transition:transform .22s cubic-bezier(.4,0,.2,1);
-  pointer-events:none;
+  opacity:0; pointer-events:none;
+  transition:opacity .2s ease;
+  max-width:430px; margin:0 auto;
 }
-.dt-sticky-hdr.visible { transform:translateY(0); pointer-events:auto; }
+.dt-sticky-hdr.visible { opacity:1; pointer-events:auto; }
 .dt-sticky-back {
   width:34px; height:34px; border-radius:50%;
   background:var(--bg0); border:1px solid var(--bd);
@@ -723,7 +723,7 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
   color:var(--dk); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 
-.dt-body { padding:18px 16px 110px; }
+.dt-body { padding:18px 16px 110px; flex:1; overflow-y:auto; }
 
 .dt-stats { display:flex; background:var(--lt); border-radius:var(--r); overflow:hidden; margin-bottom:20px; }
 .dt-stat { flex:1; padding:14px 8px; text-align:center; border-right:1px solid var(--bd); }
@@ -2845,10 +2845,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
       Ver mapa
     </button>
-    <button onclick="App._cachearLoopOffline()" title="Guardar mapa para usar sin internet"
-      style="width:40px;height:40px;border-radius:12px;border:1.5px solid var(--bd);background:var(--lt);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--md)" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-    </button>
+
     <button class="btn-go" style="flex:1;" onclick="App.startLoop()">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
       Iniciar Loop
@@ -5840,6 +5837,11 @@ const App = {
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     const target = document.getElementById(sid);
     if (target) target.classList.add('active');
+    // Ocultar header fijo del detalle si salimos de esa pantalla
+    if (sid !== 'detail') {
+      const dsh = document.getElementById('dt-sticky-hdr');
+      if (dsh) dsh.classList.remove('visible');
+    }
 
     const navScreens = ['explore','loops','loops-urbanos','saved','profile','comunidad','eventos','ranking','grabar','detail','admin','explorar-ciudades','ciudad-remota','crear-manual'];
     const showFab = sid === 'explore';
@@ -10362,29 +10364,15 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     this.go('detail');
 
-    // ── Header sticky: aparece cuando el hero scrollea fuera de vista ──
-    const detailEl = document.getElementById('detail');
+    // ── Header fijo: siempre oculto en detail (la foto queda fija, no scrollea) ──
     const stickyHdr = document.getElementById('dt-sticky-hdr');
     const stickyTitle = document.getElementById('dt-sticky-title');
     if (stickyTitle) stickyTitle.textContent = r.name;
-    // Resetear posición al abrir
     if (stickyHdr) stickyHdr.classList.remove('visible');
-    // Scroll al top al abrir la pantalla
-    if (detailEl) detailEl.scrollTop = 0;
-    // Remover listener anterior si existe
-    if (this._dtScrollFn) detailEl.removeEventListener('scroll', this._dtScrollFn);
-    this._dtScrollFn = () => {
-      const hero = document.getElementById('dt-hero');
-      if (!hero || !stickyHdr) return;
-      // Mostrar el header sticky cuando el hero ya no es visible
-      const heroBottom = hero.getBoundingClientRect().bottom;
-      if (heroBottom <= 0) {
-        stickyHdr.classList.add('visible');
-      } else {
-        stickyHdr.classList.remove('visible');
-      }
-    };
-    if (detailEl) detailEl.addEventListener('scroll', this._dtScrollFn, { passive: true });
+    // Solo el dt-body scrollea — resetear su scroll al abrir
+    const dtBody = document.querySelector('#detail .dt-body');
+    if (dtBody) dtBody.scrollTop = 0;
+    if (this._dtScrollFn && dtBody) dtBody.removeEventListener('scroll', this._dtScrollFn);
 
     // Cargar imágenes firestore: de las paradas (lazy)
     setTimeout(() => this._lazyLoadFsImgs(document.getElementById('detail')), 80);
