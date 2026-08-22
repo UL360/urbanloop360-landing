@@ -3200,8 +3200,8 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <!-- ── PENDIENTES DE REVISIÓN (global, todo el país) ── -->
     <div id="adm-tab-pendientes" class="adm-panel" style="display:none;">
       <div class="ac" style="background:var(--orL);border:1px solid var(--or);margin-bottom:14px;">
-        <div style="font-size:12px;color:var(--dk);line-height:1.5;">
-          🔔 Todo lo que está esperando tu aprobación, <b>de todas las ciudades juntas</b> — no hace falta ir cambiando el filtro de provincia/ciudad de arriba. Tocá cualquier ítem para ir a revisarlo.
+        <div id="adm-pend-hint" style="font-size:12px;color:var(--dk);line-height:1.5;">
+          🔔 Todo lo que está esperando tu aprobación, <b>de todas las ciudades juntas</b>. Elegí una ciudad en el filtro de arriba si querés ver solo una.
         </div>
       </div>
       <div id="adm-pend-chips" style="display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;">
@@ -17923,13 +17923,13 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">Cargando...</div>`;
 
     const pendLoops = (this.routes||[]).filter(r => r.type!=='fotostop' && (r.status||'approved')==='pending')
-      .map(r => ({ kind:'Loop', emoji:r.emoji||'🔄', id:r.id, name:r.name||'Loop', ciudad:r.ciudad||r.cityId||'—', provincia:r.provincia||'', autor:r.authorName||'Anónimo', ts:r.createdAt||0 }));
+      .map(r => ({ kind:'Loop', emoji:r.emoji||'🔄', id:r.id, name:r.name||'Loop', ciudad:r.ciudad||r.cityId||'—', departamento:r.departamento||'', provincia:r.provincia||'', pais:r.pais||'', autor:r.authorName||'Anónimo', ts:r.createdAt||0 }));
 
     const pendFotos = (this._fotoPosts||[]).filter(p => (p.status||'pending')==='pending')
-      .map(p => ({ kind:'Foto Loop', emoji:p.emoji||'📸', id:p.id, name:p.name||'Foto Loop', ciudad:p.ciudad||p.cityId||'—', provincia:p.provincia||'', autor:p.authorName||'Anónimo', ts:p.ts||p.createdAt||0 }));
+      .map(p => ({ kind:'Foto Loop', emoji:p.emoji||'📸', id:p.id, name:p.name||'Foto Loop', ciudad:p.ciudad||p.cityId||'—', departamento:p.departamento||'', provincia:p.provincia||'', pais:p.pais||'', autor:p.authorName||'Anónimo', ts:p.ts||p.createdAt||0 }));
 
     const pendEventos = (this._eventos||[]).filter(e => e.status==='pending')
-      .map(e => ({ kind:'Evento', emoji:e.emoji||'📅', id:e.id, name:e.name||'Evento', ciudad:e.ciudad||e.cityId||'—', provincia:e.provincia||'', autor:e.authorName||'Anónimo', ts:e.ts||0 }));
+      .map(e => ({ kind:'Evento', emoji:e.emoji||'📅', id:e.id, name:e.name||'Evento', ciudad:e.ciudad||e.cityId||'—', departamento:e.departamento||'', provincia:e.provincia||'', pais:e.pais||'', autor:e.authorName||'Anónimo', ts:e.ts||0 }));
 
     let pendReportes = [];
     if (this._db) {
@@ -17937,17 +17937,31 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
         const snap = await this._db.collection('urban_reports').where('status','==','pending').get();
         pendReportes = snap.docs.map(d => {
           const r = d.data();
-          return { kind:'Reporte', emoji:'🚩', id:d.id, name:r.titulo || r.cat || 'Reporte urbano', ciudad:r.ciudad||'—', provincia:r.provincia||'', autor:r.authorName||'Anónimo', ts:r.ts||0 };
+          return { kind:'Reporte', emoji:'🚩', id:d.id, name:r.titulo || r.cat || 'Reporte urbano', ciudad:r.ciudad||'—', departamento:r.departamento||'', provincia:r.provincia||'', pais:r.pais||'', autor:r.authorName||'Anónimo', ts:r.ts||0 };
         });
       } catch(e) { /* silencioso */ }
     }
 
     let all = [...pendLoops, ...pendFotos, ...pendEventos, ...pendReportes].sort((a,b) => a.ts - b.ts); // más viejo primero
 
+    // Si eligieron ciudad/depto/provincia en el selector de arriba, respetarlo.
+    // Si está en "Todas", se ve todo el país junto (comportamiento por defecto).
+    if (this._admCity || this._admDepto || this._admProvincia) {
+      all = all.filter(x => this._admMatchesGeoFilter(x));
+    }
+
     const f = this._admPendActiveFilter || 'all';
     if (f !== 'all') all = all.filter(x => x.kind === f);
 
     this._admPendCache = all;
+
+    // Banner: aclara si se está viendo todo el país o solo la ciudad elegida
+    const hint = document.getElementById('adm-pend-hint');
+    if (hint) {
+      hint.innerHTML = (this._admCity || this._admDepto || this._admProvincia)
+        ? `🔔 Mostrando pendientes de <b>${App._esc(this._admCity || this._admDepto || this._admProvincia)}</b> — cambiá el filtro de arriba a "Todas" para ver el país completo.`
+        : `🔔 Todo lo que está esperando tu aprobación, <b>de todas las ciudades juntas</b>. Elegí una ciudad en el filtro de arriba si querés ver solo una.`;
+    }
 
     if (!all.length) {
       list.innerHTML = '';
@@ -17977,13 +17991,16 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   _admGoToPending(i) {
     const item = (this._admPendCache||[])[i];
     if (!item) return;
-    // Resetear el selector geográfico global a "Todas" para no ocultar el ítem
-    ['adm-sel-provincia','adm-sel-departamento','adm-sel-ciudad'].forEach(id => {
-      const el = document.getElementById(id); if (el) el.value = '';
-    });
-    this._admProvincia = ''; this._admDepto = ''; this._admCity = '';
-    const badge = document.getElementById('adm-municipio-badge');
-    if (badge) badge.textContent = '🏙️ Todas las ciudades';
+    // Solo resetear el filtro geográfico a "Todas" si el filtro actual NO
+    // incluiría a este ítem (si ya coincide, se respeta la ciudad elegida).
+    if (!this._admMatchesGeoFilter(item)) {
+      ['adm-sel-provincia','adm-sel-departamento','adm-sel-ciudad'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+      });
+      this._admProvincia = ''; this._admDepto = ''; this._admCity = '';
+      const badge = document.getElementById('adm-municipio-badge');
+      if (badge) badge.textContent = '🏙️ Todas las ciudades';
+    }
 
     const map = { 'Loop':'loops', 'Foto Loop':'fotoloops', 'Evento':'eventos', 'Reporte':'reportes' };
     const tab = map[item.kind];
@@ -18348,6 +18365,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (activeTab === 'reportes')    this._admRenderReportes();
     if (activeTab === 'eventos')     this._admRenderEventos();
     if (activeTab === 'negocios')    this._admRenderNegocios();
+    if (activeTab === 'pendientes')  this._admRenderPendientes();
     if (activeTab === 'dashboard')   this._admLoadDashboard();
   },
 
