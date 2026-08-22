@@ -1334,6 +1334,12 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
   font-size:15px; background:var(--bg2); border:0.5px solid var(--bd);
   transition:all .15s;
 }
+.adm-pend-chip {
+  flex-shrink:0; padding:7px 13px; border-radius:20px; border:1.5px solid var(--bd);
+  background:var(--wh); color:var(--md); font-size:12px; font-weight:700;
+  cursor:pointer; white-space:nowrap; font-family:var(--fB); transition:all .15s;
+}
+.adm-pend-chip.on { background:var(--or); border-color:var(--or); color:white; }
 .adm-tab.on .adm-tab-ic { background:var(--orL); border-color:var(--or); }
 .adm-panel { padding:14px 14px calc(var(--navH) + 16px); }
 .adm-stat { background:var(--bg2);border-radius:12px;padding:14px;text-align:center; }
@@ -3076,6 +3082,10 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       <button class="adm-tab on" data-tab="dashboard" onclick="App._admTab('dashboard',this)">
         <span class="adm-tab-ic">📊</span>Dashboard
       </button>
+      <button class="adm-tab" data-tab="pendientes" onclick="App._admTab('pendientes',this)" style="display:flex;align-items:center;justify-content:space-between;">
+        <span><span class="adm-tab-ic">🔔</span>Pendientes</span>
+        <span id="adm-pend-badge" style="display:none;background:#EF4444;color:white;font-size:11px;font-weight:800;border-radius:10px;min-width:20px;height:20px;padding:0 6px;align-items:center;justify-content:center;">0</span>
+      </button>
       <button class="adm-tab" data-tab="crear-loop" onclick="App._admTab('crear-loop',this)">
         <span class="adm-tab-ic">➕</span>Crear loop
       </button>
@@ -3184,6 +3194,27 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
             ⬆️ Migrar ahora
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- ── PENDIENTES DE REVISIÓN (global, todo el país) ── -->
+    <div id="adm-tab-pendientes" class="adm-panel" style="display:none;">
+      <div class="ac" style="background:var(--orL);border:1px solid var(--or);margin-bottom:14px;">
+        <div style="font-size:12px;color:var(--dk);line-height:1.5;">
+          🔔 Todo lo que está esperando tu aprobación, <b>de todas las ciudades juntas</b> — no hace falta ir cambiando el filtro de provincia/ciudad de arriba. Tocá cualquier ítem para ir a revisarlo.
+        </div>
+      </div>
+      <div id="adm-pend-chips" style="display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;">
+        <button class="adm-pend-chip on" data-f="all" onclick="App._admPendFilter('all',this)">Todos</button>
+        <button class="adm-pend-chip" data-f="Loop" onclick="App._admPendFilter('Loop',this)">🔄 Loops</button>
+        <button class="adm-pend-chip" data-f="Foto Loop" onclick="App._admPendFilter('Foto Loop',this)">📸 FotoLoops</button>
+        <button class="adm-pend-chip" data-f="Evento" onclick="App._admPendFilter('Evento',this)">📅 Eventos</button>
+        <button class="adm-pend-chip" data-f="Reporte" onclick="App._admPendFilter('Reporte',this)">🚩 Reportes</button>
+      </div>
+      <div id="adm-pend-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+      <div id="adm-pend-empty" style="display:none;text-align:center;padding:40px 20px;color:var(--gr);">
+        <div style="font-size:32px;margin-bottom:8px;">✅</div>
+        <div>Nada pendiente por ahora. ¡Al día!</div>
       </div>
     </div>
 
@@ -17766,6 +17797,9 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     }
     if (denied)  denied.style.display  = 'none';
     if (content) content.style.display = 'flex';
+    // Numerito de pendientes: siempre se refresca al entrar al admin, sin
+    // importar qué pestaña haya quedado activa la última vez.
+    this._admUpdatePendingBadge();
     // Inicializar selector de municipio (primera vez o si cambia la ciudad detectada)
     this._admInitMunicipioSelector();
     // Inicializar mapa del admin (crear-loop tab)
@@ -17796,6 +17830,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (tab === 'crear-loop') setTimeout(()=>this.admMap && this.admMap.resize(), 120);
     // Cargar datos
     if (tab === 'dashboard')   this._admLoadDashboard();
+    if (tab === 'pendientes')  this._admRenderPendientes();
     if (tab === 'loops')       this._admRenderLoops();
     if (tab === 'fotoloops')   this._admRenderFotoloops();
     if (tab === 'eventos')     this._admRenderEventos();
@@ -17808,6 +17843,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
 
   // ── Dashboard ──
   async _admLoadDashboard() {
+    this._admUpdatePendingBadge();
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
     set('aStat-loops',    this.routes.filter(r=>r.type!=='fotostop').length);
     set('aStat-eventos',  (this._eventos||[]).filter(e=>e.fecha >= new Date().toISOString().split('T')[0]).length);
@@ -17847,6 +17883,114 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
           </div>
           <div style="font-size:10px;color:var(--gr);">${r.createdAt ? new Date(r.createdAt).toLocaleDateString('es-AR',{day:'2-digit',month:'short'}) : ''}</div>
         </div>`).join('');
+  },
+
+  // ══════════════════════════════════════════
+  // 🔔 PENDIENTES DE REVISIÓN — vista global (todas las ciudades juntas)
+  // ══════════════════════════════════════════
+
+  // Recalcula el total de pendientes (loops + fotoloops + eventos + reportes,
+  // sin filtrar por ciudad/provincia) y actualiza el numerito en la pestaña.
+  async _admUpdatePendingBadge() {
+    let total = (this.routes||[]).filter(r => r.type!=='fotostop' && (r.status||'approved')==='pending').length
+              + (this._fotoPosts||[]).filter(p => (p.status||'pending')==='pending').length
+              + (this._eventos||[]).filter(e => e.status==='pending').length;
+    if (this._db) {
+      try {
+        const snap = await this._db.collection('urban_reports').where('status','==','pending').get();
+        total += snap.size;
+      } catch(e) { /* si falla, el badge queda con el parcial local */ }
+    }
+    const badge = document.getElementById('adm-pend-badge');
+    if (badge) {
+      badge.textContent = total > 99 ? '99+' : String(total);
+      badge.style.display = total > 0 ? 'flex' : 'none';
+    }
+    return total;
+  },
+
+  _admPendFilter(f, btnEl) {
+    this._admPendActiveFilter = f;
+    document.querySelectorAll('.adm-pend-chip').forEach(b => b.classList.remove('on'));
+    if (btnEl) btnEl.classList.add('on');
+    this._admRenderPendientes();
+  },
+
+  async _admRenderPendientes() {
+    const list  = document.getElementById('adm-pend-list');
+    const empty = document.getElementById('adm-pend-empty');
+    if (!list) return;
+    list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">Cargando...</div>`;
+
+    const pendLoops = (this.routes||[]).filter(r => r.type!=='fotostop' && (r.status||'approved')==='pending')
+      .map(r => ({ kind:'Loop', emoji:r.emoji||'🔄', id:r.id, name:r.name||'Loop', ciudad:r.ciudad||r.cityId||'—', provincia:r.provincia||'', autor:r.authorName||'Anónimo', ts:r.createdAt||0 }));
+
+    const pendFotos = (this._fotoPosts||[]).filter(p => (p.status||'pending')==='pending')
+      .map(p => ({ kind:'Foto Loop', emoji:p.emoji||'📸', id:p.id, name:p.name||'Foto Loop', ciudad:p.ciudad||p.cityId||'—', provincia:p.provincia||'', autor:p.authorName||'Anónimo', ts:p.ts||p.createdAt||0 }));
+
+    const pendEventos = (this._eventos||[]).filter(e => e.status==='pending')
+      .map(e => ({ kind:'Evento', emoji:e.emoji||'📅', id:e.id, name:e.name||'Evento', ciudad:e.ciudad||e.cityId||'—', provincia:e.provincia||'', autor:e.authorName||'Anónimo', ts:e.ts||0 }));
+
+    let pendReportes = [];
+    if (this._db) {
+      try {
+        const snap = await this._db.collection('urban_reports').where('status','==','pending').get();
+        pendReportes = snap.docs.map(d => {
+          const r = d.data();
+          return { kind:'Reporte', emoji:'🚩', id:d.id, name:r.titulo || r.cat || 'Reporte urbano', ciudad:r.ciudad||'—', provincia:r.provincia||'', autor:r.authorName||'Anónimo', ts:r.ts||0 };
+        });
+      } catch(e) { /* silencioso */ }
+    }
+
+    let all = [...pendLoops, ...pendFotos, ...pendEventos, ...pendReportes].sort((a,b) => a.ts - b.ts); // más viejo primero
+
+    const f = this._admPendActiveFilter || 'all';
+    if (f !== 'all') all = all.filter(x => x.kind === f);
+
+    this._admPendCache = all;
+
+    if (!all.length) {
+      list.innerHTML = '';
+      if (empty) empty.style.display = 'block';
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+
+    list.innerHTML = all.map((item, i) => {
+      const fecha = item.ts ? new Date(item.ts).toLocaleDateString('es-AR', { day:'2-digit', month:'short' }) : '';
+      const lugar = [item.ciudad, item.provincia].filter(Boolean).join(', ');
+      return `
+        <div onclick="App._admGoToPending(${i})" style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--wh);border:0.5px solid var(--bd);border-left:3px solid #F59E0B;border-radius:12px;cursor:pointer;">
+          <div style="font-size:22px;flex-shrink:0;">${item.emoji}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:700;color:var(--dk);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${App._esc(item.name)}</div>
+            <div style="font-size:11px;color:var(--gr);margin-top:2px;">${item.kind} · ${App._esc(lugar)} · ${App._esc(item.autor)}${fecha ? ' · '+fecha : ''}</div>
+          </div>
+          <div style="flex-shrink:0;font-size:10px;font-weight:800;color:#D97706;background:#FEF3C7;padding:4px 9px;border-radius:8px;white-space:nowrap;">⏳ Pendiente</div>
+        </div>`;
+    }).join('');
+  },
+
+  // Te lleva a la pestaña de detalle correspondiente, con el filtro geográfico
+  // reseteado a "Todas" (para que el ítem sea visible sin importar la ciudad)
+  // y el filtro de estado en "Pendientes".
+  _admGoToPending(i) {
+    const item = (this._admPendCache||[])[i];
+    if (!item) return;
+    // Resetear el selector geográfico global a "Todas" para no ocultar el ítem
+    ['adm-sel-provincia','adm-sel-departamento','adm-sel-ciudad'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    this._admProvincia = ''; this._admDepto = ''; this._admCity = '';
+    const badge = document.getElementById('adm-municipio-badge');
+    if (badge) badge.textContent = '🏙️ Todas las ciudades';
+
+    const map = { 'Loop':'loops', 'Foto Loop':'fotoloops', 'Evento':'eventos', 'Reporte':'reportes' };
+    const tab = map[item.kind];
+    if (!tab) return;
+    const q = { 'Loop':'adm-loops-filter', 'Foto Loop':'adm-fl-filter', 'Reporte':'adm-rep-filter-status' }[item.kind];
+    if (q) { const el = document.getElementById(q); if (el) el.value = 'pending'; }
+    this._admTab(tab);
   },
 
   // ══════════════════════════════════════════
