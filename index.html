@@ -5118,7 +5118,6 @@ const App = {
           // _userJustLoggedIn se setea en true cuando el usuario toca el botón de login
           if (user && !wasLoggedIn && this._userJustLoggedIn) {
             this._userJustLoggedIn = false;
-            setTimeout(() => this.go('profile'), 300);
             this._initNotifications();
             // Mostrar banner si no verificó el email (solo cuentas email/password)
             const isGoogle = user.providerData?.some(p => p.providerId === 'google.com');
@@ -5127,6 +5126,19 @@ const App = {
             }
             // Pedir fecha de nacimiento si no la tenemos (cuenta nueva o vieja sin este dato)
             if (this._needsBirthdate) setTimeout(() => this._showBirthdateModal(), 600);
+
+            // Si el login se disparó desde un gate en medio de otra acción
+            // (subir FotoLoop, crear un Loop, reportar algo, etc.) retomamos
+            // esa acción y NO navegamos a perfil, para no sacar al usuario
+            // de donde estaba. Si el login fue directo (botón "Iniciar sesión"
+            // del perfil), no hay callback guardado y sí vamos a perfil.
+            const resume = this._authGateOnSuccess;
+            this._authGateOnSuccess = null;
+            if (resume) {
+              setTimeout(() => resume(), 300);
+            } else {
+              setTimeout(() => this.go('profile'), 300);
+            }
           } else if (user && !wasLoggedIn) {
             // Refresh de página con sesión existente: quedarse en explore
             this._initNotifications();
@@ -5200,7 +5212,8 @@ const App = {
         this._renderCards('', this._activeFilter || 'all');
         if (this.mainMap) this._refreshMain();
         this.toast(`✅ Bienvenido, ${result.user.displayName || result.user.email}`);
-        setTimeout(() => this.go('profile'), 200);
+        // La navegación post-login (retomar la acción original o ir a perfil)
+        // la decide únicamente el listener onAuthStateChanged, para no duplicarla.
       }
 
     } catch(e) {
@@ -5387,8 +5400,9 @@ const App = {
       await cred.user.updateProfile({ displayName });
       // Forzar refresh del user para que displayName quede disponible
       this._user = cred.user;
+      this._userJustLoggedIn = true;
       this.toast(`🎉 ¡Cuenta creada! Bienvenido, ${displayName}`);
-      // onAuthStateChanged navegará al perfil
+      // onAuthStateChanged retoma la acción original (si vino de un gate) o va al perfil
     } catch(e) {
       const msg = {
         'auth/email-already-in-use':  'Ese email ya tiene una cuenta',
@@ -19713,6 +19727,9 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     // (los gates funcionales siempre se muestran)
     const prev = document.getElementById('auth-gate-overlay');
     if (prev) prev.remove();
+    // Guardar el callback para retomar la acción original (crear loop, subir
+    // foto, reportar, etc.) una vez logueado, en vez de forzar ir al perfil.
+    this._authGateOnSuccess = onSuccess || null;
 
     const ov = document.createElement('div');
     ov.id = 'auth-gate-overlay';
@@ -19816,6 +19833,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   _authGateCancel() {
     const ov = document.getElementById('auth-gate-overlay');
     if (ov) ov.remove();
+    this._authGateOnSuccess = null; // cancelado: no retomar ninguna acción al loguearse después
     if (this._fromLooperFlow) {
       this._fromLooperFlow = false;
       this._userRole = null;
