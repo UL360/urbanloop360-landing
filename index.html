@@ -7092,11 +7092,12 @@ const App = {
             this._voiceOn = true; // garantizar que la voz esté activa al entrar al loop
             this._rerouteActive = false;
             this._removeNavLine();
+            this._activateLoopVisualFocus(r.id);
             const panel = document.getElementById('nav-panel');
             if (panel) panel.remove();
 
             // ── Restaurar visibilidad del loop sin redibujar ──
-            const layerIds2 = ['line-' + r.id, 'line-' + r.id + '-border', 'line-' + r.id + '-glow'];
+            const layerIds2 = ['line-' + r.id, 'glow-' + r.id];
             layerIds2.forEach(lid => {
               try { if (this.mainMap.getLayer(lid)) this.mainMap.setLayoutProperty(lid, 'visibility', 'visible'); } catch(e) {}
             });
@@ -7369,6 +7370,52 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   },
 
   // ── Quita todas las capas/fuentes de la polilínea de un loop (usado por full y por el preview de icon) ──
+  // ── Foco visual del loop activo: línea más ancha + glow pulsante,
+  //    atenuando el resto de los loops visibles para que resalte por contraste ──
+  _activateLoopVisualFocus(activeId) {
+    if (!this.mainMap) return;
+    this._loopFocusId = activeId;
+
+    // Atenuar todos los demás loops que estén dibujados en el mapa
+    if (this._layers) {
+      Object.keys(this._layers).forEach(id => {
+        if (id === activeId) return;
+        try { if (this.mainMap.getLayer('line-'+id)) this.mainMap.setPaintProperty('line-'+id, 'line-opacity', 0.20); } catch(e){}
+        try { if (this.mainMap.getLayer('glow-'+id)) this.mainMap.setPaintProperty('glow-'+id, 'line-opacity', 0.05); } catch(e){}
+      });
+    }
+
+    // Línea del loop activo: base más ancha que la normal (5→8)
+    try { if (this.mainMap.getLayer('line-'+activeId)) this.mainMap.setPaintProperty('line-'+activeId, 'line-width', 8); } catch(e){}
+
+    // Glow pulsante: "respira" creciendo y achicándose en loop, sin parar
+    const start = performance.now();
+    const animate = (now) => {
+      if (this._loopFocusId !== activeId) return; // se desactivó o cambió → cortar
+      const t = (now - start) / 1000;
+      const pulse = (Math.sin(t * 1.6) + 1) / 2; // oscila 0..1
+      try {
+        if (this.mainMap.getLayer('glow-'+activeId)) {
+          this.mainMap.setPaintProperty('glow-'+activeId, 'line-width', 18 + pulse * 12);   // 18..30
+          this.mainMap.setPaintProperty('glow-'+activeId, 'line-opacity', 0.22 + pulse * 0.18); // 0.22..0.40
+        }
+      } catch(e){}
+      this._loopFocusRAF = requestAnimationFrame(animate);
+    };
+    this._loopFocusRAF = requestAnimationFrame(animate);
+  },
+
+  // ── Restaura el estilo normal de todos los loops (salir / cancelar / terminar) ──
+  _deactivateLoopVisualFocus() {
+    if (this._loopFocusRAF) { cancelAnimationFrame(this._loopFocusRAF); this._loopFocusRAF = null; }
+    this._loopFocusId = null;
+    if (!this.mainMap || !this._layers) return;
+    Object.keys(this._layers).forEach(id => {
+      try { if (this.mainMap.getLayer('line-'+id)) { this.mainMap.setPaintProperty('line-'+id, 'line-opacity', 0.9); this.mainMap.setPaintProperty('line-'+id, 'line-width', 5); } } catch(e){}
+      try { if (this.mainMap.getLayer('glow-'+id)) { this.mainMap.setPaintProperty('glow-'+id, 'line-opacity', 0.18); this.mainMap.setPaintProperty('glow-'+id, 'line-width', 14); } } catch(e){}
+    });
+  },
+
   _removeRouteLayers(id) {
     if (!this.mainMap) return;
     const prev = this._layers && this._layers[id];
@@ -9235,6 +9282,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     }
     this._loopStarted = false;  // reset flag de inicio de loop
     this._visitedPois = new Set(); // reset POIs visitados para guía IA
+    this._deactivateLoopVisualFocus(); // por si quedó un foco visual de una navegación anterior
     // Usar el punto de inicio seleccionado (0 = inicio, o punto más cercano)
     const startIdx = this._navStartIdx || 0;
     this._navStartIdx = 0; // reset
@@ -9632,10 +9680,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     this._lastReroute = null;
     this._voiceNavRouteCoords = null;
     this._visitedPois = new Set();
+    this._deactivateLoopVisualFocus();
     // Restaurar visibilidad del loop sin redibujar (evita pins duplicados)
     if (r) {
       // Mostrar capas del loop si estaban ocultas
-      const layerIds = ['line-' + r.id, 'line-' + r.id + '-border', 'line-' + r.id + '-glow'];
+      const layerIds = ['line-' + r.id, 'glow-' + r.id];
       layerIds.forEach(lid => {
         try { if (this.mainMap.getLayer(lid)) this.mainMap.setLayoutProperty(lid, 'visibility', 'visible'); } catch(e) {}
       });
