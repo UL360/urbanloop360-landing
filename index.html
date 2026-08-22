@@ -7203,6 +7203,33 @@ const App = {
           }
         }
       }
+
+      // ── Recalcular si te desviás del recorrido MIENTRAS el loop está activo ──
+      // (equivalente a la recalculación de Waze, pero para volver al loop en
+      // vez de volver al punto de partida — esa es la de más arriba, antes de entrar)
+      if (this._loopStarted && this._voiceNavRoute && this._voiceNavRoute.pts && this._voiceNavRoute.pts.length > 1) {
+        const loopCoords = this._voiceNavRoute.pts.map(p => Array.isArray(p) ? [p[1], p[0]] : [p.lng, p.lat]);
+        const distToLoop = this._distToPolyline(lat, lng, loopCoords);
+        const desvioUmbralLoop = 30; // metros
+
+        if (distToLoop > desvioUmbralLoop) {
+          const now = Date.now();
+          if (!this._lastReroute || now - this._lastReroute > 10000) {
+            this._lastReroute = now;
+            if (!this._rerouteActive) {
+              this._rerouteActive = true;
+              if (this._voiceOn) this._speak('Te desviaste del recorrido. Recalculando para volver al loop.');
+              this.toast('↩️ Recalculando para volver al loop...');
+              this._calcAndDrawLoopReturn(this._voiceNavRoute).finally(() => {
+                this._rerouteActive = false;
+              });
+            }
+          }
+        } else if (this._loopReturnLine) {
+          // Volviste al recorrido: sacar la línea de "vuelta al loop"
+          this._clearLoopReturnLine();
+        }
+      }
     };
 
     const onErr = (err) => {
@@ -9408,6 +9435,53 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     }
   },
 
+  // ── Recalcula y dibuja una línea corta de vuelta al recorrido cuando te
+  //    desviaste del loop MIENTRAS ya está en curso (no toca _loopStarted,
+  //    la voz de giros, ni las métricas — solo agrega esta línea temporal). ──
+  async _calcAndDrawLoopReturn(r) {
+    if (!this._locMarker || !r.pts || r.pts.length < 2) return;
+    const uLL = this._locMarker.getLngLat();
+    const loopCoords = r.pts.map(p => Array.isArray(p) ? [p[1], p[0]] : [p.lng, p.lat]);
+    // Punto más cercano del recorrido para volver ahí (reutiliza el mismo
+    // proyector que usa el snap visual de la flecha)
+    const target = this._snapPointToLine(uLL.lat, uLL.lng, loopCoords);
+    const mode = this._navModes[this._navMode] || this._navModes.foot;
+
+    this._clearLoopReturnLine(); // por si había una anterior
+
+    try {
+      const url = `https://router.project-osrm.org/route/v1/${mode.osrm}/${uLL.lng},${uLL.lat};${target.lng},${target.lat}?overview=full&geometries=geojson&steps=false&annotations=false`;
+      const resp = await fetch(url, { signal: this._abortSignal(10000) });
+      const data = await resp.json();
+      let coords;
+      if (data.code === 'Ok' && data.routes && data.routes.length) {
+        coords = data.routes[0].geometry.coordinates;
+      } else {
+        coords = [[uLL.lng, uLL.lat], [target.lng, target.lat]]; // fallback: línea recta
+      }
+      if (this.mainMap.getSource('loop-return-src')) {
+        this.mainMap.getSource('loop-return-src').setData({ type:'Feature', geometry:{ type:'LineString', coordinates:coords } });
+      } else {
+        this.mainMap.addSource('loop-return-src', { type:'geojson', data:{ type:'Feature', geometry:{ type:'LineString', coordinates:coords } } });
+        this.mainMap.addLayer({
+          id: 'loop-return-line', type: 'line', source: 'loop-return-src',
+          layout: { 'line-join':'round', 'line-cap':'round' },
+          paint: { 'line-color':'#2563EB', 'line-width':4, 'line-opacity':0.85, 'line-dasharray':[2,2] }
+        });
+      }
+      this._loopReturnLine = true;
+    } catch(e) {
+      console.warn('[_calcAndDrawLoopReturn] falló, sin línea de vuelta:', e);
+    }
+  },
+
+  _clearLoopReturnLine() {
+    if (!this._loopReturnLine) return;
+    try { if (this.mainMap.getLayer('loop-return-line')) this.mainMap.removeLayer('loop-return-line'); } catch(e) {}
+    try { if (this.mainMap.getSource('loop-return-src')) this.mainMap.removeSource('loop-return-src'); } catch(e) {}
+    this._loopReturnLine = false;
+  },
+
   _showNavPanel(r, dist, durMin, mode) {
     mode = mode || this._navModes[this._navMode] || this._navModes.foot;
     let panel = document.getElementById('nav-panel');
@@ -9681,6 +9755,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     this._voiceNavRouteCoords = null;
     this._visitedPois = new Set();
     this._deactivateLoopVisualFocus();
+    this._clearLoopReturnLine();
     // Restaurar visibilidad del loop sin redibujar (evita pins duplicados)
     if (r) {
       // Mostrar capas del loop si estaban ocultas
