@@ -2031,6 +2031,48 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
   transition: transform .25s ease;
 }
 
+/* ═══ QUICK LOOP — creación desde clic derecho en mapa ═══ */
+#ql-toolbar {
+  position:fixed; bottom:90px; left:50%; transform:translateX(-50%);
+  z-index:50; display:none;
+  background:var(--wh); border-radius:20px;
+  border:1.5px solid var(--or);
+  box-shadow:0 6px 28px rgba(255,95,0,.25);
+  padding:10px 14px; align-items:center; gap:10px;
+  font-family:var(--fB); white-space:nowrap;
+  animation:fadeUp .25s cubic-bezier(.34,1.56,.64,1);
+}
+#ql-toolbar.active { display:flex; }
+#ql-pt-count {
+  font-size:13px; font-weight:700; color:var(--or);
+  min-width:60px;
+}
+.ql-btn {
+  padding:7px 14px; border-radius:12px; border:none;
+  font-size:13px; font-weight:700; cursor:pointer;
+  font-family:var(--fB); transition:all .15s;
+}
+.ql-btn-save  { background:var(--or); color:#fff; }
+.ql-btn-save:hover  { background:var(--or2); }
+.ql-btn-undo  { background:var(--bg0); color:var(--md); border:1px solid var(--bd); }
+.ql-btn-cancel { background:transparent; color:var(--gr); font-size:12px; padding:7px 8px; }
+/* Modal de guardado quick loop */
+#ql-modal-overlay {
+  position:fixed; inset:0; z-index:200;
+  background:rgba(0,0,0,.45); display:none;
+  align-items:flex-end; justify-content:center;
+}
+#ql-modal-overlay.open { display:flex; }
+#ql-modal {
+  background:var(--wh); border-radius:24px 24px 0 0;
+  padding:20px 20px 36px; width:100%; max-width:430px;
+  animation:slideUp .3s cubic-bezier(.34,1.56,.64,1);
+}
+#ql-modal h3 { font-family:var(--fH); font-size:17px; font-weight:800; margin:0 0 14px; color:var(--dk); }
+.ql-field { margin-bottom:10px; }
+.ql-field label { font-size:11px; font-weight:700; color:var(--gr); letter-spacing:.5px; display:block; margin-bottom:4px; text-transform:uppercase; }
+@keyframes slideUp { from { transform:translateY(60px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+
 /* ═══ PINES DE LOGO (Inicio de Loop / FotoLoop / Comercio) ═══ */
 .ul-pin-wrap { cursor: pointer; pointer-events: all; display: flex; align-items: flex-end; justify-content: center; padding: 12px 10px 0; touch-action: manipulation; box-sizing: content-box; }
 .ul-pin-wrap img { width: 100%; height: 100%; object-fit: contain; display: block; transition: transform .15s; }
@@ -3539,6 +3581,52 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
           </label>
         </div>
       </div>
+  </div>
+</div>
+
+<!-- ════════════ QUICK LOOP (clic derecho en mapa) ════════════ -->
+<div id="ql-toolbar">
+  <span style="font-size:16px;">✏️</span>
+  <span id="ql-pt-count">0 puntos</span>
+  <span style="font-size:11px;color:var(--gr);">· Clic derecho para agregar</span>
+  <button class="ql-btn ql-btn-undo" onclick="App._qlUndo()">↩ Deshacer</button>
+  <button class="ql-btn ql-btn-save" onclick="App._qlOpenSave()">Guardar Loop →</button>
+  <button class="ql-btn ql-btn-cancel" onclick="App._qlCancel()">✕ Cancelar</button>
+</div>
+
+<div id="ql-modal-overlay" onclick="if(event.target===this)App._qlCloseSave()">
+  <div id="ql-modal">
+    <div style="width:36px;height:4px;background:var(--bd);border-radius:4px;margin:0 auto 16px;"></div>
+    <h3>💾 Guardar Loop</h3>
+    <div class="ql-field">
+      <label>Nombre *</label>
+      <input id="ql-name" type="text" class="fi" placeholder="ej. Loop del Parque Central…">
+    </div>
+    <div class="ql-field">
+      <label>Tipo</label>
+      <select id="ql-type" class="fi">
+        <option value="trad">☕ Tradicional Loop</option>
+        <option value="running">🏃 Running Loop</option>
+        <option value="mtb">🚵 MTB Loop</option>
+        <option value="ciclismo">🚴 Ciclismo Loop</option>
+        <option value="caminata">🥾 Caminata Loop</option>
+        <option value="paseo">🌳 Paseo Loop</option>
+        <option value="gastro">🍽️ Gastronómica Loop</option>
+        <option value="atardecer">🌅 Atardecer Loop</option>
+        <option value="relax">🧘 Relax Loop</option>
+        <option value="nocturno">🌙 Noche Loop</option>
+        <option value="aventura">🧗 Aventura Loop</option>
+        <option value="otro">✳️ Otro Loop</option>
+      </select>
+    </div>
+    <div class="ql-field">
+      <label>Descripción</label>
+      <textarea id="ql-desc" class="fi" rows="2" placeholder="Describí la experiencia…" style="resize:none;"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button onclick="App._qlCloseSave()" style="flex:0 0 auto;padding:13px 16px;border-radius:14px;border:1.5px solid var(--bd);background:var(--lt);color:var(--md);font-size:13px;font-weight:600;cursor:pointer;">Volver</button>
+      <button id="ql-save-btn" onclick="App._qlSave()" style="flex:1;padding:13px;border-radius:14px;border:none;background:var(--or);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--fH);">🚀 Publicar Loop</button>
+    </div>
   </div>
 </div>
 
@@ -6846,6 +6934,7 @@ const App = {
           if (distToStart < 5) {
             // ¡Llegó a 5m del inicio! Iniciar modo loop
             this._loopStarted = true;
+            this._voiceOn = true; // garantizar que la voz esté activa al entrar al loop
             this._rerouteActive = false;
             this._removeNavLine();
             const panel = document.getElementById('nav-panel');
@@ -6885,8 +6974,8 @@ const App = {
             }
             this._hideNavBanner();
             // ── Iniciar guía de giros dentro del loop ──
-            // Aumentamos el delay a 6s para que no solape con el mensaje de bienvenida
-            setTimeout(() => this._initLoopVoiceNav(r), 6000);
+            // 3s: suficiente para que termine el mensaje de bienvenida sin perder giros
+            setTimeout(() => this._initLoopVoiceNav(r), 3000);
             this._showLoopStartPanel(r);
           }
         }
@@ -9137,6 +9226,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
               style="width:38px;height:38px;border-radius:11px;border:1.5px solid var(--bd);background:var(--lt);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--md)" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
+
           </div>
         </div>
 
@@ -9401,6 +9491,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   },
 
   // ── Panel activo del loop (una vez que llegaste al inicio) ──
+
   _showLoopStartPanel(r) {
     let panel = document.getElementById('loop-active-panel');
     if (panel) panel.remove();
@@ -9786,7 +9877,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   // acumular una distancia mínima real (MIN_SEG metros), así el cálculo del
   // rumbo es confiable sin importar cuán densa sea la muestra de puntos.
   _initLoopVoiceNav(r) {
-    if (!r || !r.pts || r.pts.length < 3) return;
+    if (!r || !r.pts || r.pts.length < 3) { console.warn('[VOZ] pts insuficientes, saliendo'); return; }
     // NO cortamos aqui si _voiceOn es false: igual calculamos los pasos de giro
     // para que _checkLoopVoiceGPS funcione. Solo silenciamos el speak si esta off.
 
@@ -9902,7 +9993,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
   // ── Se llama en cada GPS ping cuando el loop está activo ──
   _checkLoopVoiceGPS(userLat, userLng) {
-    if (!this._voiceOn || !this._loopVoiceSteps) return;
+    if (!this._voiceOn || !this._loopVoiceSteps) {
+      return;
+    }
 
     const haverDist = (lat1, lng1, lat2, lng2) => {
       const R = 6371000;
@@ -10120,6 +10213,13 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   },
 
   _stopVoice() {
+    // Si el loop ya comenzó, NO apagar la voz — solo limpiar los pasos de navegación
+    // al punto de partida. La voz del loop (_loopVoiceSteps) sigue activa.
+    if (this._loopStarted) {
+      this._voiceSteps = null;
+      this._voiceIdx = 0;
+      return;
+    }
     this._voiceOn = false;
     this._voiceSteps = null;
     this._voiceIdx = 0;
