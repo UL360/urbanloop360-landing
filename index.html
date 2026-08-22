@@ -6911,12 +6911,20 @@ const App = {
       // ── Suavizado: promedio ponderado de últimas lecturas ──
       const { lat, lng } = smoothGPS(rawLat, rawLng, acc);
 
+      // ── Snap visual: "pegar" la flecha a la calle/ruta conocida (ruta activa
+      // hacia el loop, loop en curso, o loop seleccionado mirando el mapa) para
+      // que no quede flotando sobre veredas/casas por el margen de error del GPS.
+      // OJO: esto es solo para dónde se DIBUJA la flecha — toda la lógica de
+      // distancias/llegada/giros sigue usando lat/lng reales (sin snap), más abajo.
+      const snap0 = this._getSnappedPos(lat, lng);
+      const mLat = snap0.lat, mLng = snap0.lng;
+
       // ── Filtro de ruido: ignorar si se movió menos de MIN_MOVE_METERS ──
       if (this._lastLat !== null) {
         const d = distMeters(this._lastLat, this._lastLng, lat, lng);
         if (d < MIN_MOVE_METERS) {
-          // Actualizar marcador con posición suavizada
-          if (this._locMarker) this._locMarker.setLngLat([lng, lat]);
+          // Actualizar marcador con posición suavizada (y pegada a la calle)
+          if (this._locMarker) this._locMarker.setLngLat([mLng, mLat]);
           return;
         }
       }
@@ -6925,7 +6933,7 @@ const App = {
       if (!this._locMarker) {
         // Primera fix: crear marcador y círculo
         this._locMarker = new maplibregl.Marker({ element: el, anchor: 'center' })
-          .setLngLat([lng, lat]).addTo(this.mainMap);
+          .setLngLat([mLng, mLat]).addTo(this.mainMap);
 
         this.mainMap.addSource('user-accuracy', {
           type: 'geojson', data: this._makeCircleGeoJSON(lat, lng, acc)
@@ -6948,9 +6956,11 @@ const App = {
         this._updateCityFromGPS(lat, lng);
         this.toast('📍 Ubicación encontrada');
       } else {
-        // Actualizar marcador
-        this._locMarker.setLngLat([lng, lat]);
+        // Actualizar marcador (pegado a la calle)
+        this._locMarker.setLngLat([mLng, mLat]);
         if (this.mainMap.getSource('user-accuracy')) {
+          // El círculo de precisión sí queda en la posición REAL: representa
+          // el margen de error verdadero del GPS, no tendría sentido snappearlo.
           this.mainMap.getSource('user-accuracy').setData(this._makeCircleGeoJSON(lat, lng, acc));
         }
 
@@ -6980,7 +6990,7 @@ const App = {
             ? (navClose ? 19 : 16.5)
             : Math.max(this.mainMap.getZoom(), 16);
           this.mainMap.easeTo({
-            center: [lng, lat],
+            center: [mLng, mLat],
             bearing,
             pitch: followPitch3d,
             zoom: followZoom,
@@ -10203,6 +10213,53 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       break; // solo procesar el próximo giro
     }
   },
+  // ── Elige a qué línea "pegar" la flecha visualmente, según el contexto ──
+  // Prioridad: 1) ruta activa yendo hacia el inicio del loop, 2) el loop en
+  // curso una vez adentro, 3) el loop seleccionado mientras solo se mira el
+  // mapa (sin navegar). Si no hay ninguna de las tres, no hay a qué pegarse
+  // y se devuelve la posición real tal cual.
+  _getSnappedPos(lat, lng) {
+    let coords = null;
+    const toLngLatArr = pts => pts.map(p => Array.isArray(p) ? [p[1], p[0]] : [p.lng, p.lat]);
+
+    if (!this._loopStarted && this._voiceNavRouteCoords && this._voiceNavRouteCoords.length > 1) {
+      coords = this._voiceNavRouteCoords; // ya viene en formato [lng,lat]
+    } else if (this._loopStarted && this._voiceNavRoute && this._voiceNavRoute.pts && this._voiceNavRoute.pts.length > 1) {
+      coords = toLngLatArr(this._voiceNavRoute.pts);
+    } else if (this.selId) {
+      const r = this.routes.find(x => x.id === this.selId);
+      if (r && r.pts && r.pts.length > 1) coords = toLngLatArr(r.pts);
+    }
+
+    if (!coords) return { lat, lng }; // nada a lo que pegarse: posición real
+    return this._snapPointToLine(lat, lng, coords);
+  },
+
+  // ── Proyecta (lat,lng) sobre el segmento más cercano de una polilínea ──
+  // (aproximación plana en metros, más que suficiente a la escala de un loop
+  // urbano). Siempre devuelve un punto SOBRE la línea, nunca la posición real.
+  _snapPointToLine(lat, lng, coords) {
+    const latRad = lat * Math.PI / 180;
+    const mPerLat = 111320;
+    const mPerLng = 111320 * Math.cos(latRad);
+    const toXY = (lo, la) => [(lo - lng) * mPerLng, (la - lat) * mPerLat];
+
+    let bestDist = Infinity, bestX = 0, bestY = 0;
+    for (let i = 0; i < coords.length - 1; i++) {
+      const [ax, ay] = toXY(coords[i][0], coords[i][1]);
+      const [bx, by] = toXY(coords[i+1][0], coords[i+1][1]);
+      const dx = bx - ax, dy = by - ay;
+      const lenSq = dx*dx + dy*dy;
+      let t = lenSq > 0 ? (-ax*dx - ay*dy) / lenSq : 0;
+      t = Math.max(0, Math.min(1, t));
+      const px = ax + t*dx, py = ay + t*dy;
+      const dist = px*px + py*py;
+      if (dist < bestDist) { bestDist = dist; bestX = px; bestY = py; }
+    }
+    if (bestDist === Infinity) return { lat, lng };
+    return { lat: lat + bestY / mPerLat, lng: lng + bestX / mPerLng };
+  },
+
   _navDistRestante(userLat, userLng) {
     const coords = this._voiceNavRouteCoords;
     if (!coords || coords.length < 2) return null;
