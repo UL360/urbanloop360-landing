@@ -6347,11 +6347,10 @@ const App = {
           this._drawNegociosOnMap();
           // Re-agregar círculo GPS si estaba activo (setStyle() elimina todas las fuentes)
           if (this._locMarker && this._lastLat !== null) {
-            const ll  = this._locMarker.getLngLat();
             const acc = this._lastAcc || 40;
             try {
               this.mainMap.addSource('user-accuracy', {
-                type: 'geojson', data: this._makeCircleGeoJSON(ll.lat, ll.lng, acc)
+                type: 'geojson', data: this._makeCircleGeoJSON(this._lastLat, this._lastLng, acc)
               });
               this.mainMap.addLayer({ id:'user-accuracy-fill', type:'fill', source:'user-accuracy',
                 paint:{ 'fill-color':'#3B82F6','fill-opacity':0.12 } });
@@ -8505,12 +8504,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   _urepRefreshLoc() {
     const lbl = document.getElementById('urep-loc-label');
     if (lbl) lbl.textContent = 'Detectando ubicación...';
-    // Usar la ubicación GPS actual si está disponible
-    if (this._locMarker) {
-      const pos = this._locMarker.getLngLat();
-      this._urepLat = pos.lat;
-      this._urepLng = pos.lng;
-      if (lbl) lbl.textContent = `📍 ${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`;
+    // Usar la ubicación GPS REAL (nunca la posición visual "pegada" a un loop)
+    if (this._locMarker && this._lastLat !== null) {
+      this._urepLat = this._lastLat;
+      this._urepLng = this._lastLng;
+      if (lbl) lbl.textContent = `📍 ${this._lastLat.toFixed(5)}, ${this._lastLng.toFixed(5)}`;
       return;
     }
     if (!navigator.geolocation) {
@@ -9183,8 +9181,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
   // Encontrar el punto del loop más cercano al usuario
   _nearestLoopPoint(r) {
-    if (!r.pts || !r.pts.length || !this._locMarker) return { idx: 0, dist: Infinity };
-    const uLL = this._locMarker.getLngLat();
+    if (!r.pts || !r.pts.length || !this._locMarker || this._lastLat === null) return { idx: 0, dist: Infinity };
+    const uLL = { lat: this._lastLat, lng: this._lastLng }; // posición GPS REAL, no la visual
     let minDist = Infinity, minIdx = 0;
     r.pts.forEach((p, i) => {
       const lat = Array.isArray(p) ? p[0] : p.lat;
@@ -9207,7 +9205,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const startPt = r.pts[0];
     const startLat = Array.isArray(startPt) ? startPt[0] : startPt.lat;
     const startLng = Array.isArray(startPt) ? startPt[1] : startPt.lng;
-    const uLL = this._locMarker ? this._locMarker.getLngLat() : null;
+    const uLL = (this._locMarker && this._lastLat !== null) ? { lat: this._lastLat, lng: this._lastLng } : null; // posición REAL
     let distToStart = Infinity;
     if (uLL) {
       const dlat = (uLL.lat - startLat) * Math.PI / 180;
@@ -9317,7 +9315,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const loopStartCoord = Array.isArray(loopStart) ? [loopStart[1],loopStart[0]] : [loopStart.lng,loopStart.lat];
     // Si arranca desde el medio, marcar el índice de inicio para el progreso
     this._loopStartPtIdx = startIdx;
-    const uLL = this._locMarker.getLngLat();
+    // Posición GPS REAL (no la visual "pegada" a una línea) — es el origen
+    // real de la ruta, tiene que calcularse desde donde estás de verdad.
+    const uLL = (this._lastLat !== null)
+      ? { lat: this._lastLat, lng: this._lastLng }
+      : this._locMarker.getLngLat(); // fallback si por algún motivo no está seteada aún
 
     const mode = this._navModes[this._navMode] || this._navModes.foot;
     this.toast(`${mode.emoji} Calculando ruta ${mode.label}...`);
@@ -9439,8 +9441,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   //    desviaste del loop MIENTRAS ya está en curso (no toca _loopStarted,
   //    la voz de giros, ni las métricas — solo agrega esta línea temporal). ──
   async _calcAndDrawLoopReturn(r) {
-    if (!this._locMarker || !r.pts || r.pts.length < 2) return;
-    const uLL = this._locMarker.getLngLat();
+    if (!this._locMarker || !r.pts || r.pts.length < 2 || this._lastLat === null) return;
+    const uLL = { lat: this._lastLat, lng: this._lastLng }; // posición GPS REAL
     const loopCoords = r.pts.map(p => Array.isArray(p) ? [p[1], p[0]] : [p.lng, p.lat]);
     // Punto más cercano del recorrido para volver ahí (reutiliza el mismo
     // proyector que usa el snap visual de la flecha)
@@ -11573,10 +11575,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const el = document.getElementById('fl-map');
     if (!el || this._flMap) return;
     let center = [-59.644, -30.749]; // [lng, lat]
-    if (this._locMarker) {
-      const ll = this._locMarker.getLngLat();
-      center = [ll.lng, ll.lat];
-      this._flLat = ll.lat; this._flLng = ll.lng;
+    if (this._locMarker && this._lastLat !== null) {
+      // Posición GPS REAL — nunca la posición visual "pegada" a un loop cercano,
+      // o la foto quedaría geotagueada en el lugar equivocado.
+      center = [this._lastLng, this._lastLat];
+      this._flLat = this._lastLat; this._flLng = this._lastLng;
     }
     const startMode = document.body.classList.contains('day') ? 'day' : 'night';
     this._flMapMode = startMode;
@@ -11604,8 +11607,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       if (coords) coords.textContent = `📌 ${this._flLat.toFixed(5)}, ${this._flLng.toFixed(5)}`;
     });
 
-    if (this._locMarker) {
-      const ll = this._locMarker.getLngLat();
+    if (this._locMarker && this._lastLat !== null) {
+      const ll = { lat: this._lastLat, lng: this._lastLng }; // posición GPS REAL
       const markerEl = document.createElement('div');
       markerEl.style.cssText = 'width:28px;height:28px;border-radius:50%;background:#FF5F00;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.4);';
       this._flMarker = new maplibregl.Marker({ element: markerEl, anchor: 'center' })
@@ -11682,9 +11685,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     // Fallback: GPS actual si no marcó en el mapa
     if (!lat || !lng) {
-      if (this._locMarker) {
-        const ll = this._locMarker.getLngLat();
-        lat = ll.lat; lng = ll.lng;
+      if (this._locMarker && this._lastLat !== null) {
+        lat = this._lastLat; lng = this._lastLng; // posición GPS REAL
       } else {
         try {
           const pos = await new Promise((res, rej) =>
