@@ -1648,7 +1648,7 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
 /* ═══════════════════════
    GRABAR SCREEN
 ═══════════════════════ */
-#grabar{overflow:hidden;}
+#grabar{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
 .grab-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg1);border-bottom:0.5px solid var(--bd);flex-shrink:0;}
 .grab-hdr h2{font-family:var(--fH);font-size:17px;font-weight:700;color:#F5F5F5;}
 .grab-back{background:none;border:none;cursor:pointer;color:var(--or);font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px;font-family:var(--fB);padding:8px 4px;}
@@ -1657,10 +1657,12 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
 .grab-type-row::-webkit-scrollbar{display:none;}
 .grab-type-chip{flex-shrink:0;height:30px;padding:0 12px;border-radius:20px;border:0.5px solid #2C2C2E;background:#1C1C1E;font-size:12px;font-weight:500;color:#8A8A98;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .2s;white-space:nowrap;}
 .grab-type-chip.on{background:var(--or);border-color:var(--or);color:var(--wh);}
-.grab-map-wrap{width:100%;aspect-ratio:1/1;flex-shrink:0;position:relative;overflow:hidden;}
+/* flex-shrink:1 + max-height: el mapa cede espacio si hace falta, para que
+   siempre quede lugar visible para el panel de abajo (stats + botón Iniciar) */
+.grab-map-wrap{width:100%;aspect-ratio:1/1;flex-shrink:1;max-height:36vh;min-height:160px;position:relative;overflow:hidden;}
 #grab-map{position:absolute!important;top:0;left:0;right:0;bottom:0;width:100%!important;height:100%!important;}
 .grab-map-hdr{position:absolute;top:10px;left:10px;right:10px;z-index:400;display:flex;align-items:center;justify-content:space-between;}
-.grab-panel{flex:1;min-height:0;overflow-y:auto;background:var(--bg1);padding:14px 16px 20px;}
+.grab-panel{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg1);padding:14px 16px 20px;}
 .grab-overlay{display:contents;}
 .grab-state-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:14px;font-weight:700;background:rgba(0,0,0,.55);}
 .grab-state-badge.idle{color:#fff;}
@@ -3705,10 +3707,15 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <!-- Mapa para dibujar -->
     <div>
       <label style="font-size:12px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:6px;">TRAZADO DEL RECORRIDO</label>
-      <div style="border-radius:14px;overflow:hidden;border:2px solid var(--bd);position:relative;aspect-ratio:1/1;width:100%;">
+      <div style="border-radius:14px;overflow:hidden;border:2px solid var(--bd);position:relative;aspect-ratio:4/3;max-height:300px;min-height:220px;width:100%;">
         <div id="cm-map" style="width:100%;height:100%;display:block;"></div>
+        <div class="adm-map-style-btns" style="left:8px;right:auto;">
+          <button type="button" id="cm-map-mode-day" onclick="App._cmSetMapStyle('day')" title="Modo día">☀️</button>
+          <button type="button" id="cm-map-mode-night" onclick="App._cmSetMapStyle('night')" title="Modo noche">🌙</button>
+          <button type="button" id="cm-map-mode-satellite" onclick="App._cmSetMapStyle('satellite')" title="Modo satélite">🛰️</button>
+        </div>
         <!-- Info overlay -->
-        <div style="position:absolute;top:10px;left:10px;right:10px;pointer-events:none;">
+        <div style="position:absolute;top:10px;left:52px;right:10px;pointer-events:none;">
           <div id="cm-map-hint" style="background:rgba(0,0,0,.6);color:white;font-size:11px;font-weight:600;padding:6px 10px;border-radius:8px;text-align:center;backdrop-filter:blur(4px);">
             💡 Tocá el mapa para agregar puntos al recorrido
           </div>
@@ -4511,7 +4518,14 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
         📌 Ubicación en el mapa
         <button onclick="App._flUseMyLocation()" style="margin-left:auto;background:var(--orL);border:none;color:var(--or);font-size:12px;font-weight:700;padding:6px 12px;border-radius:10px;cursor:pointer;">📍 Usar mi ubicación</button>
       </div>
-      <div id="fl-map" style="aspect-ratio:1/1;width:100%;height:auto;border-radius:14px;border:1.5px solid var(--bd);overflow:hidden;background:var(--bg0);"></div>
+      <div id="fl-map-wrap" style="position:relative;">
+        <div id="fl-map" style="aspect-ratio:1/1;width:100%;height:auto;border-radius:14px;border:1.5px solid var(--bd);overflow:hidden;background:var(--bg0);"></div>
+        <div class="adm-map-style-btns">
+          <button type="button" id="fl-map-mode-day" onclick="App._flSetMapStyle('day')" title="Modo día">☀️</button>
+          <button type="button" id="fl-map-mode-night" onclick="App._flSetMapStyle('night')" title="Modo noche">🌙</button>
+          <button type="button" id="fl-map-mode-satellite" onclick="App._flSetMapStyle('satellite')" title="Modo satélite">🛰️</button>
+        </div>
+      </div>
       <div id="fl-coords" style="font-size:12px;color:var(--gr);margin-top:4px;text-align:center;">Tocá el mapa para marcar el lugar</div>
     </div>
 
@@ -11233,6 +11247,21 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   _setFLCat(btn) { this._fotoLoopCat = btn?.dataset?.c || 'lugar'; },
 
   // ── FOTO LOOP MAP ──
+  // ── Cambiar estilo del mapa de FotoLoop (día / noche / satélite) ──
+  _flSetMapStyle(mode) {
+    if (!this._flMap) return;
+    this._flMapMode = mode;
+    const styleUrl = mode === 'satellite' ? this._ML_STYLE_SATELLITE
+                    : mode === 'night'    ? this._ML_STYLE_DARK
+                    : this._ML_STYLE_LIGHT;
+    this._flMap.setStyle(styleUrl);
+    // El marker del pin es un elemento DOM aparte, sobrevive solo al cambio de estilo.
+    ['day','night','satellite'].forEach(m => {
+      const btn = document.getElementById('fl-map-mode-' + m);
+      if (btn) btn.classList.toggle('active', m === mode);
+    });
+  },
+
   _flMap: null,
   _flMarker: null,
   _flLat: null,
@@ -11247,10 +11276,16 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       center = [ll.lng, ll.lat];
       this._flLat = ll.lat; this._flLng = ll.lng;
     }
+    const startMode = document.body.classList.contains('day') ? 'day' : 'night';
+    this._flMapMode = startMode;
     this._flMap = new maplibregl.Map({
       container: 'fl-map',
-      style: document.body.classList.contains('day') ? this._ML_STYLE_LIGHT : this._ML_STYLE_DARK,
+      style: startMode === 'day' ? this._ML_STYLE_LIGHT : this._ML_STYLE_DARK,
       center, zoom: 15
+    });
+    ['day','night','satellite'].forEach(m => {
+      const btn = document.getElementById('fl-map-mode-' + m);
+      if (btn) btn.classList.toggle('active', m === startMode);
     });
     this._flMap.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
 
@@ -13455,6 +13490,31 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   // ══════════════════════════════════════════
   // 🗺️ CREAR LOOP MANUAL — pantalla para usuarios comunes
   // ══════════════════════════════════════════
+  // ── Cambiar estilo del mapa de Crear Manual (día / noche / satélite) ──
+  _cmSetMapStyle(mode) {
+    if (!this._cmMap) return;
+    this._cmMapMode = mode;
+    const styleUrl = mode === 'satellite' ? this._ML_STYLE_SATELLITE
+                    : mode === 'night'    ? this._ML_STYLE_DARK
+                    : this._ML_STYLE_LIGHT;
+    this._cmMap.setStyle(styleUrl);
+    // setStyle() borra la fuente/capa del trazado (a diferencia de admin-map/fl-map
+    // que usan markers DOM, acá el recorrido se dibuja con geojson) — recrearla.
+    this._cmMap.once('style.load', () => {
+      this._cmMap.addSource('cm-route', { type:'geojson', data:{ type:'FeatureCollection', features:[] } });
+      this._cmMap.addLayer({ id:'cm-line', type:'line', source:'cm-route',
+        paint:{ 'line-color':'#FF5F00', 'line-width':4, 'line-opacity':0.85 } });
+      this._cmMap.addLayer({ id:'cm-dots', type:'circle', source:'cm-route',
+        filter:['==','$type','Point'],
+        paint:{ 'circle-radius':7, 'circle-color':'#FF5F00', 'circle-stroke-width':2, 'circle-stroke-color':'white' } });
+      this._cmRedraw();
+    });
+    ['day','night','satellite'].forEach(m => {
+      const btn = document.getElementById('cm-map-mode-' + m);
+      if (btn) btn.classList.toggle('active', m === mode);
+    });
+  },
+
   _cmMap:    null,
   _cmPts:    [],
   _cmImgB64: null,
@@ -13491,6 +13551,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       return;
     }
     const isDark = !document.body.classList.contains('day');
+    const startMode = isDark ? 'night' : 'day';
+    this._cmMapMode = startMode;
     this._cmMap = new maplibregl.Map({
       container: 'cm-map',
       style: isDark
@@ -13499,6 +13561,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       center: [this._lastLng || -59.645, this._lastLat || -30.749],
       zoom: 14,
       dragRotate: false
+    });
+    ['day','night','satellite'].forEach(m => {
+      const btn = document.getElementById('cm-map-mode-' + m);
+      if (btn) btn.classList.toggle('active', m === startMode);
     });
     this._cmMap.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
     this._cmMap.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
