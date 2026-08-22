@@ -7134,36 +7134,6 @@ const App = {
           }
         }
 
-        // ── Actualizar métricas del loop en tiempo real ──
-        if (this._loopStarted) this._updateLoopMetrics(lat, lng);
-
-        // ── Guía de giros dentro del loop (voz) ──
-        if (this._loopStarted && this._loopVoiceSteps) {
-          this._checkLoopVoiceGPS(lat, lng);
-        }
-
-        // ── Guía turístico IA: detectar POIs cercanos durante el loop activo ──
-        if (this._loopStarted && this._voiceNavRoute) {
-          const activeLoop = this._voiceNavRoute;
-          if (activeLoop.pois && activeLoop.pois.length) {
-            for (const poi of activeLoop.pois) {
-              if (!poi.lat || !poi.lng) continue;
-              const poiKey = poi.name + (poi.lat||'') + (poi.lng||'');
-              if (this._visitedPois.has(poiKey)) continue; // ya narrado
-              // Distancia haversine al POI
-              const dlat = (lat - poi.lat) * Math.PI / 180;
-              const dlng = (lng - poi.lng) * Math.PI / 180;
-              const a = Math.sin(dlat/2)**2 + Math.cos(poi.lat*Math.PI/180)*Math.cos(lat*Math.PI/180)*Math.sin(dlng/2)**2;
-              const distToPoi = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-              if (distToPoi < 30) {
-                // ¡Llegó a menos de 30m del POI! → narrar con guía IA
-                this._narrarPoi(poi, activeLoop);
-                break; // un POI por vez
-              }
-            }
-          }
-        }
-
         // ── Recálculo automático si se desvía de la ruta (como Waze) ──
         if (!this._loopStarted && this._voiceNavRouteCoords && this._voiceNavRouteCoords.length > 1) {
           const distToRoute = this._distToPolyline(lat, lng, this._voiceNavRouteCoords);
@@ -7183,6 +7153,41 @@ const App = {
                   this._rerouteActive = false;
                 });
               }
+            }
+          }
+        }
+      }
+
+      // ══ A partir de acá, TODO corre en cada GPS ping mientras el loop esté
+      // activo — fuera del bloque de arriba (que solo aplica MIENTRAS SE VA
+      // hacia el punto de partida). Antes esto quedaba adentro de ese bloque,
+      // por eso se cortaba apenas arrancaba el loop (bug). ══
+
+      // ── Actualizar métricas del loop en tiempo real ──
+      if (this._loopStarted) this._updateLoopMetrics(lat, lng);
+
+      // ── Guía de giros dentro del loop (voz) ──
+      if (this._loopStarted && this._loopVoiceSteps) {
+        this._checkLoopVoiceGPS(lat, lng);
+      }
+
+      // ── Guía turístico IA: detectar POIs cercanos durante el loop activo ──
+      if (this._loopStarted && this._voiceNavRoute) {
+        const activeLoop = this._voiceNavRoute;
+        if (activeLoop.pois && activeLoop.pois.length) {
+          for (const poi of activeLoop.pois) {
+            if (!poi.lat || !poi.lng) continue;
+            const poiKey = poi.name + (poi.lat||'') + (poi.lng||'');
+            if (this._visitedPois.has(poiKey)) continue; // ya narrado
+            // Distancia haversine al POI
+            const dlat = (lat - poi.lat) * Math.PI / 180;
+            const dlng = (lng - poi.lng) * Math.PI / 180;
+            const a = Math.sin(dlat/2)**2 + Math.cos(poi.lat*Math.PI/180)*Math.cos(lat*Math.PI/180)*Math.sin(dlng/2)**2;
+            const distToPoi = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            if (distToPoi < 30) {
+              // ¡Llegó a menos de 30m del POI! → narrar con guía IA
+              this._narrarPoi(poi, activeLoop);
+              break; // un POI por vez
             }
           }
         }
