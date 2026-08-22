@@ -6969,13 +6969,22 @@ const App = {
               }
               if (r.dist) startMsg += 'Recorrido total: ' + r.dist + '. ';
               startMsg += '¡Que lo disfrutes!';
-              // Pequeño delay para que el cancel() se procese
-              setTimeout(() => this._speak(startMsg), 300);
+              // Pequeño delay para que el cancel() se procese, y encadenamos
+              // _initLoopVoiceNav al final de ESTE mensaje (onEnd) en vez de
+              // un timeout fijo, para no cortarlo si es largo (varias paradas).
+              setTimeout(() => {
+                this._speak(startMsg, () => this._initLoopVoiceNav(r));
+                // Fallback por si onEnd no dispara (algunos navegadores lo pierden
+                // si hay cancel() de por medio): igual arrancamos a los 6s.
+                this._loopVoiceNavFallback = setTimeout(() => {
+                  if (!this._loopVoiceSteps) this._initLoopVoiceNav(r);
+                }, 6000);
+              }, 300);
+            } else {
+              // Voz apagada: igual hay que calcular los giros para cuando la prendan
+              this._initLoopVoiceNav(r);
             }
             this._hideNavBanner();
-            // ── Iniciar guía de giros dentro del loop ──
-            // 3s: suficiente para que termine el mensaje de bienvenida sin perder giros
-            setTimeout(() => this._initLoopVoiceNav(r), 3000);
             this._showLoopStartPanel(r);
           }
         }
@@ -9878,6 +9887,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   // rumbo es confiable sin importar cuán densa sea la muestra de puntos.
   _initLoopVoiceNav(r) {
     if (!r || !r.pts || r.pts.length < 3) { console.warn('[VOZ] pts insuficientes, saliendo'); return; }
+    if (this._loopVoiceSteps) return; // ya inicializado (evita doble disparo onEnd + fallback)
+    if (this._loopVoiceNavFallback) { clearTimeout(this._loopVoiceNavFallback); this._loopVoiceNavFallback = null; }
     // NO cortamos aqui si _voiceOn es false: igual calculamos los pasos de giro
     // para que _checkLoopVoiceGPS funcione. Solo silenciamos el speak si esta off.
 
