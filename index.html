@@ -1527,14 +1527,24 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
 textarea.fi { height:80px; padding:10px 12px; resize:none; }
 select.fi { cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%239CA3AF' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; }
 
-#admin-map { width:100%; height:240px; border-radius:var(--rs); border:1.5px solid var(--bd); overflow:hidden; display:block; }
+#admin-map { width:100%; height:220px; border-radius:var(--rs); border:1.5px solid var(--bd); overflow:hidden; display:block; box-sizing:border-box; }
+
+/* ── Botones de modo de mapa (día/noche/satélite) sobre el mapa de trazado ── */
+.adm-map-style-btns { position:absolute; top:8px; right:8px; display:flex; flex-direction:column; gap:6px; z-index:5; }
+.adm-map-style-btns button {
+  width:32px; height:32px; border-radius:50%; border:1.5px solid var(--bd);
+  background:var(--wh); cursor:pointer; font-size:15px; padding:0;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 8px rgba(0,0,0,.25); transition:all .15s;
+}
+.adm-map-style-btns button.active { border-color:var(--or); background:var(--orL); box-shadow:0 2px 10px rgba(255,95,0,.35); }
 
 /* ── Desktop: mapa de trazado más grande y redimensionable ── */
 @media (min-width:769px) {
   #admin-map {
-    height: 480px;
+    height: 340px;
     min-height: 200px;
-    max-height: 82vh;
+    max-height: 55vh;
     resize: vertical;
     overflow: auto;        /* resize necesita overflow != hidden */
     cursor: default;
@@ -3229,6 +3239,11 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
         <div class="act">🗺️ Trazado de la Ruta</div>
         <div id="admin-map-wrap" style="position:relative;">
           <div id="admin-map"></div>
+          <div class="adm-map-style-btns">
+            <button type="button" id="adm-map-mode-day" onclick="App._admSetMapStyle('day')" title="Modo día">☀️</button>
+            <button type="button" id="adm-map-mode-night" onclick="App._admSetMapStyle('night')" title="Modo noche">🌙</button>
+            <button type="button" id="adm-map-mode-satellite" onclick="App._admSetMapStyle('satellite')" title="Modo satélite">🛰️</button>
+          </div>
         </div>
         <div class="map-hint">💡 Hacé clic en el mapa para agregar puntos a la ruta</div>
         <div class="pts-list" id="pts-list"></div>
@@ -12008,6 +12023,24 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     await this._calcAndDrawNav(fakeRoute);
   },
 
+  // ── Cambiar estilo del mapa de trazado (día / noche / satélite) ──
+  _admSetMapStyle(mode) {
+    if (!this.admMap) return;
+    this._admMapMode = mode;
+    const styleUrl = mode === 'satellite' ? this._ML_STYLE_SATELLITE
+                    : mode === 'night'    ? this._ML_STYLE_DARK
+                    : this._ML_STYLE_LIGHT;
+    this.admMap.setStyle(styleUrl);
+    // setStyle() borra fuentes/capas propias (la línea del trazado) — redibujar
+    // apenas termine de cargar el nuevo estilo. Los markers (aPts/aPois) son
+    // elementos DOM independientes del estilo, así que sobreviven solos.
+    this.admMap.once('style.load', () => { this._redrawAdmLine(); });
+    ['day','night','satellite'].forEach(m => {
+      const btn = document.getElementById('adm-map-mode-' + m);
+      if (btn) btn.classList.toggle('active', m === mode);
+    });
+  },
+
   // ── ADMIN MAP (MapLibre) ──
   _initAdminMap() {
     this.aPts=[]; this.aPois=[]; this._admMarkers=[];
@@ -12025,11 +12058,17 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       this._admCenterOnGPS();
       return;
     }
+    const startMode = document.body.classList.contains('day') ? 'day' : 'night';
+    this._admMapMode = startMode;
     this.admMap = new maplibregl.Map({
       container: 'admin-map',
-      style: document.body.classList.contains('day') ? this._ML_STYLE_LIGHT : this._ML_STYLE_DARK,
+      style: startMode === 'day' ? this._ML_STYLE_LIGHT : this._ML_STYLE_DARK,
       center: [-59.6450, -30.7490],
       zoom: 14
+    });
+    ['day','night','satellite'].forEach(m => {
+      const btn = document.getElementById('adm-map-mode-' + m);
+      if (btn) btn.classList.toggle('active', m === startMode);
     });
     this.admMap.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
     this.admMap.on('load', () => {
