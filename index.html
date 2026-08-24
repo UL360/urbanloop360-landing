@@ -10006,7 +10006,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         <div style="font-size:56px;margin-bottom:8px;">🏆</div>
         <div style="font-family:var(--fH);font-size:22px;font-weight:800;color:var(--dk);margin-bottom:4px;">¡Loop completado!</div>
         <div style="font-size:14px;color:var(--gr);margin-bottom:6px;">${App._esc(r.name)}</div>
-        <div style="font-size:13px;color:var(--dk);line-height:1.4;margin-bottom:20px;">Esperamos que te haya gustado el loop. Fijate en el mapa 🗺️, hay varios más para seguir recorriendo.</div>
+        <div style="font-size:13px;color:var(--dk);line-height:1.4;margin-bottom:20px;">Esperamos que te haya gustado el loop. Hay varios más para seguir recorriendo 🗺️</div>
 
         <!-- Stats -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
@@ -10030,6 +10030,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
         <button onclick="App._logroCompartir('${r.id}')" style="width:100%;padding:13px;border-radius:14px;border:none;background:var(--or);color:#fff;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;">
           📸 Compartir mi recorrido
+        </button>
+        <button onclick="document.getElementById('loop-logro-overlay').remove();App._stopNav();App._loopCompletado=false;App.go('loops-urbanos');" style="width:100%;padding:13px;border-radius:14px;border:1.5px solid var(--or);background:var(--orL);color:var(--or);font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;">
+          🔍 Descubrí otros loops
         </button>
         <button onclick="document.getElementById('loop-logro-overlay').remove();App._stopNav();App._loopCompletado=false;" style="width:100%;padding:11px;border-radius:14px;border:1.5px solid var(--bd);background:transparent;color:var(--dk);font-size:13px;font-weight:600;cursor:pointer;">
           Cerrar
