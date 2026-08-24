@@ -9956,6 +9956,26 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         this._completarLoop(r);
       }
     }
+
+    // ── Volviste al punto de partida = loop completado ──
+    // (antes solo se completaba visitando todas las paradas; si el loop no
+    // tenía paradas, o no las visitabas todas, nunca terminaba — y al volver
+    // al inicio quedaba como si arrancara todo de nuevo)
+    if (!this._loopCompletado && totalM > 0) {
+      const startPt = r.pts[this._loopStartPtIdx || 0];
+      const sLat = Array.isArray(startPt) ? startPt[0] : startPt.lat;
+      const sLng = Array.isArray(startPt) ? startPt[1] : startPt.lng;
+      const dlatS = (lat - sLat) * Math.PI / 180;
+      const dlngS = (lng - sLng) * Math.PI / 180;
+      const aS = Math.sin(dlatS/2)**2 + Math.cos(sLat*Math.PI/180)*Math.cos(lat*Math.PI/180)*Math.sin(dlngS/2)**2;
+      const distToStart = 6371000 * 2 * Math.atan2(Math.sqrt(aS), Math.sqrt(1-aS));
+      // Exigir haber caminado ~60% del loop antes de contarlo — si no, se
+      // dispararía apenas arrancás (obvio que estás cerca del inicio recién salido)
+      const recorridoSuficiente = (this._loopDistRecorrida||0) >= totalM * 0.6;
+      if (recorridoSuficiente && distToStart < 20) {
+        this._completarLoop(r);
+      }
+    }
   },
 
   // ── Completar loop — pantalla de logro ──
@@ -9975,7 +9995,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const pts = r.pts_reward || 50;
 
     // Voz de completado
-    if (this._voiceOn) this._speak(`¡Felicitaciones! Completaste ${r.name} en ${tiempoTxt}. Ganaste ${pts} puntos.`);
+    if (this._voiceOn) this._speak(`¡Felicitaciones! Completaste ${r.name} en ${tiempoTxt}. Ganaste ${pts} puntos. Esperamos que te haya gustado el loop. Fijate en el mapa, hay varios más para seguir recorriendo.`);
 
     // Pantalla de logro
     const overlay = document.createElement('div');
@@ -9985,7 +10005,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       <div style="background:var(--wh);border-radius:24px;padding:28px 22px;width:100%;max-width:340px;text-align:center;position:relative;">
         <div style="font-size:56px;margin-bottom:8px;">🏆</div>
         <div style="font-family:var(--fH);font-size:22px;font-weight:800;color:var(--dk);margin-bottom:4px;">¡Loop completado!</div>
-        <div style="font-size:14px;color:var(--gr);margin-bottom:20px;">${App._esc(r.name)}</div>
+        <div style="font-size:14px;color:var(--gr);margin-bottom:6px;">${App._esc(r.name)}</div>
+        <div style="font-size:13px;color:var(--dk);line-height:1.4;margin-bottom:20px;">Esperamos que te haya gustado el loop. Fijate en el mapa 🗺️, hay varios más para seguir recorriendo.</div>
 
         <!-- Stats -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
