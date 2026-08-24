@@ -10244,6 +10244,12 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           loopSteps.push({
             lat: pts[i].lat,
             lng: pts[i].lng,
+            // Punto ~12m DESPUÉS del giro, ya sobre la calle nueva — se usa
+            // solo para preguntarle el nombre de calle a Nominatim, porque
+            // geocodificar justo la esquina es ambiguo y a veces devuelve
+            // la calle de la que venías en vez de la nueva.
+            geoLat: pts[ai].lat,
+            geoLng: pts[ai].lng,
             dir: dirLabel(diff),
             diff,
             street: null,
@@ -10279,7 +10285,11 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   async _loopVoiceGeocodeStreets(steps) {
     for (const step of steps) {
       try {
-        const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${step.lat}&lon=${step.lng}&format=json&zoom=18&addressdetails=1`);
+        // geoLat/geoLng: punto ya sobre la calle nueva (después del giro),
+        // no el vértice de la esquina — evita devolver la calle equivocada.
+        const gLat = step.geoLat != null ? step.geoLat : step.lat;
+        const gLng = step.geoLng != null ? step.geoLng : step.lng;
+        const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${gLat}&lon=${gLng}&format=json&zoom=18&addressdetails=1`);
         const data = await resp.json();
         const addr = data && data.address;
         step.street = addr ? (addr.road || addr.pedestrian || addr.footway || addr.street || null) : null;
