@@ -2955,23 +2955,14 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <div id="agm-counter" style="background:rgba(0,0,0,.45);color:#fff;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;display:none;"></div>
   </div>
 
-  <!-- Carrusel full-screen -->
+  <!-- Carrusel: cada slide es una tarjeta (imagen enmarcada + pie con título/cat/fecha) -->
   <div id="agm-carousel"
     style="width:100%;height:100%;overflow-x:scroll;scroll-snap-type:x mandatory;display:flex;scrollbar-width:none;-ms-overflow-style:none;"
     onscroll="App._agmOnScroll(this)">
   </div>
 
   <!-- Dots indicadores -->
-  <div id="agm-dots" style="position:absolute;bottom:80px;left:0;right:0;display:flex;justify-content:center;gap:6px;z-index:20;"></div>
-
-  <!-- Info flotante abajo -->
-  <div id="agm-info-bar" style="position:absolute;bottom:0;left:0;right:0;z-index:20;padding:16px 18px 32px;background:linear-gradient(to top,rgba(0,0,0,.75) 0%,transparent 100%);">
-    <div id="agm-info-titulo" style="font-family:var(--fH);font-size:18px;font-weight:800;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.6);margin-bottom:6px;"></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <span id="agm-info-cat"   style="background:rgba(255,255,255,.2);color:#fff;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;backdrop-filter:blur(4px);"></span>
-      <span id="agm-info-fecha" style="background:rgba(255,255,255,.2);color:#fff;border-radius:20px;padding:3px 10px;font-size:11px;backdrop-filter:blur(4px);"></span>
-    </div>
-  </div>
+  <div id="agm-dots" style="position:absolute;bottom:14px;left:0;right:0;display:flex;justify-content:center;gap:6px;z-index:20;"></div>
 </div>
 
 <!-- MODAL: detalle afiche -->
@@ -19711,23 +19702,31 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const counter  = document.getElementById('agm-counter');
     if (!carousel) return;
     const items = this._agmItems || [];
+    const catEmoji = { cultural:'🎭', deportivo:'⚽', salud:'🏥', educacion:'📚', turismo:'🧳', social:'🤝', otro:'📋' };
 
     if (!items.length) {
       carousel.innerHTML = '<div style="width:100%;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(255,255,255,.6);gap:10px;"><div style="font-size:40px;">📭</div><div style="font-size:14px;font-weight:600;">Sin afiches publicados</div></div>';
       if (dots)    dots.innerHTML = '';
       if (counter) counter.style.display = 'none';
-      document.getElementById('agm-info-titulo') && (document.getElementById('agm-info-titulo').textContent = '');
       return;
     }
 
-    // Slides
+    // Slides: tarjeta = imagen enmarcada + pie con título/cat/fecha pegado debajo (no flotando encima)
     carousel.innerHTML = items.map((c, i) => {
       const src = c.img && c.img.startsWith('firestore:') ? '' : (c.img || '');
       const fsref = c.img && c.img.startsWith('firestore:') ? c.img : '';
       const srcAttr = src ? (' src="' + src + '"') : ''; // sin src="" para no disparar onerror antes de resolver Firestore
-      return '<div style="width:100%;flex-shrink:0;scroll-snap-align:start;position:relative;overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center;background:#1a1a1a;" onclick="App._agmOpenDetail(' + JSON.stringify(c.id) + ')">'
-        + '<img' + srcAttr + ' data-fsref="' + fsref + '" data-idx="' + i + '" style="width:100%;height:100%;object-fit:contain;display:block;" onerror="App._agmImgFallback(this)">'
-        + '<div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,0,0,.08) 0%,transparent 60%);pointer-events:none;"></div>'
+      return '<div style="width:100%;flex-shrink:0;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:76px 18px 34px;box-sizing:border-box;">'
+        + '<div style="cursor:pointer;width:100%;max-width:340px;aspect-ratio:3/4;border-radius:18px;overflow:hidden;background:#1a1a1a;box-shadow:0 12px 36px rgba(0,0,0,.5);flex-shrink:0;" onclick="App._agmOpenDetail(' + JSON.stringify(c.id) + ')">'
+        + '<img' + srcAttr + ' data-fsref="' + fsref + '" data-idx="' + i + '" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="App._agmImgFallback(this)">'
+        + '</div>'
+        + '<div style="width:100%;max-width:340px;margin-top:14px;">'
+        + '<div style="font-family:var(--fH);font-size:16px;font-weight:800;color:#fff;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + this._esc(c.titulo || '') + '</div>'
+        + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+        + '<span style="background:rgba(255,255,255,.14);color:#fff;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;">' + (catEmoji[c.cat] || '📋') + ' ' + this._esc(c.cat || '') + '</span>'
+        + '<span style="background:rgba(255,255,255,.14);color:#fff;border-radius:20px;padding:3px 10px;font-size:11px;">📅 ' + this._esc(c.fecha || '') + '</span>'
+        + '</div>'
+        + '</div>'
         + '</div>';
     }).join('');
 
@@ -19741,9 +19740,6 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     // Counter
     if (counter) { counter.textContent = '1 / ' + items.length; counter.style.display = 'block'; }
 
-    // Info bar primer slide
-    this._agmUpdateInfo(0);
-
     // Resolver imágenes Firestore
     carousel.querySelectorAll('img[data-fsref]').forEach(img => {
       if (img.dataset.fsref) this._resolveCartImg(img);
@@ -19755,19 +19751,6 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
         carousel.scrollLeft = this._agmCurrentIdx * carousel.offsetWidth;
       });
     }
-  },
-
-  _agmUpdateInfo(idx) {
-    const items = this._agmItems || [];
-    const c = items[idx];
-    const catEmoji = { cultural:'🎭', deportivo:'⚽', salud:'🏥', educacion:'📚', turismo:'🧳', social:'🤝', otro:'📋' };
-    const titulo  = document.getElementById('agm-info-titulo');
-    const catEl   = document.getElementById('agm-info-cat');
-    const fechaEl = document.getElementById('agm-info-fecha');
-    if (!c) return;
-    if (titulo)  titulo.textContent  = c.titulo || '';
-    if (catEl)   catEl.textContent   = (catEmoji[c.cat] || '📋') + ' ' + (c.cat || '');
-    if (fechaEl) fechaEl.textContent = '📅 ' + (c.fecha || '');
   },
 
   _agmOnScroll(el) {
@@ -19786,8 +19769,6 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     // Counter
     const counter = document.getElementById('agm-counter');
     if (counter) counter.textContent = (idx + 1) + ' / ' + items.length;
-    // Info bar
-    this._agmUpdateInfo(idx);
   },
 
   _agmGoTo(idx) {
