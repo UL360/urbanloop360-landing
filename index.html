@@ -1080,6 +1080,8 @@ html, body { width:100%; height:100%; overflow:hidden; font-family:var(--fB); co
    RULETA — ¿QUÉ SALE HOY?
 ═══════════════════════ */
 #actividades { overflow-y:auto; background:var(--bg0); }
+#agm-carousel::-webkit-scrollbar { display:none; }
+#agenda-municipal { position:relative; }
 .rul-header {
   padding:18px 16px 0;
   display:flex; align-items:center; justify-content:space-between;
@@ -2825,8 +2827,8 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <!-- MIS COSAS -->
     <div class="sb-divider"></div>
     <span class="sb-section-label">Mis cosas</span>
-    <button class="sb-nav-btn" id="sb-btn-saved" onclick="App.sideNav('saved')" aria-label="Ver guardados" role="menuitem">
-      <span class="sb-icon">🔖</span><span class="sb-label">Guardados</span>
+    <button class="sb-nav-btn" id="sb-btn-agenda-municipal" onclick="App.sideNav('agenda-municipal')" aria-label="Ver agenda municipal" role="menuitem">
+      <span class="sb-icon">📌</span><span class="sb-label">Agenda Municipal</span>
     </button>
     <button class="sb-nav-btn" id="sb-btn-profile" onclick="App.sideNav('profile')" aria-label="Ver perfil" role="menuitem">
       <span class="sb-icon">👤</span><span class="sb-label">Perfil</span>
@@ -2923,16 +2925,51 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 </div>
 
 <!-- ════════════ SAVED ════════════ -->
-<div id="saved" class="screen" style="background:var(--bg0);">
-  <div class="scr-hdr">
-    <h1>Guardados</h1>
-    <p>Tus lugares y rutas favoritas</p>
+<div id="saved" class="screen" style="display:none;background:var(--bg0);"></div>
+
+<!-- ════════════ AGENDA MUNICIPAL ════════════ -->
+<div id="agenda-municipal" class="screen" style="background:#111;overflow:hidden;">
+
+  <!-- Header flotante sobre el carrusel -->
+  <div style="position:absolute;top:0;left:0;right:0;z-index:20;padding:12px 14px 10px;display:flex;align-items:center;gap:10px;background:linear-gradient(to bottom,rgba(0,0,0,.65) 0%,transparent 100%);">
+    <button class="scr-back-btn" onclick="App.go('explore')" style="background:rgba(0,0,0,.4);border:none;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><path d="M19 12H5m0 0l7-7m-7 7l7 7"/></svg>
+    </button>
+    <div style="flex:1;">
+      <h1 style="font-family:var(--fH);font-size:18px;font-weight:800;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.5);">📌 Agenda Municipal</h1>
+      <p style="font-size:11px;color:rgba(255,255,255,.75);margin-top:1px;" id="agm-city-label">Cartelería oficial de tu ciudad</p>
+    </div>
+    <!-- Contador -->
+    <div id="agm-counter" style="background:rgba(0,0,0,.45);color:#fff;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;display:none;"></div>
   </div>
-  <div class="scr-body">
-    <div class="empty-state">
-      <div class="empty-ico">🔖</div>
-      <h3>Nada guardado aún</h3>
-      <p>Explorá loops y tocá el corazón<br>para guardarlas aquí</p>
+
+  <!-- Carrusel full-screen -->
+  <div id="agm-carousel"
+    style="width:100%;height:100%;overflow-x:scroll;scroll-snap-type:x mandatory;display:flex;scrollbar-width:none;-ms-overflow-style:none;"
+    onscroll="App._agmOnScroll(this)">
+  </div>
+
+  <!-- Dots indicadores -->
+  <div id="agm-dots" style="position:absolute;bottom:80px;left:0;right:0;display:flex;justify-content:center;gap:6px;z-index:20;"></div>
+
+  <!-- Info flotante abajo -->
+  <div id="agm-info-bar" style="position:absolute;bottom:0;left:0;right:0;z-index:20;padding:16px 18px 32px;background:linear-gradient(to top,rgba(0,0,0,.75) 0%,transparent 100%);">
+    <div id="agm-info-titulo" style="font-family:var(--fH);font-size:18px;font-weight:800;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.6);margin-bottom:6px;"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <span id="agm-info-cat"   style="background:rgba(255,255,255,.2);color:#fff;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;backdrop-filter:blur(4px);"></span>
+      <span id="agm-info-fecha" style="background:rgba(255,255,255,.2);color:#fff;border-radius:20px;padding:3px 10px;font-size:11px;backdrop-filter:blur(4px);"></span>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: detalle afiche -->
+<div id="agm-detail-overlay" onclick="if(event.target===this)App._agmCloseDetail()"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:400;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--bg1);border-radius:20px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;padding:0 0 28px;">
+    <div style="width:36px;height:4px;background:var(--bd);border-radius:2px;margin:14px auto 10px;"></div>
+    <div id="agm-detail-body" style="padding:0 18px;"></div>
+    <div style="padding:0 18px;margin-top:14px;">
+      <button onclick="App._agmCloseDetail()" style="width:100%;padding:12px;background:var(--bg2);border:none;border-radius:12px;font-size:14px;color:var(--md);cursor:pointer;">Cerrar</button>
     </div>
   </div>
 </div>
@@ -3097,6 +3134,9 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       </button>
       <button class="adm-tab" data-tab="eventos" onclick="App._admTab('eventos',this)">
         <span class="adm-tab-ic">📅</span>Eventos
+      </button>
+      <button class="adm-tab" data-tab="carteleria" onclick="App._admTab('carteleria',this)">
+        <span class="adm-tab-ic">📌</span>Cartelería
       </button>
       <button class="adm-tab" data-tab="usuarios" onclick="App._admTab('usuarios',this)">
         <span class="adm-tab-ic">👥</span>Usuarios
@@ -3399,7 +3439,65 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 
     <!-- ── EVENTOS ── -->
     <div id="adm-tab-eventos" class="adm-panel" style="display:none;">
+
       <div id="adm-ev-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+
+    <!-- ── CARTELERÍA ── -->
+    <div id="adm-tab-carteleria" class="adm-panel" style="display:none;">
+      <!-- Formulario subir afiche -->
+      <div style="background:var(--orL);border:1.5px solid var(--or);border-radius:14px;padding:16px;margin-bottom:14px;">
+        <div style="font-family:var(--fH);font-size:14px;font-weight:800;color:var(--dk);margin-bottom:12px;">📤 Subir nuevo afiche</div>
+
+        <!-- Imagen -->
+        <div style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;margin-bottom:6px;">IMAGEN DEL FLYER *</div>
+        <div id="adm-cart-img-preview" style="display:none;position:relative;border-radius:12px;overflow:hidden;aspect-ratio:3/4;background:var(--bg0);margin-bottom:8px;max-height:260px;">
+          <img id="adm-cart-img-thumb" style="width:100%;height:100%;object-fit:contain;background:#000;" src="" alt="">
+          <button onclick="App._admCartClearImg()" style="position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.6);border:none;color:#fff;font-size:13px;cursor:pointer;">✕</button>
+        </div>
+        <label style="display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border:1.5px dashed var(--or);border-radius:12px;cursor:pointer;color:var(--or);font-size:13px;font-weight:600;margin-bottom:14px;background:var(--wh);" id="adm-cart-img-label">
+          🖼️ Seleccionar imagen
+          <input type="file" accept="image/*" style="display:none;" onchange="App._admCartLoadImg(this)">
+        </label>
+
+        <!-- Título -->
+        <div style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;margin-bottom:6px;">TÍTULO DEL EVENTO *</div>
+        <input id="adm-cart-titulo" class="fi" type="text" placeholder="Ej: Festival del Río 2026" style="margin-bottom:12px;">
+
+        <!-- Fecha -->
+        <div style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;margin-bottom:6px;">FECHA DEL EVENTO *</div>
+        <input id="adm-cart-fecha" class="fi" type="date" style="margin-bottom:12px;">
+
+        <!-- Categoría -->
+        <div style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;margin-bottom:6px;">CATEGORÍA</div>
+        <select id="adm-cart-cat" class="fi" style="margin-bottom:12px;">
+          <option value="cultural">🎭 Cultural</option>
+          <option value="deportivo">⚽ Deportivo</option>
+          <option value="salud">🏥 Salud</option>
+          <option value="educacion">📚 Educación</option>
+          <option value="turismo">🧳 Turismo</option>
+          <option value="social">🤝 Social</option>
+          <option value="otro">📋 Otro</option>
+        </select>
+
+        <!-- Descripción -->
+        <div style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;margin-bottom:6px;">DESCRIPCIÓN CORTA (opcional)</div>
+        <textarea id="adm-cart-desc" class="fi" rows="2" placeholder="Detalles adicionales, lugar, horario..." style="resize:none;margin-bottom:14px;"></textarea>
+
+        <button onclick="App._admCartSubir()"
+          style="width:100%;padding:13px;background:var(--or);color:#fff;border:none;border-radius:12px;font-family:var(--fH);font-size:14px;font-weight:800;cursor:pointer;">
+          📌 Publicar en Agenda Municipal
+        </button>
+      </div>
+
+      <!-- Filtros lista -->
+      <div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;scrollbar-width:none;">
+        <button class="adm-pend-chip on" data-cf="all"      onclick="App._admCartFilter('all',this)">Todos</button>
+        <button class="adm-pend-chip"    data-cf="vigente"  onclick="App._admCartFilter('vigente',this)">✅ Vigentes</button>
+        <button class="adm-pend-chip"    data-cf="vencido"  onclick="App._admCartFilter('vencido',this)">📦 Vencidos</button>
+      </div>
+
+      <div id="adm-cart-list" style="display:flex;flex-direction:column;gap:8px;"></div>
     </div>
 
     <!-- ── USUARIOS ── -->
@@ -6076,7 +6174,7 @@ const App = {
       if (dsh) dsh.classList.remove('visible');
     }
 
-    const navScreens = ['explore','loops','loops-urbanos','saved','profile','comunidad','eventos','ranking','grabar','detail','admin','explorar-ciudades','ciudad-remota','crear-manual'];
+    const navScreens = ['explore','loops','loops-urbanos','saved','agenda-municipal','profile','comunidad','eventos','ranking','grabar','detail','admin','explorar-ciudades','ciudad-remota','crear-manual'];
     const showFab = sid === 'explore';
     const pill = document.getElementById('map-pill');
     if (pill) pill.style.display = showFab ? 'flex' : 'none';
@@ -6109,6 +6207,7 @@ const App = {
     }
     if (sid==='comunidad')       { this._renderComunidad(); }
     if (sid==='eventos')         { this._renderEventos(); }
+    if (sid==='agenda-municipal') { this._agmLoad(); }
     if (sid==='ranking')         { this._renderRanking(); }
     if (sid==='explorar-ciudades') { this._renderExplorar(); }
     if (sid==='actividades')       { this._renderHacemosHoy(); }
@@ -18061,6 +18160,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (tab === 'notifs')      this._admRenderNotifHistory();
     if (tab === 'negocios')    this._admRenderNegocios();
     if (tab === 'accesibilidad') this._admRenderAccesibilidad();
+    if (tab === 'carteleria')   this._admRenderCarteleria();
   },
 
   // ── Dashboard ──
@@ -19355,6 +19455,351 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     this._admRenderEventos();
     this._renderEventos();
     this.toast(`🗑️ Evento "${name}" eliminado`);
+  },
+
+  // ══════════════════════════════════════════
+  // ── CARTELERÍA / AGENDA MUNICIPAL ──
+  // ══════════════════════════════════════════
+
+  _admCartImgB64: null,
+  _carteleriaCache: [],
+  _agmCatFilter: 'all',
+  _agmCurrentIdx: 0,
+
+  _admCartLoadImg(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      this._admCartImgB64 = e.target.result;
+      const thumb = document.getElementById('adm-cart-img-thumb');
+      const preview = document.getElementById('adm-cart-img-preview');
+      const label = document.getElementById('adm-cart-img-label');
+      if (thumb) thumb.src = e.target.result;
+      if (preview) preview.style.display = 'block';
+      if (label) label.style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  },
+
+  _admCartClearImg() {
+    this._admCartImgB64 = null;
+    const thumb = document.getElementById('adm-cart-img-thumb');
+    const preview = document.getElementById('adm-cart-img-preview');
+    const label = document.getElementById('adm-cart-img-label');
+    if (thumb) thumb.src = '';
+    if (preview) preview.style.display = 'none';
+    if (label) label.style.display = 'flex';
+  },
+
+  async _admCartSubir() {
+    const titulo = document.getElementById('adm-cart-titulo')?.value.trim();
+    const fecha  = document.getElementById('adm-cart-fecha')?.value;
+    const cat    = document.getElementById('adm-cart-cat')?.value || 'otro';
+    const desc   = document.getElementById('adm-cart-desc')?.value.trim();
+
+    if (!this._admCartImgB64) return this.toast('⚠️ Seleccioná una imagen');
+    if (!titulo) return this.toast('⚠️ Escribí el título del evento');
+    if (!fecha)  return this.toast('⚠️ Seleccioná la fecha del evento');
+
+    const btn = document.querySelector('[onclick="App._admCartSubir()"]');
+    if (btn) { btn.textContent = '⏳ Subiendo...'; btn.disabled = true; }
+
+    try {
+      const id = 'cart_' + Date.now();
+      let imgUrl = this._admCartImgB64;
+
+      // Guardar imagen en Firestore (mismo patrón que el resto de la app)
+      if (this._db) {
+        await this._db.collection('carteleria_imgs').doc(id).set({ img: imgUrl, ts: Date.now() });
+        imgUrl = `firestore:carteleria_imgs/${id}`;
+      }
+
+      const doc = {
+        id, titulo, fecha, cat, desc: desc || '',
+        img: imgUrl,
+        ciudad: this._admCity || this._luCity || 'La Paz',
+        municipio: this._admCity || this._luCity || 'La Paz',
+        ts: Date.now(),
+        activo: true,
+      };
+
+      if (this._db) await this._db.collection('carteleria').doc(id).set(doc);
+      this._carteleriaCache.unshift(doc);
+
+      // Limpiar formulario
+      document.getElementById('adm-cart-titulo').value = '';
+      document.getElementById('adm-cart-fecha').value = '';
+      document.getElementById('adm-cart-desc').value = '';
+      this._admCartClearImg();
+      this.toast('✅ Afiche publicado en Agenda Municipal');
+      this._admRenderCarteleria();
+    } catch(e) {
+      console.error('[_admCartSubir]', e);
+      this.toast('❌ Error al subir: ' + e.message);
+    } finally {
+      if (btn) { btn.textContent = '📌 Publicar en Agenda Municipal'; btn.disabled = false; }
+    }
+  },
+
+  _admCartFilterState: 'all',
+
+  _admCartFilter(f, btn) {
+    this._admCartFilterState = f;
+    document.querySelectorAll('[data-cf]').forEach(b => b.classList.remove('on'));
+    if (btn) btn.classList.add('on');
+    this._admRenderCarteleriaList();
+  },
+
+  async _admRenderCarteleria() {
+    const list = document.getElementById('adm-cart-list');
+    if (!list) return;
+    list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">Cargando cartelería...</div>`;
+    if (this._db) {
+      try {
+        const snap = await this._db.collection('carteleria').orderBy('ts','desc').limit(200).get();
+        this._carteleriaCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      } catch(e) {
+        try {
+          const snap = await this._db.collection('carteleria').limit(200).get();
+          this._carteleriaCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          this._carteleriaCache.sort((a,b) => (b.ts||0)-(a.ts||0));
+        } catch(e2) { console.warn('carteleria:', e2); }
+      }
+    }
+    this._admRenderCarteleriaList();
+  },
+
+  async _admCartToggleActivo(id, activo) {
+    const item = this._carteleriaCache.find(c => c.id === id);
+    if (item) item.activo = !activo;
+    if (this._db) await this._db.collection('carteleria').doc(id).update({ activo: !activo }).catch(()=>{});
+    this.toast(activo ? '📦 Afiche archivado' : '✅ Afiche reactivado');
+    this._admRenderCarteleriaList();
+  },
+
+  async _admCartEliminar(id, titulo) {
+    if (!confirm(`¿Eliminar el afiche "${titulo}"?`)) return;
+    this._carteleriaCache = this._carteleriaCache.filter(c => c.id !== id);
+    if (this._db) {
+      await this._db.collection('carteleria').doc(id).delete().catch(()=>{});
+      await this._db.collection('carteleria_imgs').doc(id).delete().catch(()=>{});
+    }
+    this.toast(`🗑️ Afiche eliminado`);
+    this._admRenderCarteleriaList();
+    // Refrescar pantalla pública si está cargada
+    if (this._carteleriaCache !== undefined) this._agmRender();
+  },
+
+  _admRenderCarteleriaList() {
+    const list = document.getElementById('adm-cart-list');
+    if (!list) return;
+    const now = new Date().toISOString().split('T')[0];
+    const f = this._admCartFilterState || 'all';
+    let items = (this._carteleriaCache || []).filter(c => this._admMatchesGeoFilter(c));
+    if (f === 'vigente') items = items.filter(c => c.activo !== false && c.fecha >= now);
+    if (f === 'vencido') items = items.filter(c => c.activo === false || c.fecha < now);
+
+    const catEmoji = { cultural:'🎭', deportivo:'⚽', salud:'🏥', educacion:'📚', turismo:'🧳', social:'🤝', otro:'📋' };
+    if (!items.length) {
+      list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">Sin afiches en este filtro</div>`;
+      return;
+    }
+    list.innerHTML = items.map(c => {
+      const vencido = c.fecha < now || c.activo === false;
+      return `<div class="adm-item" style="${vencido ? 'opacity:.6;' : ''}">
+        <div class="adm-item-row" style="gap:10px;">
+          <div style="width:52px;height:68px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--bg2);">
+            <img src="${c.img && c.img.startsWith('firestore:') ? '' : (c.img||'')}"
+              data-fsref="${c.img && c.img.startsWith('firestore:') ? c.img : ''}"
+              style="width:100%;height:100%;object-fit:cover;"
+              onerror="this.style.display='none'"
+              onload="if(this.dataset.fsref)App._resolveCartImg(this)">
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:700;color:var(--dk);margin-bottom:3px;">${App._esc(c.titulo)}</div>
+            <div style="font-size:11px;color:var(--gr);">${catEmoji[c.cat]||'📋'} ${c.cat} · 📅 ${c.fecha}</div>
+            <div style="font-size:11px;color:var(--gr);">📍 ${App._esc(c.municipio||c.ciudad||'—')}</div>
+            ${vencido ? '<div style="font-size:10px;color:#EF4444;font-weight:600;margin-top:2px;">VENCIDO / ARCHIVADO</div>' : ''}
+          </div>
+        </div>
+        <div class="adm-item-actions" style="margin-top:8px;">
+          <button class="adm-btn" onclick="App._admCartToggleActivo('${c.id}',${c.activo!==false})"
+            style="${c.activo===false ? 'background:#16A34A;color:#fff;border:none;' : 'background:var(--bg2);'}">
+            ${c.activo===false ? '✅ Reactivar' : '📦 Archivar'}
+          </button>
+          <button class="adm-btn adm-btn-red" onclick="App._admCartEliminar('${c.id}','${(c.titulo||'').replace(/'/g,'')}')">🗑️ Eliminar</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Resolver imágenes Firestore
+    list.querySelectorAll('img[data-fsref]').forEach(img => {
+      if (img.dataset.fsref) this._resolveCartImg(img);
+    });
+  },
+
+  // ── Resolución de imágenes Firestore para cartelería ──
+  async _resolveCartImg(imgEl) {
+    const ref = imgEl.dataset.fsref;
+    if (!ref || !ref.startsWith('firestore:') || !this._db) return;
+    try {
+      const [col, docId] = ref.replace('firestore:', '').split('/');
+      const snap = await this._db.collection(col).doc(docId).get();
+      if (snap.exists) imgEl.src = snap.data().img || '';
+    } catch(e) { /* silencio */ }
+  },
+
+  // ── Pantalla pública: Agenda Municipal ──
+  _agmImgFallback(imgEl) {
+    if (imgEl && imgEl.parentElement) {
+      imgEl.style.display = 'none';
+    }
+  },
+
+  async _agmLoad() {
+    const carousel = document.getElementById('agm-carousel');
+    if (!carousel) return;
+    carousel.innerHTML = '<div style="width:100vw;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.6);font-size:14px;">Cargando agenda...</div>';
+    const now = new Date().toISOString().split('T')[0];
+    let items = [];
+    if (this._db) {
+      try {
+        const snap = await this._db.collection('carteleria')
+          .where('activo', '!=', false)
+          .orderBy('activo').orderBy('fecha','asc').limit(100).get();
+        items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      } catch(e) {
+        try {
+          const snap = await this._db.collection('carteleria').orderBy('fecha','asc').limit(100).get();
+          items = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(c => c.activo !== false);
+        } catch(e2) { console.warn('agenda:', e2); }
+      }
+    }
+    this._agmItems = items.filter(c => c.fecha >= now);
+    this._agmCurrentIdx = 0;
+    this._agmRender();
+  },
+
+  _agmRender() {
+    const carousel = document.getElementById('agm-carousel');
+    const dots     = document.getElementById('agm-dots');
+    const counter  = document.getElementById('agm-counter');
+    if (!carousel) return;
+    const items = this._agmItems || [];
+
+    if (!items.length) {
+      carousel.innerHTML = '<div style="width:100vw;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(255,255,255,.6);gap:10px;"><div style="font-size:40px;">📭</div><div style="font-size:14px;font-weight:600;">Sin afiches publicados</div></div>';
+      if (dots)    dots.innerHTML = '';
+      if (counter) counter.style.display = 'none';
+      document.getElementById('agm-info-titulo') && (document.getElementById('agm-info-titulo').textContent = '');
+      return;
+    }
+
+    // Slides
+    carousel.innerHTML = items.map((c, i) => {
+      const src = c.img && c.img.startsWith('firestore:') ? '' : (c.img || '');
+      const fsref = c.img && c.img.startsWith('firestore:') ? c.img : '';
+      return '<div style="width:100vw;flex-shrink:0;scroll-snap-align:start;position:relative;overflow:hidden;cursor:pointer;" onclick="App._agmOpenDetail(' + JSON.stringify(c.id) + ')">'
+        + '<img src="' + src + '" data-fsref="' + fsref + '" data-idx="' + i + '" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="App._agmImgFallback(this)">'
+        + '<div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,0,0,.08) 0%,transparent 60%);pointer-events:none;"></div>'
+        + '</div>';
+    }).join('');
+
+    // Dots
+    if (dots) {
+      dots.innerHTML = items.map((_, i) =>
+        '<div data-agmdot="' + i + '" style="width:' + (i===0?'20':'7') + 'px;height:7px;border-radius:4px;background:' + (i===0?'#fff':'rgba(255,255,255,.4)') + ';transition:all .25s;cursor:pointer;" onclick="App._agmGoTo(' + i + ')"></div>'
+      ).join('');
+    }
+
+    // Counter
+    if (counter) { counter.textContent = '1 / ' + items.length; counter.style.display = 'block'; }
+
+    // Info bar primer slide
+    this._agmUpdateInfo(0);
+
+    // Resolver imágenes Firestore
+    carousel.querySelectorAll('img[data-fsref]').forEach(img => {
+      if (img.dataset.fsref) this._resolveCartImg(img);
+    });
+
+    // Scroll al índice actual si venimos de un detalle
+    if (this._agmCurrentIdx > 0) {
+      requestAnimationFrame(() => {
+        carousel.scrollLeft = this._agmCurrentIdx * carousel.offsetWidth;
+      });
+    }
+  },
+
+  _agmUpdateInfo(idx) {
+    const items = this._agmItems || [];
+    const c = items[idx];
+    const catEmoji = { cultural:'🎭', deportivo:'⚽', salud:'🏥', educacion:'📚', turismo:'🧳', social:'🤝', otro:'📋' };
+    const titulo  = document.getElementById('agm-info-titulo');
+    const catEl   = document.getElementById('agm-info-cat');
+    const fechaEl = document.getElementById('agm-info-fecha');
+    if (!c) return;
+    if (titulo)  titulo.textContent  = c.titulo || '';
+    if (catEl)   catEl.textContent   = (catEmoji[c.cat] || '📋') + ' ' + (c.cat || '');
+    if (fechaEl) fechaEl.textContent = '📅 ' + (c.fecha || '');
+  },
+
+  _agmOnScroll(el) {
+    if (!el) return;
+    const idx = Math.round(el.scrollLeft / el.offsetWidth);
+    if (idx === this._agmCurrentIdx) return;
+    this._agmCurrentIdx = idx;
+    const items = this._agmItems || [];
+    // Dots
+    document.querySelectorAll('[data-agmdot]').forEach(d => {
+      const i = parseInt(d.dataset.agmdot);
+      const active = i === idx;
+      d.style.width = active ? '20px' : '7px';
+      d.style.background = active ? '#fff' : 'rgba(255,255,255,.4)';
+    });
+    // Counter
+    const counter = document.getElementById('agm-counter');
+    if (counter) counter.textContent = (idx + 1) + ' / ' + items.length;
+    // Info bar
+    this._agmUpdateInfo(idx);
+  },
+
+  _agmGoTo(idx) {
+    const carousel = document.getElementById('agm-carousel');
+    if (!carousel) return;
+    carousel.scrollTo({ left: idx * carousel.offsetWidth, behavior: 'smooth' });
+  },
+
+  _agmOpenDetail(id) {
+    const c = (this._agmItems || []).find(x => x.id === id);
+    if (!c) return;
+    const catEmoji = { cultural:'🎭', deportivo:'⚽', salud:'🏥', educacion:'📚', turismo:'🧳', social:'🤝', otro:'📋' };
+    const body = document.getElementById('agm-detail-body');
+    if (body) {
+      const src   = c.img && c.img.startsWith('firestore:') ? '' : (c.img || '');
+      const fsref = c.img && c.img.startsWith('firestore:') ? c.img : '';
+      body.innerHTML =
+        '<div style="aspect-ratio:3/4;background:var(--bg2);border-radius:14px;overflow:hidden;margin-bottom:16px;max-height:55vh;">'
+        + '<img src="' + src + '" data-fsref="' + fsref + '" id="agm-detail-img" style="width:100%;height:100%;object-fit:contain;background:#111;">'
+        + '</div>'
+        + '<div style="font-family:var(--fH);font-size:18px;font-weight:800;color:var(--dk);margin-bottom:8px;">' + App._esc(c.titulo) + '</div>'
+        + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">'
+        + '<span style="background:var(--orL);color:var(--or);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;">' + (catEmoji[c.cat]||'📋') + ' ' + (c.cat||'') + '</span>'
+        + '<span style="background:var(--bg2);color:var(--md);border-radius:20px;padding:3px 10px;font-size:11px;">📅 ' + (c.fecha||'') + '</span>'
+        + '<span style="background:var(--bg2);color:var(--md);border-radius:20px;padding:3px 10px;font-size:11px;">📍 ' + App._esc(c.municipio||c.ciudad||'Municipal') + '</span>'
+        + '</div>'
+        + (c.desc ? '<div style="font-size:13px;color:var(--md);line-height:1.6;padding:10px;background:var(--bg2);border-radius:10px;">' + App._esc(c.desc) + '</div>' : '');
+    }
+    const overlay = document.getElementById('agm-detail-overlay');
+    if (overlay) overlay.style.display = 'flex';
+    const imgEl = document.getElementById('agm-detail-img');
+    if (imgEl && imgEl.dataset.fsref) this._resolveCartImg(imgEl);
+  },
+
+  _agmCloseDetail() {
+    const overlay = document.getElementById('agm-detail-overlay');
+    if (overlay) overlay.style.display = 'none';
   },
 
   // ── Usuarios ──
