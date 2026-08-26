@@ -19469,17 +19469,17 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   _admCartLoadImg(input) {
     const file = input.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      this._admCartImgB64 = e.target.result;
+    this.toast && this.toast('⏳ Comprimiendo imagen...');
+    this._compressImg(file, (b64, kb) => {
+      this._admCartImgB64 = b64;
       const thumb = document.getElementById('adm-cart-img-thumb');
       const preview = document.getElementById('adm-cart-img-preview');
       const label = document.getElementById('adm-cart-img-label');
-      if (thumb) thumb.src = e.target.result;
+      if (thumb) thumb.src = b64;
       if (preview) preview.style.display = 'block';
       if (label) label.style.display = 'none';
-    };
-    reader.readAsDataURL(file);
+      this.toast && this.toast('✅ Imagen lista (' + kb + ' KB)');
+    });
   },
 
   _admCartClearImg() {
