@@ -19663,18 +19663,23 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     carousel.innerHTML = '<div style="width:100vw;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.6);font-size:14px;">Cargando agenda...</div>';
     const now = new Date().toISOString().split('T')[0];
     let items = [];
+    let loadError = null;
     if (this._db) {
       try {
-        const snap = await this._db.collection('carteleria')
-          .where('activo', '!=', false)
-          .orderBy('activo').orderBy('fecha','asc').limit(100).get();
-        items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // Consulta simple sin '!=' combinado con orderBy (evita requerir índice compuesto).
+        // El filtro por 'activo' y por fecha se hace en el cliente.
+        const snap = await this._db.collection('carteleria').orderBy('fecha', 'asc').limit(100).get();
+        items = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(c => c.activo !== false);
       } catch(e) {
-        try {
-          const snap = await this._db.collection('carteleria').orderBy('fecha','asc').limit(100).get();
-          items = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(c => c.activo !== false);
-        } catch(e2) { console.warn('agenda:', e2); }
+        console.error('[_agmLoad]', e);
+        loadError = e;
       }
+    }
+    if (loadError) {
+      carousel.innerHTML = '<div style="width:100vw;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(255,255,255,.7);gap:10px;padding:0 24px;text-align:center;"><div style="font-size:40px;">⚠️</div><div style="font-size:13px;">No se pudo cargar la agenda.<br>' + (loadError.code || loadError.message || 'Error desconocido') + '</div></div>';
+      this.toast && this.toast('❌ Agenda: ' + (loadError.code || loadError.message));
+      this._agmItems = [];
+      return;
     }
     this._agmItems = items.filter(c => c.fecha >= now);
     this._agmCurrentIdx = 0;
