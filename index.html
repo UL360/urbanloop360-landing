@@ -18696,6 +18696,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (activeTab === 'negocios')    this._admRenderNegocios();
     if (activeTab === 'pendientes')  this._admRenderPendientes();
     if (activeTab === 'dashboard')   this._admLoadDashboard();
+    if (activeTab === 'carteleria')  this._admRenderCarteleriaList();
   },
 
   // ── Filtro geográfico unificado para las listas del admin (Loops, FotoLoops,
@@ -19625,6 +19626,17 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
 
   _admCartFilterState: 'all',
 
+  _admCartClearGeoFilter() {
+    const selPais  = document.getElementById('adm-sel-pais');
+    const selProv  = document.getElementById('adm-sel-provincia');
+    const selDepto = document.getElementById('adm-sel-departamento');
+    const selCiud  = document.getElementById('adm-sel-ciudad');
+    if (selCiud)  selCiud.value  = '';
+    if (selDepto) selDepto.value = '';
+    if (selProv)  selProv.value  = '';
+    this._admMunicipioChanged();
+  },
+
   _admCartFilter(f, btn) {
     this._admCartFilterState = f;
     document.querySelectorAll('[data-cf]').forEach(b => b.classList.remove('on'));
@@ -19677,13 +19689,27 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (!list) return;
     const now = new Date().toISOString().split('T')[0];
     const f = this._admCartFilterState || 'all';
+    const totalCache = (this._carteleriaCache || []).length;
     let items = (this._carteleriaCache || []).filter(c => this._admMatchesGeoFilter(c));
+    const hiddenByGeo = totalCache - items.length;
     if (f === 'vigente') items = items.filter(c => c.activo !== false && c.fecha >= now);
     if (f === 'vencido') items = items.filter(c => c.activo === false || c.fecha < now);
 
     const catEmoji = { cultural:'🎭', deportivo:'⚽', salud:'🏥', educacion:'📚', turismo:'🧳', social:'🤝', otro:'📋' };
     if (!items.length) {
-      list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">Sin afiches en este filtro</div>`;
+      if (totalCache === 0) {
+        list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">Todavía no publicaste ningún afiche</div>`;
+      } else if (hiddenByGeo > 0) {
+        const filtroActivo = this._admCity || this._admDepto || this._admProvincia || this._admPais;
+        list.innerHTML = `<div style="text-align:center;padding:28px 16px;color:var(--gr);font-size:13px;">
+          ⚠️ Hay ${hiddenByGeo} afiche${hiddenByGeo===1?'':'s'} publicado${hiddenByGeo===1?'':'s'}, pero no se muestra${hiddenByGeo===1?'':'n'} porque el filtro de ubicación está en <b>"${App._esc(filtroActivo)}"</b> y no coincide.
+          <div style="margin-top:12px;">
+            <button class="adm-btn" onclick="App._admCartClearGeoFilter()">🌎 Ver todas las ciudades</button>
+          </div>
+        </div>`;
+      } else {
+        list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gr);font-size:13px;">Sin afiches en este filtro</div>`;
+      }
       return;
     }
     list.innerHTML = items.map(c => {
