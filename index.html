@@ -1639,6 +1639,18 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
   #toast { left:50%; }
 }
 
+/* Agenda Municipal: en desktop no debe estirarse a todo el ancho de la ventana
+   (el carrusel es full-bleed tipo mobile y se ve la imagen gigante/cortada) */
+@media(min-width:769px) {
+  #agenda-municipal {
+    left:50% !important;
+    right:auto !important;
+    width:430px !important;
+    transform:translateX(-50%);
+    box-shadow:0 0 80px rgba(0,0,0,.55);
+  }
+}
+
 /* ═══════════════════════
    EXTENDED BADGES
 ═══════════════════════ */
@@ -19646,8 +19658,15 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     try {
       const [col, docId] = ref.replace('firestore:', '').split('/');
       const snap = await this._db.collection(col).doc(docId).get();
-      if (snap.exists) imgEl.src = snap.data().img || '';
-    } catch(e) { /* silencio */ }
+      if (snap.exists && snap.data().img) {
+        imgEl.src = snap.data().img;
+      } else {
+        this._agmImgFallback(imgEl);
+      }
+    } catch(e) {
+      console.error('[_resolveCartImg]', e);
+      this._agmImgFallback(imgEl);
+    }
   },
 
   // ── Pantalla pública: Agenda Municipal ──
@@ -19660,7 +19679,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
   async _agmLoad() {
     const carousel = document.getElementById('agm-carousel');
     if (!carousel) return;
-    carousel.innerHTML = '<div style="width:100vw;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.6);font-size:14px;">Cargando agenda...</div>';
+    carousel.innerHTML = '<div style="width:100%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.6);font-size:14px;">Cargando agenda...</div>';
     const now = new Date().toISOString().split('T')[0];
     let items = [];
     let loadError = null;
@@ -19676,7 +19695,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       }
     }
     if (loadError) {
-      carousel.innerHTML = '<div style="width:100vw;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(255,255,255,.7);gap:10px;padding:0 24px;text-align:center;"><div style="font-size:40px;">⚠️</div><div style="font-size:13px;">No se pudo cargar la agenda.<br>' + (loadError.code || loadError.message || 'Error desconocido') + '</div></div>';
+      carousel.innerHTML = '<div style="width:100%;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(255,255,255,.7);gap:10px;padding:0 24px;text-align:center;"><div style="font-size:40px;">⚠️</div><div style="font-size:13px;">No se pudo cargar la agenda.<br>' + (loadError.code || loadError.message || 'Error desconocido') + '</div></div>';
       this.toast && this.toast('❌ Agenda: ' + (loadError.code || loadError.message));
       this._agmItems = [];
       return;
@@ -19694,7 +19713,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const items = this._agmItems || [];
 
     if (!items.length) {
-      carousel.innerHTML = '<div style="width:100vw;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(255,255,255,.6);gap:10px;"><div style="font-size:40px;">📭</div><div style="font-size:14px;font-weight:600;">Sin afiches publicados</div></div>';
+      carousel.innerHTML = '<div style="width:100%;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(255,255,255,.6);gap:10px;"><div style="font-size:40px;">📭</div><div style="font-size:14px;font-weight:600;">Sin afiches publicados</div></div>';
       if (dots)    dots.innerHTML = '';
       if (counter) counter.style.display = 'none';
       document.getElementById('agm-info-titulo') && (document.getElementById('agm-info-titulo').textContent = '');
@@ -19705,8 +19724,9 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     carousel.innerHTML = items.map((c, i) => {
       const src = c.img && c.img.startsWith('firestore:') ? '' : (c.img || '');
       const fsref = c.img && c.img.startsWith('firestore:') ? c.img : '';
-      return '<div style="width:100vw;flex-shrink:0;scroll-snap-align:start;position:relative;overflow:hidden;cursor:pointer;" onclick="App._agmOpenDetail(' + JSON.stringify(c.id) + ')">'
-        + '<img src="' + src + '" data-fsref="' + fsref + '" data-idx="' + i + '" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="App._agmImgFallback(this)">'
+      const srcAttr = src ? (' src="' + src + '"') : ''; // sin src="" para no disparar onerror antes de resolver Firestore
+      return '<div style="width:100%;flex-shrink:0;scroll-snap-align:start;position:relative;overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center;background:#1a1a1a;" onclick="App._agmOpenDetail(' + JSON.stringify(c.id) + ')">'
+        + '<img' + srcAttr + ' data-fsref="' + fsref + '" data-idx="' + i + '" style="width:100%;height:100%;object-fit:contain;display:block;" onerror="App._agmImgFallback(this)">'
         + '<div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,0,0,.08) 0%,transparent 60%);pointer-events:none;"></div>'
         + '</div>';
     }).join('');
