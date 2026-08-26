@@ -19648,17 +19648,27 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const list = document.getElementById('adm-cart-list');
     if (!list) return;
     list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--gr);font-size:13px;">Cargando cartelería...</div>`;
+    console.log('[carteleria] _admRenderCarteleria() llamada. this._db =', !!this._db);
     if (this._db) {
       try {
         const snap = await this._db.collection('carteleria').orderBy('ts','desc').limit(200).get();
         this._carteleriaCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        console.log(`[carteleria] Cargados ${this._carteleriaCache.length} afiches (query con orderBy)`, this._carteleriaCache);
       } catch(e) {
+        console.warn('[carteleria] Falló query con orderBy, probando fallback simple:', e);
         try {
           const snap = await this._db.collection('carteleria').limit(200).get();
           this._carteleriaCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
           this._carteleriaCache.sort((a,b) => (b.ts||0)-(a.ts||0));
-        } catch(e2) { console.warn('carteleria:', e2); }
+          console.log(`[carteleria] Cargados ${this._carteleriaCache.length} afiches (fallback)`, this._carteleriaCache);
+        } catch(e2) {
+          console.error('[carteleria] Falló también el fallback:', e2);
+          list.innerHTML = `<div style="text-align:center;padding:28px 16px;color:#EF4444;font-size:13px;">❌ Error al cargar: ${App._esc(e2.code || e2.message || 'desconocido')}</div>`;
+          return;
+        }
       }
+    } else {
+      console.warn('[carteleria] this._db no está disponible (Firestore no inicializado todavía)');
     }
     this._admRenderCarteleriaList();
   },
@@ -19694,6 +19704,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const hiddenByGeo = totalCache - items.length;
     if (f === 'vigente') items = items.filter(c => c.activo !== false && c.fecha >= now);
     if (f === 'vencido') items = items.filter(c => c.activo === false || c.fecha < now);
+    console.log(`[carteleria] Render lista: total en caché=${totalCache}, ocultos por filtro de ciudad=${hiddenByGeo}, filtro activo="${f}", visibles finales=${items.length}, filtro ciudad actual="${this._admCity||''}"`);
 
     const catEmoji = { cultural:'🎭', deportivo:'⚽', salud:'🏥', educacion:'📚', turismo:'🧳', social:'🤝', otro:'📋' };
     if (!items.length) {
