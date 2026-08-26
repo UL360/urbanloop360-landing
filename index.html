@@ -3450,7 +3450,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <div id="adm-tab-carteleria" class="adm-panel" style="display:none;">
       <!-- Formulario subir afiche -->
       <div style="background:var(--orL);border:1.5px solid var(--or);border-radius:14px;padding:16px;margin-bottom:14px;">
-        <div style="font-family:var(--fH);font-size:14px;font-weight:800;color:var(--dk);margin-bottom:12px;">📤 Subir nuevo afiche</div>
+        <div id="adm-cart-form-title" style="font-family:var(--fH);font-size:14px;font-weight:800;color:var(--dk);margin-bottom:12px;">📤 Subir nuevo afiche</div>
 
         <!-- Imagen -->
         <div style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;margin-bottom:6px;">IMAGEN DEL FLYER *</div>
@@ -3487,9 +3487,13 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
         <div style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;margin-bottom:6px;">DESCRIPCIÓN CORTA (opcional)</div>
         <textarea id="adm-cart-desc" class="fi" rows="2" placeholder="Detalles adicionales, lugar, horario..." style="resize:none;margin-bottom:14px;"></textarea>
 
-        <button onclick="App._admCartSubir()"
+        <button id="adm-cart-submit-btn" onclick="App._admCartSubir()"
           style="width:100%;padding:13px;background:var(--or);color:#fff;border:none;border-radius:12px;font-family:var(--fH);font-size:14px;font-weight:800;cursor:pointer;">
           📌 Publicar en Agenda Municipal
+        </button>
+        <button id="adm-cart-cancel-btn" onclick="App._admCartCancelEdit()"
+          style="display:none;width:100%;padding:11px;background:transparent;color:var(--gr);border:1.5px solid var(--bd);border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px;">
+          ✕ Cancelar edición
         </button>
       </div>
 
@@ -19475,6 +19479,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     this.toast && this.toast('⏳ Comprimiendo imagen...');
     this._compressImg(file, (b64, kb) => {
       this._admCartImgB64 = b64;
+      this._admCartImgChanged = true; // el usuario cargó una imagen nueva (relevante en modo edición)
       const thumb = document.getElementById('adm-cart-img-thumb');
       const preview = document.getElementById('adm-cart-img-preview');
       const label = document.getElementById('adm-cart-img-label');
@@ -19500,49 +19505,122 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const fecha  = document.getElementById('adm-cart-fecha')?.value;
     const cat    = document.getElementById('adm-cart-cat')?.value || 'otro';
     const desc   = document.getElementById('adm-cart-desc')?.value.trim();
+    const editId = this._admCartEditId;
 
     if (!this._admCartImgB64) return this.toast('⚠️ Seleccioná una imagen');
     if (!titulo) return this.toast('⚠️ Escribí el título del evento');
     if (!fecha)  return this.toast('⚠️ Seleccioná la fecha del evento');
 
-    const btn = document.querySelector('[onclick="App._admCartSubir()"]');
-    if (btn) { btn.textContent = '⏳ Subiendo...'; btn.disabled = true; }
+    const btn = document.getElementById('adm-cart-submit-btn');
+    if (btn) { btn.textContent = editId ? '⏳ Guardando...' : '⏳ Subiendo...'; btn.disabled = true; }
 
     try {
-      const id = 'cart_' + Date.now();
+      const id = editId || ('cart_' + Date.now());
       let imgUrl = this._admCartImgB64;
 
-      // Guardar imagen en Firestore (mismo patrón que el resto de la app)
-      if (this._db) {
-        await this._db.collection('carteleria_imgs').doc(id).set({ img: imgUrl, ts: Date.now() });
-        imgUrl = `firestore:carteleria_imgs/${id}`;
+      // Solo (re)subir la imagen si es un afiche nuevo o si el usuario cargó una imagen distinta
+      if (!editId || this._admCartImgChanged) {
+        if (this._db) {
+          await this._db.collection('carteleria_imgs').doc(id).set({ img: imgUrl, ts: Date.now() });
+          imgUrl = `firestore:carteleria_imgs/${id}`;
+        }
       }
+      // si estamos editando y no se tocó la imagen, this._admCartImgB64 ya es la referencia firestore:... existente
 
+      const existing = editId ? ((this._carteleriaCache || []).find(c => c.id === editId) || {}) : {};
       const doc = {
         id, titulo, fecha, cat, desc: desc || '',
         img: imgUrl,
-        ciudad: this._admCity || this._luCity || 'La Paz',
-        municipio: this._admCity || this._luCity || 'La Paz',
-        ts: Date.now(),
-        activo: true,
+        ciudad: existing.ciudad || this._admCity || this._luCity || 'La Paz',
+        municipio: existing.municipio || this._admCity || this._luCity || 'La Paz',
+        ts: existing.ts || Date.now(),
+        activo: existing.activo !== undefined ? existing.activo : true,
       };
 
       if (this._db) await this._db.collection('carteleria').doc(id).set(doc);
-      this._carteleriaCache.unshift(doc);
 
-      // Limpiar formulario
-      document.getElementById('adm-cart-titulo').value = '';
-      document.getElementById('adm-cart-fecha').value = '';
-      document.getElementById('adm-cart-desc').value = '';
-      this._admCartClearImg();
-      this.toast('✅ Afiche publicado en Agenda Municipal');
+      if (editId) {
+        const idx = (this._carteleriaCache || []).findIndex(c => c.id === editId);
+        if (idx >= 0) this._carteleriaCache[idx] = doc; else this._carteleriaCache.unshift(doc);
+      } else {
+        this._carteleriaCache.unshift(doc);
+      }
+
+      this.toast(editId ? '✅ Afiche actualizado' : '✅ Afiche publicado en Agenda Municipal');
+      this._admCartCancelEdit(); // limpia el formulario y sale del modo edición
       this._admRenderCarteleria();
+      this._agmRender && this._agmRender(); // refrescar pantalla pública si está cargada
     } catch(e) {
       console.error('[_admCartSubir]', e);
-      this.toast('❌ Error al subir: ' + e.message);
+      this.toast('❌ Error al ' + (editId ? 'guardar' : 'subir') + ': ' + e.message);
     } finally {
-      if (btn) { btn.textContent = '📌 Publicar en Agenda Municipal'; btn.disabled = false; }
+      if (btn) { btn.disabled = false; btn.textContent = this._admCartEditId ? '💾 Guardar cambios' : '📌 Publicar en Agenda Municipal'; }
     }
+  },
+
+  // ── Editar afiche existente ──
+  async _admCartEditar(id) {
+    const item = (this._carteleriaCache || []).find(c => c.id === id);
+    if (!item) return this.toast('⚠️ No se encontró el afiche');
+
+    this._admCartEditId = id;
+    this._admCartImgChanged = false;
+
+    const tituloEl = document.getElementById('adm-cart-titulo');
+    const fechaEl  = document.getElementById('adm-cart-fecha');
+    const catEl    = document.getElementById('adm-cart-cat');
+    const descEl   = document.getElementById('adm-cart-desc');
+    if (tituloEl) tituloEl.value = item.titulo || '';
+    if (fechaEl)  fechaEl.value  = item.fecha || '';
+    if (catEl)    catEl.value    = item.cat || 'otro';
+    if (descEl)   descEl.value   = item.desc || '';
+
+    // Precargar imagen (resolviendo la referencia de Firestore si corresponde)
+    const thumb   = document.getElementById('adm-cart-img-thumb');
+    const preview = document.getElementById('adm-cart-img-preview');
+    const label   = document.getElementById('adm-cart-img-label');
+    this._admCartImgB64 = item.img || null;
+    if (preview) preview.style.display = item.img ? 'block' : 'none';
+    if (label)   label.style.display   = item.img ? 'none' : 'flex';
+    if (thumb)   thumb.src = '';
+    if (item.img && item.img.startsWith('firestore:') && this._db) {
+      try {
+        const [col, docId] = item.img.replace('firestore:', '').split('/');
+        const snap = await this._db.collection(col).doc(docId).get();
+        if (snap.exists && thumb) thumb.src = snap.data().img || '';
+      } catch(e) { console.error('[_admCartEditar]', e); }
+    } else if (thumb) {
+      thumb.src = item.img || '';
+    }
+
+    // Cambiar el formulario a modo edición
+    const titleEl = document.getElementById('adm-cart-form-title');
+    if (titleEl) titleEl.textContent = '✏️ Editando afiche';
+    const btn = document.getElementById('adm-cart-submit-btn');
+    if (btn) btn.textContent = '💾 Guardar cambios';
+    const cancelBtn = document.getElementById('adm-cart-cancel-btn');
+    if (cancelBtn) cancelBtn.style.display = 'block';
+
+    document.getElementById('adm-tab-carteleria')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  },
+
+  _admCartCancelEdit() {
+    this._admCartEditId = null;
+    this._admCartImgChanged = false;
+    const tituloEl = document.getElementById('adm-cart-titulo');
+    const fechaEl  = document.getElementById('adm-cart-fecha');
+    const descEl   = document.getElementById('adm-cart-desc');
+    if (tituloEl) tituloEl.value = '';
+    if (fechaEl)  fechaEl.value  = '';
+    if (descEl)   descEl.value   = '';
+    this._admCartClearImg();
+
+    const titleEl = document.getElementById('adm-cart-form-title');
+    if (titleEl) titleEl.textContent = '📤 Subir nuevo afiche';
+    const btn = document.getElementById('adm-cart-submit-btn');
+    if (btn) btn.textContent = '📌 Publicar en Agenda Municipal';
+    const cancelBtn = document.getElementById('adm-cart-cancel-btn');
+    if (cancelBtn) cancelBtn.style.display = 'none';
   },
 
   _admCartFilterState: 'all',
@@ -19610,14 +19688,17 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     }
     list.innerHTML = items.map(c => {
       const vencido = c.fecha < now || c.activo === false;
+      const isFs  = c.img && c.img.startsWith('firestore:');
+      const src   = isFs ? '' : (c.img || '');
+      const fsref = isFs ? c.img : '';
+      const srcAttr = src ? (' src="' + src + '"') : ''; // sin src="" para no disparar onerror antes de resolver Firestore
       return `<div class="adm-item" style="${vencido ? 'opacity:.6;' : ''}">
         <div class="adm-item-row" style="gap:10px;">
           <div style="width:52px;height:68px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--bg2);">
-            <img src="${c.img && c.img.startsWith('firestore:') ? '' : (c.img||'')}"
-              data-fsref="${c.img && c.img.startsWith('firestore:') ? c.img : ''}"
+            <img${srcAttr}
+              data-fsref="${fsref}"
               style="width:100%;height:100%;object-fit:cover;"
-              onerror="this.style.display='none'"
-              onload="if(this.dataset.fsref)App._resolveCartImg(this)">
+              onerror="App._agmImgFallback(this)">
           </div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:13px;font-weight:700;color:var(--dk);margin-bottom:3px;">${App._esc(c.titulo)}</div>
@@ -19631,6 +19712,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
             style="${c.activo===false ? 'background:#16A34A;color:#fff;border:none;' : 'background:var(--bg2);'}">
             ${c.activo===false ? '✅ Reactivar' : '📦 Archivar'}
           </button>
+          <button class="adm-btn" onclick="App._admCartEditar('${c.id}')">✏️ Editar</button>
           <button class="adm-btn adm-btn-red" onclick="App._admCartEliminar('${c.id}','${(c.titulo||'').replace(/'/g,'')}')">🗑️ Eliminar</button>
         </div>
       </div>`;
