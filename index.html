@@ -228,6 +228,17 @@ body.day #grabar .grab-type-row { background:var(--bg2) !important; border-color
 body.day #grabar .grab-type-chip { background:var(--bg2) !important; border-color:var(--bd) !important; color:var(--md) !important; }
 body.day #grabar .grab-hdr h2 { color:var(--dk) !important; }
 body.day #grabar .grab-back { color:var(--or) !important; }
+body.day .agm-frame { background:var(--bg2) !important; }
+body.day .agm-frame img { background:var(--bg2) !important; }
+body.day .agm-titulo { color:var(--dk) !important; }
+body.day .agm-badge { background:rgba(58,46,31,.10) !important; color:var(--md) !important; }
+body.day #agenda-municipal { background:var(--bg1) !important; }
+body.day #agm-header { background:linear-gradient(to bottom,var(--bg1) 0%,transparent 100%) !important; }
+body.day .agm-hdr-title { color:var(--dk) !important; text-shadow:none !important; }
+body.day .agm-hdr-sub { color:var(--gr) !important; }
+body.day .agm-back-btn { background:rgba(58,46,31,.12) !important; }
+body.day .agm-back-icon { stroke:var(--dk) !important; }
+body.day .agm-counter { background:rgba(58,46,31,.12) !important; color:var(--dk) !important; }
 body.day #grabar .grab-sl { color:var(--gr) !important; }
 
 
@@ -2943,16 +2954,16 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 <div id="agenda-municipal" class="screen" style="background:#111;overflow:hidden;">
 
   <!-- Header flotante sobre el carrusel -->
-  <div style="position:absolute;top:0;left:0;right:0;z-index:20;padding:12px 14px 10px;display:flex;align-items:center;gap:10px;background:linear-gradient(to bottom,rgba(0,0,0,.65) 0%,transparent 100%);">
-    <button class="scr-back-btn" onclick="App.go('explore')" style="background:rgba(0,0,0,.4);border:none;">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><path d="M19 12H5m0 0l7-7m-7 7l7 7"/></svg>
+  <div id="agm-header" style="position:absolute;top:0;left:0;right:0;z-index:20;padding:12px 14px 10px;display:flex;align-items:center;gap:10px;background:linear-gradient(to bottom,rgba(0,0,0,.65) 0%,transparent 100%);">
+    <button class="scr-back-btn agm-back-btn" onclick="App.go('explore')" style="background:rgba(0,0,0,.4);border:none;">
+      <svg class="agm-back-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><path d="M19 12H5m0 0l7-7m-7 7l7 7"/></svg>
     </button>
     <div style="flex:1;">
-      <h1 style="font-family:var(--fH);font-size:18px;font-weight:800;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.5);">📌 Agenda Municipal</h1>
-      <p style="font-size:11px;color:rgba(255,255,255,.75);margin-top:1px;" id="agm-city-label">Cartelería oficial de tu ciudad</p>
+      <h1 class="agm-hdr-title" style="font-family:var(--fH);font-size:18px;font-weight:800;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.5);">📌 Agenda Municipal</h1>
+      <p class="agm-hdr-sub" style="font-size:11px;color:rgba(255,255,255,.75);margin-top:1px;" id="agm-city-label">Cartelería oficial de tu ciudad</p>
     </div>
     <!-- Contador -->
-    <div id="agm-counter" style="background:rgba(0,0,0,.45);color:#fff;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;display:none;"></div>
+    <div id="agm-counter" class="agm-counter" style="background:rgba(0,0,0,.45);color:#fff;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;display:none;"></div>
   </div>
 
   <!-- Carrusel: cada slide es una tarjeta (imagen enmarcada + pie con título/cat/fecha) -->
@@ -19854,13 +19865,13 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       const srcAttr = src ? (' src="' + src + '"') : ''; // sin src="" para no disparar onerror antes de resolver Firestore
       return '<div class="agm-slide" style="width:100%;flex-shrink:0;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:76px 18px 34px;box-sizing:border-box;">'
         + '<div class="agm-frame" style="cursor:pointer;width:100%;max-width:340px;aspect-ratio:3/4;overflow:hidden;background:#1a1a1a;box-shadow:0 12px 36px rgba(0,0,0,.5);flex-shrink:0;" onclick="App._agmOpenDetail(' + JSON.stringify(c.id) + ')">'
-        + '<img' + srcAttr + ' data-fsref="' + fsref + '" data-idx="' + i + '" style="width:100%;height:100%;object-fit:contain;display:block;background:#1a1a1a;" onerror="App._agmImgFallback(this)">'
+        + '<img' + srcAttr + ' data-fsref="' + fsref + '" data-idx="' + i + '" class="agm-frame" style="width:100%;height:100%;object-fit:contain;display:block;background:#1a1a1a;" onerror="App._agmImgFallback(this)">'
         + '</div>'
-        + '<div style="width:100%;max-width:340px;margin-top:14px;">'
-        + '<div style="font-family:var(--fH);font-size:16px;font-weight:800;color:#fff;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + this._esc(c.titulo || '') + '</div>'
+        + '<div class="agm-footer" style="width:100%;max-width:340px;margin-top:14px;">'
+        + '<div class="agm-titulo" style="font-family:var(--fH);font-size:16px;font-weight:800;color:#fff;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + this._esc(c.titulo || '') + '</div>'
         + '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
-        + '<span style="background:rgba(255,255,255,.14);color:#fff;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;">' + (catEmoji[c.cat] || '📋') + ' ' + this._esc(c.cat || '') + '</span>'
-        + '<span style="background:rgba(255,255,255,.14);color:#fff;border-radius:20px;padding:3px 10px;font-size:11px;">📅 ' + this._esc(c.fecha || '') + '</span>'
+        + '<span class="agm-badge" style="background:rgba(255,255,255,.14);color:#fff;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;">' + (catEmoji[c.cat] || '📋') + ' ' + this._esc(c.cat || '') + '</span>'
+        + '<span class="agm-badge" style="background:rgba(255,255,255,.14);color:#fff;border-radius:20px;padding:3px 10px;font-size:11px;">📅 ' + this._esc(c.fecha || '') + '</span>'
         + '</div>'
         + '</div>'
         + '</div>'
