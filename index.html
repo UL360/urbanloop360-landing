@@ -11281,7 +11281,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       const img = new Image();
       img.onload = () => {
         let w = img.width, h = img.height;
-        const maxW = 900, maxH = 600;
+        // Dimensiones máximas adaptadas a la orientación de la imagen
+        const isPortrait = h > w;
+        const maxW = isPortrait ? 600 : 900;
+        const maxH = isPortrait ? 900 : 600;
         if (w > maxW || h > maxH) {
           const ratio = Math.min(maxW/w, maxH/h);
           w = Math.round(w*ratio); h = Math.round(h*ratio);
@@ -19504,7 +19507,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       if (preview) preview.style.display = 'block';
       if (label) label.style.display = 'none';
       this.toast && this.toast('✅ Imagen lista (' + kb + ' KB)');
-    });
+    }, 65 * 1024);
   },
 
   _admCartClearImg() {
