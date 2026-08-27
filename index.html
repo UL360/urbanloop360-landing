@@ -11287,13 +11287,18 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           q = Math.max(q - 0.08, 0.25);
           b64 = canvas.toDataURL('image/jpeg', q);
         }
-        // Si aún es muy grande, reducir resolución también
-        if (b64.length * 0.75 > maxBytes) {
-          const scale = Math.sqrt(maxBytes / (b64.length * 0.75));
-          canvas.width  = Math.round(w * scale);
-          canvas.height = Math.round(h * scale);
-          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-          b64 = canvas.toDataURL('image/jpeg', 0.7);
+        // Si todavía pesa de más (típico en flyers con mucho texto, que
+        // comprimen mal en JPEG), seguir reduciendo resolución de a poco
+        // hasta cumplir el objetivo real, en vez de un solo intento
+        let guard = 0;
+        while (b64.length * 0.75 > maxBytes && guard < 8) {
+          const scale = Math.sqrt(maxBytes / (b64.length * 0.75)) * 0.94; // margen para no pasarse por redondeo
+          const newW = Math.max(120, Math.round(canvas.width * scale));
+          const newH = Math.max(120, Math.round(canvas.height * scale));
+          canvas.width = newW; canvas.height = newH;
+          canvas.getContext('2d').drawImage(img, 0, 0, newW, newH);
+          b64 = canvas.toDataURL('image/jpeg', 0.72);
+          guard++;
         }
         const kb = Math.round(b64.length * 0.75 / 1024);
         cb(b64, kb, canvas.width, canvas.height);
