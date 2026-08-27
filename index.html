@@ -2946,7 +2946,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 <div id="agenda-municipal" class="screen" style="background:var(--bg0);overflow:hidden;">
 
   <!-- Header flotante sobre el carrusel -->
-  <div style="position:absolute;top:0;left:0;right:0;z-index:20;padding:12px 14px 10px;display:flex;align-items:center;gap:10px;background:linear-gradient(to bottom,rgba(0,0,0,.65) 0%,transparent 100%);">
+  <div style="position:absolute;top:0;left:0;right:0;z-index:20;padding:12px 14px 10px;display:flex;align-items:center;gap:10px;background:linear-gradient(to bottom,rgba(0,0,0,.75) 0%,rgba(0,0,0,.55) 60%,rgba(0,0,0,.25) 100%);">
     <button class="scr-back-btn" onclick="App.go('explore')" style="background:rgba(0,0,0,.4);border:none;">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><path d="M19 12H5m0 0l7-7m-7 7l7 7"/></svg>
     </button>
@@ -19797,7 +19797,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const carousel = document.getElementById('agm-carousel');
     if (!carousel) return;
     console.log('[agm] _agmLoad() llamada');
-    carousel.innerHTML = '<div style="width:100%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.6);font-size:14px;">Cargando agenda...</div>';
+    carousel.innerHTML = '<div style="width:100%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--gr);font-size:14px;">Cargando agenda...</div>';
     const now = new Date().toISOString().split('T')[0];
     let items = [];
     let loadError = null;
