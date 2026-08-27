@@ -19854,7 +19854,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       const srcAttr = src ? (' src="' + src + '"') : ''; // sin src="" para no disparar onerror antes de resolver Firestore
       return '<div class="agm-slide" style="width:100%;flex-shrink:0;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:76px 18px 34px;box-sizing:border-box;">'
         + '<div class="agm-frame" style="cursor:pointer;width:100%;max-width:340px;aspect-ratio:3/4;overflow:hidden;background:#1a1a1a;box-shadow:0 12px 36px rgba(0,0,0,.5);flex-shrink:0;" onclick="App._agmOpenDetail(' + JSON.stringify(c.id) + ')">'
-        + '<img' + srcAttr + ' data-fsref="' + fsref + '" data-idx="' + i + '" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="App._agmImgFallback(this)">'
+        + '<img' + srcAttr + ' data-fsref="' + fsref + '" data-idx="' + i + '" style="width:100%;height:100%;object-fit:contain;display:block;background:#1a1a1a;" onerror="App._agmImgFallback(this)">'
         + '</div>'
         + '<div style="width:100%;max-width:340px;margin-top:14px;">'
         + '<div style="font-family:var(--fH);font-size:16px;font-weight:800;color:#fff;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + this._esc(c.titulo || '') + '</div>'
