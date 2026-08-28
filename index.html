@@ -9271,8 +9271,6 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     scooter:   { label:'🛴 Monopatin',   emoji:'🛴', osrm:'bike',    speed:15, voz:'en monopatín' },
     moto:      { label:'🏍 Moto',        emoji:'🏍', osrm:'car',     speed:40, voz:'en moto' },
     car:       { label:'🚗 Auto',        emoji:'🚗', osrm:'car',     speed:40, voz:'en auto' },
-    bus:       { label:'🚌 Colectivo',   emoji:'🚌', osrm:'foot',    speed:20, voz:'en colectivo' },
-    horse:     { label:'🐴 A caballo',   emoji:'🐴', osrm:'foot',    speed:10, voz:'a caballo' },
     kayak:     { label:'🛶 Kayak',       emoji:'🛶', osrm:'foot',    speed:6,  voz:'en kayak' },
     run:       { label:'🏃 Corriendo',   emoji:'🏃', osrm:'foot',    speed:10, voz:'corriendo' },
   },
@@ -9382,6 +9380,20 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       b.style.background  = active ? 'var(--orL)' : 'var(--lt)';
       b.style.color       = active ? 'var(--or)' : 'var(--md)';
     });
+  },
+
+  async _changeNavMode(key) {
+    this._navMode = key;
+    // Actualizar visual de la fila inline sin redibujar todo el panel
+    document.querySelectorAll('[data-navmode]').forEach(b => {
+      const active = b.dataset.navmode === key;
+      b.style.borderColor = active ? 'var(--or)' : 'var(--bd)';
+      b.style.background  = active ? 'var(--orL)' : 'var(--lt)';
+      b.querySelector('span:last-child').style.color = active ? 'var(--or)' : 'var(--gr)';
+    });
+    // Recalcular ruta con el nuevo modo
+    const r = this.routes && this.routes.find(x => x.id === this.selId);
+    if (r) await this._calcAndDrawNav(r);
   },
 
   async _confirmTransport() {
@@ -9656,6 +9668,19 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
               <div style="font-size:10px;color:var(--gr);margin-top:1px;">distancia restante</div>
             </div>
           </div>
+        </div>
+
+        <!-- Selector de modo inline -->
+        <div style="display:flex;gap:6px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none;-webkit-overflow-scrolling:touch;" id="nav-mode-row">
+          ${Object.entries(this._navModes).map(([key, m]) => `
+            <button onclick="App._changeNavMode('${key}')" data-navmode="${key}"
+              style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 10px;border-radius:12px;flex-shrink:0;
+                     border:1.5px solid ${this._navMode===key?'var(--or)':'var(--bd)'};
+                     background:${this._navMode===key?'var(--orL)':'var(--lt)'};
+                     cursor:pointer;transition:all .15s;">
+              <span style="font-size:20px;">${m.emoji}</span>
+              <span style="font-size:9px;font-weight:700;color:${this._navMode===key?'var(--or)':'var(--gr)'};">${m.label.split(' ').slice(1).join(' ')}</span>
+            </button>`).join('')}
         </div>
 
       </div>`;
@@ -10190,7 +10215,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     mode = mode || this._navModes[this._navMode] || this._navModes.foot;
     this._voiceOn = true;
     this._voiceNavRoute = r;
-    this._navMode = this._navMode || 'foot';
+    this._navMode = this._navMode || 'car';
     this._navModeSpeed = (mode.speed || 5) / 3.6; // km/h → m/s para ETA
 
     // Mensaje de inicio
