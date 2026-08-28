@@ -4829,6 +4829,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
 const App = {
   routes: [],
   selId: null,
+  _navMode: 'car',
   mainMap: null,
   aMap: null,
   layers: {},        // id → [leaflet layers]
@@ -9384,15 +9385,18 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
   async _changeNavMode(key) {
     this._navMode = key;
-    // Actualizar visual de la fila inline sin redibujar todo el panel
+    // Actualizar visual de la fila inline
     document.querySelectorAll('[data-navmode]').forEach(b => {
       const active = b.dataset.navmode === key;
       b.style.borderColor = active ? 'var(--or)' : 'var(--bd)';
       b.style.background  = active ? 'var(--orL)' : 'var(--lt)';
-      b.querySelector('span:last-child').style.color = active ? 'var(--or)' : 'var(--gr)';
+      const lbl = b.querySelector('span:last-child');
+      if (lbl) lbl.style.color = active ? 'var(--or)' : 'var(--gr)';
     });
-    // Recalcular ruta con el nuevo modo
-    const r = this.routes && this.routes.find(x => x.id === this.selId);
+    // Recalcular ruta: priorizar ruta de voz activa, luego selId
+    const r = this._voiceNavRoute
+      || (this.selId && this.routes && this.routes.find(x => x.id === this.selId))
+      || this._pendingNavRoute;
     if (r) await this._calcAndDrawNav(r);
   },
 
@@ -9450,7 +9454,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       ? { lat: this._lastLat, lng: this._lastLng }
       : this._locMarker.getLngLat(); // fallback si por algún motivo no está seteada aún
 
-    const mode = this._navModes[this._navMode] || this._navModes.foot;
+    const mode = this._navModes[this._navMode] || this._navModes.car;
     this.toast(`${mode.emoji} Calculando ruta ${mode.label}...`);
 
     // Línea provisional punteada
@@ -9576,7 +9580,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     // Punto más cercano del recorrido para volver ahí (reutiliza el mismo
     // proyector que usa el snap visual de la flecha)
     const target = this._snapPointToLine(uLL.lat, uLL.lng, loopCoords);
-    const mode = this._navModes[this._navMode] || this._navModes.foot;
+    const mode = this._navModes[this._navMode] || this._navModes.car;
 
     this._clearLoopReturnLine(); // por si había una anterior
 
@@ -9614,7 +9618,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   },
 
   _showNavPanel(r, dist, durMin, mode) {
-    mode = mode || this._navModes[this._navMode] || this._navModes.foot;
+    mode = mode || this._navModes[this._navMode] || this._navModes.car;
     let panel = document.getElementById('nav-panel');
     if (!panel) {
       panel = document.createElement('div');
@@ -10207,15 +10211,15 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   },
 
   // ── VOZ DE NAVEGACIÓN ──
-  _voiceOn: false,
+  _voiceOn: true,
   _voiceUtter: null,
 
   _startVoiceNav(r, steps, dist, durMin, mode) {
     if (!('speechSynthesis' in window)) { this.toast('🔇 Tu dispositivo no soporta voz'); return; }
-    mode = mode || this._navModes[this._navMode] || this._navModes.foot;
+    mode = mode || this._navModes[this._navMode] || this._navModes.car;
     this._voiceOn = true;
     this._voiceNavRoute = r;
-    this._navMode = this._navMode || 'car';
+    // _navMode ya inicializado como 'car' en el objeto App
     this._navModeSpeed = (mode.speed || 5) / 3.6; // km/h → m/s para ETA
 
     // Mensaje de inicio
