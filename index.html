@@ -9393,6 +9393,18 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       const lbl = b.querySelector('span:last-child');
       if (lbl) lbl.style.color = active ? 'var(--or)' : 'var(--gr)';
     });
+    // Limpiar capas de ruta anteriores para que _calcAndDrawNav pueda redibujar
+    const layersToClear = ['nav-shadow','nav-main','nav-dashed','nav-src-shadow','nav-src-main','nav-src-dashed'];
+    ['nav-shadow','nav-main','nav-dashed'].forEach(l => {
+      try { if (this.mainMap.getLayer(l)) this.mainMap.removeLayer(l); } catch(_){}
+    });
+    ['nav-src-shadow','nav-src-main','nav-src-dashed'].forEach(s => {
+      try { if (this.mainMap.getSource(s)) this.mainMap.removeSource(s); } catch(_){}
+    });
+    this._navLine = [];
+    // Anunciar cambio de modo por voz
+    const mode = this._navModes[key] || this._navModes.car;
+    this._speak(`Cambiando a ${mode.voz}. Recalculando.`);
     // Recalcular ruta: priorizar ruta de voz activa, luego selId
     const r = this._voiceNavRoute
       || (this.selId && this.routes && this.routes.find(x => x.id === this.selId))
@@ -10224,7 +10236,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     // Mensaje de inicio
     const poiCount = r.pois && r.pois.length ? r.pois.length : 0;
-    let msg = `Iniciando ${App._esc(r.name)}. `;
+    let msg = `Iniciando ${App._esc(r.name)}, ${mode.voz}. `;
     msg += `A ${dist}, aproximadamente ${durMin} minuto${durMin !== 1 ? 's' : ''}.`;
     if (poiCount > 0) msg += ` ${poiCount} parada${poiCount !== 1 ? 's' : ''} en el recorrido.`;
     this._speak(msg);
