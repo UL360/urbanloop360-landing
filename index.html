@@ -2927,6 +2927,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <div id="dt-action-row" class="dt-actions"></div>
     <div class="sec-title">Sobre este Loop</div>
     <p class="dt-desc" id="dt-desc">—</p>
+    <div id="dt-acceso"></div>
     <div class="sec-title">Las Paradas</div>
     <div class="stops" id="stops-list"></div>
   </div>
@@ -10980,6 +10981,10 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     document.getElementById('dt-sct').textContent  = r.pois?r.pois.length:0;
     document.getElementById('dt-desc').textContent = r.desc||'';
 
+    // Acceso al punto de inicio
+    const dtAccesoEl = document.getElementById('dt-acceso');
+    if (dtAccesoEl) dtAccesoEl.innerHTML = this._accesoHTML(r.acceso);
+
     const img = document.getElementById('dt-img');
     if (r.img) {
       const src = this._imgSrc(r.img);
@@ -12122,6 +12127,19 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if (!container) return;
     this._accesoToggle(container, btn, '.grab-acceso-chip');
   },
+  // Convierte el campo acceso (string o array) en badges HTML para mostrar en detalle
+  _accesoHTML(acceso) {
+    if (!acceso) return '';
+    const vals = Array.isArray(acceso) ? acceso : [acceso];
+    if (!vals.length || (vals.length === 1 && vals[0] === 'todos')) return '';
+    const MAP = {caminando:'🚶 Caminando',bici:'🚲 Bici',moto:'🛵 Moto',auto:'🚗 Auto',lancha:'⛵ Lancha',caballo:'🐴 A caballo',kayak:'🛶 Kayak',todos:'🌐 Todos'};
+    const badges = vals.map(v => `<span style="display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:20px;background:var(--orL,#FFF0E8);border:1.5px solid var(--or,#FF5F00);color:var(--or,#FF5F00);font-size:11px;font-weight:700;white-space:nowrap;">${MAP[v]||v}</span>`).join('');
+    return `<div style="margin-bottom:14px;">
+      <div style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;text-transform:uppercase;margin-bottom:7px;">Cómo llegar al punto de inicio</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">${badges}</div>
+    </div>`;
+  },
+
   _accesoToggle(container, btn, sel) {
     const val = btn.dataset.val;
     if (val === 'todos') {
@@ -12395,6 +12413,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
               ${r.desc ? `<div style="font-size:12px;color:var(--gr);margin-top:6px;line-height:1.5;">${App._esc(r.desc)}</div>` : ''}
             </div>
           </div>
+          ${App._accesoHTML(r.acceso)}
           <div style="display:flex;gap:8px;">
             <button onclick="App._fotoLoopVerEnMapa('${r.id}')"
               style="flex:1;height:44px;background:var(--or);color:white;border:none;border-radius:12px;font-family:var(--fH);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
