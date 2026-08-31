@@ -12109,27 +12109,43 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   _compassHeading: 0,
   _orientationHandler: null,
 
-  // ── ACCESO: ¿cómo se llega al punto de partida? ──────────────────────────
-  // prefix: 'cm' | 'adm' | 'gsm'
+  // ── ACCESO: ¿cómo se llega? — selección MÚLTIPLE ─────────────────────────
+  // "Todos" es exclusivo: si se activa limpia los demás; si se activa otro limpia "Todos".
+  // Guarda como array: ["auto","caminando"] o ["todos"]
   _setAcceso(prefix, btn) {
     const container = document.getElementById(prefix + '-acceso-chips');
     if (!container) return;
-    container.querySelectorAll('.acceso-chip').forEach(c => c.classList.remove('on'));
-    btn.classList.add('on');
+    this._accesoToggle(container, btn, '.acceso-chip');
   },
-  // Para la pantalla de grabar (chips con clase grab-acceso-chip)
   _grabSetAcceso(val, btn) {
     const container = document.getElementById('grab-acceso-chips');
     if (!container) return;
-    container.querySelectorAll('.grab-acceso-chip').forEach(c => c.classList.remove('on'));
-    btn.classList.add('on');
+    this._accesoToggle(container, btn, '.grab-acceso-chip');
   },
-  // Lee el valor seleccionado de un grupo de chips de acceso
+  _accesoToggle(container, btn, sel) {
+    const val = btn.dataset.val;
+    if (val === 'todos') {
+      container.querySelectorAll(sel).forEach(c => c.classList.remove('on'));
+      btn.classList.add('on');
+    } else {
+      container.querySelectorAll(sel).forEach(c => {
+        if (c.dataset.val === 'todos') c.classList.remove('on');
+      });
+      btn.classList.toggle('on');
+      const anyOn = container.querySelector(sel + '.on');
+      if (!anyOn) {
+        const todosBtn = container.querySelector(sel + '[data-val="todos"]');
+        if (todosBtn) todosBtn.classList.add('on');
+      }
+    }
+  },
+  // Devuelve array: ["auto","caminando"] o ["todos"]
   _getAcceso(containerId) {
     const container = document.getElementById(containerId);
-    if (!container) return 'todos';
-    const on = container.querySelector('.acceso-chip.on, .grab-acceso-chip.on');
-    return on ? (on.dataset.val || 'todos') : 'todos';
+    if (!container) return ['todos'];
+    const activos = Array.from(container.querySelectorAll('.acceso-chip.on, .grab-acceso-chip.on'))
+      .map(c => c.dataset.val).filter(Boolean);
+    return activos.length ? activos : ['todos'];
   },
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -19561,10 +19577,10 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       {val:'caballo', label:'🐴 A caballo'},
       {val:'kayak',   label:'🛶 Kayak'},
     ];
-    const accesoActual = p.acceso || 'todos';
+    const accesoActual = Array.isArray(p.acceso) ? p.acceso : (p.acceso ? [p.acceso] : ['todos']);
     const chipsHtml = accesoOpts.map(o =>
-      `<button type="button" class="acceso-chip${o.val===accesoActual?' on':''}" data-val="${o.val}"
-        onclick="this.closest('#adm-fl-edit-modal').querySelectorAll('.acceso-chip').forEach(c=>c.classList.remove('on'));this.classList.add('on');">
+      `<button type="button" class="acceso-chip${accesoActual.includes(o.val)?' on':''}" data-val="${o.val}"
+        onclick="App._accesoToggle(this.closest('#adm-fl-edit-modal').querySelector('div[style*=flex-wrap]'),this,'.acceso-chip');">
         ${o.label}</button>`
     ).join('');
 
@@ -19627,8 +19643,8 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     const name  = document.getElementById('adm-fle-name')?.value?.trim();
     const desc  = document.getElementById('adm-fle-desc')?.value?.trim();
     const cat   = document.getElementById('adm-fle-cat')?.value || p.cat;
-    const acOn  = modal?.querySelector('.acceso-chip.on');
-    const acceso = acOn ? (acOn.dataset.val||'todos') : 'todos';
+    const acOnAll = modal ? Array.from(modal.querySelectorAll('.acceso-chip.on')).map(c=>c.dataset.val).filter(Boolean) : [];
+    const acceso = acOnAll.length ? acOnAll : ['todos'];
     if (!name) return this.toast('⚠️ El nombre no puede estar vacío');
     const patch = { name, desc: desc||'', cat, acceso, updatedAt: Date.now() };
     if (this._db) {
