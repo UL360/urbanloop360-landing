@@ -1688,6 +1688,11 @@ body.day #toast { background:#1A1A2E !important; color:#FFFFFF !important; }
 .grab-type-row::-webkit-scrollbar{display:none;}
 .grab-type-chip{flex-shrink:0;height:30px;padding:0 12px;border-radius:20px;border:0.5px solid #2C2C2E;background:#1C1C1E;font-size:12px;font-weight:500;color:#8A8A98;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .2s;white-space:nowrap;}
 .grab-type-chip.on{background:var(--or);border-color:var(--or);color:var(--wh);}
+/* ── CHIPS DE ACCESO (¿cómo se llega?) — compartido por grabar, manual y admin ── */
+.acceso-chip,.grab-acceso-chip{flex-shrink:0;height:32px;padding:0 11px;border-radius:20px;border:1.5px solid var(--bd);background:var(--bg2);font-size:12px;font-weight:600;color:var(--gr);cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .18s;white-space:nowrap;font-family:var(--fB);}
+.acceso-chip.on,.grab-acceso-chip.on{background:var(--or);border-color:var(--or);color:#fff;}
+body.day .acceso-chip,body.day .grab-acceso-chip{background:var(--bg2);border-color:var(--bd);color:var(--md);}
+body.day .acceso-chip.on,body.day .grab-acceso-chip.on{background:var(--or);border-color:var(--or);color:#fff;}
 /* flex-shrink:1 + max-height: el mapa cede espacio si hace falta, para que
    siempre quede lugar visible para el panel de abajo (stats + botón Iniciar) */
 .grab-map-wrap{width:100%;aspect-ratio:1/1;flex-shrink:1;max-height:36vh;min-height:160px;position:relative;overflow:hidden;}
@@ -3324,6 +3329,19 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
             Se auto-detecta al hacer click en el mapa · o elegí manualmente
           </div>
         </div>
+        <div class="fg">
+          <label class="fl">¿Cómo se llega al punto de partida?</label>
+          <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:4px;" id="adm-acceso-chips">
+            <button type="button" class="acceso-chip on" data-val="todos" onclick="App._setAcceso('adm',this)">🌐 Todos</button>
+            <button type="button" class="acceso-chip" data-val="caminando" onclick="App._setAcceso('adm',this)">🚶 Caminando</button>
+            <button type="button" class="acceso-chip" data-val="bici" onclick="App._setAcceso('adm',this)">🚲 Bici</button>
+            <button type="button" class="acceso-chip" data-val="moto" onclick="App._setAcceso('adm',this)">🛵 Moto</button>
+            <button type="button" class="acceso-chip" data-val="auto" onclick="App._setAcceso('adm',this)">🚗 Auto</button>
+            <button type="button" class="acceso-chip" data-val="lancha" onclick="App._setAcceso('adm',this)">⛵ Lancha</button>
+            <button type="button" class="acceso-chip" data-val="caballo" onclick="App._setAcceso('adm',this)">🐴 A caballo</button>
+            <button type="button" class="acceso-chip" data-val="kayak" onclick="App._setAcceso('adm',this)">🛶 Kayak</button>
+          </div>
+        </div>
         <div class="fg"><label class="fl">Tipo de loop</label>
           <select class="fi" id="adm-type" aria-label="Tipo de loop">
             <option value="trad">☕ Tradicional Loop</option><option value="pesca">🎣 Pesca Loop</option>
@@ -3704,6 +3722,20 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
       <option value="accesibilidad">♿ Accesibilidad Loop</option>
     </select>
   </div>
+  <!-- Cómo se llega al punto de partida -->
+  <div style="padding:10px 14px 12px;background:#1C1C1E;border-bottom:0.5px solid #2C2C2E;flex-shrink:0;">
+    <div style="font-size:10px;font-weight:700;color:var(--gr);letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px;">¿Cómo se llega al punto de partida?</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;" id="grab-acceso-chips">
+      <button type="button" class="grab-acceso-chip on" data-val="todos" onclick="App._grabSetAcceso('todos',this)">🌐 Todos</button>
+      <button type="button" class="grab-acceso-chip" data-val="caminando" onclick="App._grabSetAcceso('caminando',this)">🚶 Caminando</button>
+      <button type="button" class="grab-acceso-chip" data-val="bici" onclick="App._grabSetAcceso('bici',this)">🚲 Bici</button>
+      <button type="button" class="grab-acceso-chip" data-val="moto" onclick="App._grabSetAcceso('moto',this)">🛵 Moto</button>
+      <button type="button" class="grab-acceso-chip" data-val="auto" onclick="App._grabSetAcceso('auto',this)">🚗 Auto</button>
+      <button type="button" class="grab-acceso-chip" data-val="lancha" onclick="App._grabSetAcceso('lancha',this)">⛵ Lancha</button>
+      <button type="button" class="grab-acceso-chip" data-val="caballo" onclick="App._grabSetAcceso('caballo',this)">🐴 A caballo</button>
+      <button type="button" class="grab-acceso-chip" data-val="kayak" onclick="App._grabSetAcceso('kayak',this)">🛶 Kayak</button>
+    </div>
+  </div>
   <!-- Mapa con controles superpuestos -->
   <div class="grab-map-wrap">
     <div id="grab-map"></div>
@@ -3863,6 +3895,21 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
         <option value="otra">🗺️ Otra Loop</option>
         <option value="accesibilidad">♿ Accesibilidad Loop</option>
       </select>
+    </div>
+
+    <!-- Cómo se llega al punto de partida -->
+    <div>
+      <label style="font-size:12px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:8px;">¿CÓMO SE LLEGA AL PUNTO DE PARTIDA?</label>
+      <div style="display:flex;flex-wrap:wrap;gap:7px;" id="cm-acceso-chips">
+        <button type="button" class="acceso-chip on" data-val="todos" onclick="App._setAcceso('cm',this)">🌐 Todos</button>
+        <button type="button" class="acceso-chip" data-val="caminando" onclick="App._setAcceso('cm',this)">🚶 Caminando</button>
+        <button type="button" class="acceso-chip" data-val="bici" onclick="App._setAcceso('cm',this)">🚲 Bici</button>
+        <button type="button" class="acceso-chip" data-val="moto" onclick="App._setAcceso('cm',this)">🛵 Moto</button>
+        <button type="button" class="acceso-chip" data-val="auto" onclick="App._setAcceso('cm',this)">🚗 Auto</button>
+        <button type="button" class="acceso-chip" data-val="lancha" onclick="App._setAcceso('cm',this)">⛵ Lancha</button>
+        <button type="button" class="acceso-chip" data-val="caballo" onclick="App._setAcceso('cm',this)">🐴 A caballo</button>
+        <button type="button" class="acceso-chip" data-val="kayak" onclick="App._setAcceso('cm',this)">🛶 Kayak</button>
+      </div>
     </div>
 
     <!-- Mapa para dibujar -->
@@ -12042,6 +12089,30 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   _compassHeading: 0,
   _orientationHandler: null,
 
+  // ── ACCESO: ¿cómo se llega al punto de partida? ──────────────────────────
+  // prefix: 'cm' | 'adm' | 'gsm'
+  _setAcceso(prefix, btn) {
+    const container = document.getElementById(prefix + '-acceso-chips');
+    if (!container) return;
+    container.querySelectorAll('.acceso-chip').forEach(c => c.classList.remove('on'));
+    btn.classList.add('on');
+  },
+  // Para la pantalla de grabar (chips con clase grab-acceso-chip)
+  _grabSetAcceso(val, btn) {
+    const container = document.getElementById('grab-acceso-chips');
+    if (!container) return;
+    container.querySelectorAll('.grab-acceso-chip').forEach(c => c.classList.remove('on'));
+    btn.classList.add('on');
+  },
+  // Lee el valor seleccionado de un grupo de chips de acceso
+  _getAcceso(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return 'todos';
+    const on = container.querySelector('.acceso-chip.on, .grab-acceso-chip.on');
+    return on ? (on.dataset.val || 'todos') : 'todos';
+  },
+  // ─────────────────────────────────────────────────────────────────────────
+
   _toggleMapRotation() {
     this._mapRotating = !this._mapRotating;
     const compass = document.getElementById('grab-compass');
@@ -12839,6 +12910,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const name = document.getElementById('adm-name').value.trim();
     const desc = document.getElementById('adm-desc').value.trim();
     const type = document.getElementById('adm-type').value;
+    const acceso = this._getAcceso('adm-acceso-chips');
     const creationMethod = this._admCreationMethod || 'manual';
     if (!name) { this.toast('⚠️ Ingresá un nombre'); return; }
     if (this.aPts.length<2) { this.toast('⚠️ Necesitás al menos 2 puntos en el mapa'); return; }
@@ -12950,6 +13022,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           authorName: this._user ? (this._user.displayName || this._user.email?.split('@')[0] || 'Anónimo') : 'Anónimo',
           createdAt: Date.now(),
           creationMethod: creationMethod,
+          acceso: acceso,
           status: this._isAdmin() ? 'approved' : 'pending'
         };
         console.log(`[saveRoute] "${name}" → ${r.ciudad}, ${r.provincia}, ${r.pais} (author=${r.authorId}, method=${creationMethod})`);
@@ -12976,6 +13049,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       document.getElementById('adm-name').value='';
       document.getElementById('adm-desc').value='';
       this._clearAdmImg();
+      // Reset acceso chips
+      const admAc = document.getElementById('adm-acceso-chips');
+      if (admAc) { admAc.querySelectorAll('.acceso-chip').forEach(c=>c.classList.remove('on')); const first=admAc.querySelector('.acceso-chip'); if(first) first.classList.add('on'); }
       // Reset method selector
       this._admCreationMethod = null;
       document.querySelectorAll('.adm-method-btn').forEach(b => {
@@ -14233,6 +14309,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const name = document.getElementById('cm-name')?.value?.trim();
     const desc = document.getElementById('cm-desc')?.value?.trim();
     const type = document.getElementById('cm-type')?.value || 'trad';
+    const acceso = this._getAcceso('cm-acceso-chips');
     if (!name) return this.toast('⚠️ Poné un nombre al loop');
     if (this._cmPts.length < 2) return this.toast('⚠️ Agregá al menos 2 puntos en el mapa');
 
@@ -14275,6 +14352,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       likes: 0,
       source:     'comunidad',
       visibility: vis,
+      acceso:     acceso,
       status:     this._isAdmin() ? 'approved' : 'pending',
     };
 
@@ -14312,6 +14390,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       }
 
       this._addPts(10, 'Loop publicado');
+      // Reset acceso chips
+      const cmAc = document.getElementById('cm-acceso-chips');
+      if (cmAc) { cmAc.querySelectorAll('.acceso-chip').forEach(c=>c.classList.remove('on')); const first=cmAc.querySelector('.acceso-chip'); if(first) first.classList.add('on'); }
       // FX
       const cmBtn = document.getElementById('cm-save-btn');
       this._fxBurst(cmBtn || document.getElementById('crear-manual'), 14);
@@ -17867,6 +17948,20 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
           <label style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:5px;">DESCRIPCIÓN (opcional)</label>
           <textarea id="gsm-desc" rows="2" placeholder="¿Por dónde pasa? ¿Qué se ve? ¿Es técnico o tranquilo?" style="width:100%;box-sizing:border-box;padding:11px 13px;border:1.5px solid var(--bd);border-radius:11px;font-size:13px;background:var(--bg0);color:var(--dk);resize:none;font-family:var(--fB);"></textarea>
         </div>
+        <!-- Cómo se llega al punto de partida -->
+        <div style="margin-bottom:14px;">
+          <label style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:8px;">¿CÓMO SE LLEGA AL PUNTO DE PARTIDA?</label>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;" id="gsm-acceso-chips">
+            <button type="button" class="acceso-chip on" data-val="todos" onclick="App._setAcceso('gsm',this)">🌐 Todos</button>
+            <button type="button" class="acceso-chip" data-val="caminando" onclick="App._setAcceso('gsm',this)">🚶 Caminando</button>
+            <button type="button" class="acceso-chip" data-val="bici" onclick="App._setAcceso('gsm',this)">🚲 Bici</button>
+            <button type="button" class="acceso-chip" data-val="moto" onclick="App._setAcceso('gsm',this)">🛵 Moto</button>
+            <button type="button" class="acceso-chip" data-val="auto" onclick="App._setAcceso('gsm',this)">🚗 Auto</button>
+            <button type="button" class="acceso-chip" data-val="lancha" onclick="App._setAcceso('gsm',this)">⛵ Lancha</button>
+            <button type="button" class="acceso-chip" data-val="caballo" onclick="App._setAcceso('gsm',this)">🐴 A caballo</button>
+            <button type="button" class="acceso-chip" data-val="kayak" onclick="App._setAcceso('gsm',this)">🛶 Kayak</button>
+          </div>
+        </div>
         <!-- Ubicación: auto-detectada desde GPS del recorrido grabado -->
         <div style="margin-bottom:18px;">
           <label style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:5px;">UBICACIÓN AUTO-DETECTADA</label>
@@ -17931,6 +18026,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   async _confirmGrabSave() {
     const name  = (document.getElementById('gsm-name')?.value||'').trim() || 'Mi Loop';
     const desc  = (document.getElementById('gsm-desc')?.value||'').trim();
+    const acceso = this._getAcceso('gsm-acceso-chips');
     // ── Límite de loops por usuario ──
     if (!this._isAdmin()) {
       const myCount = this.routes.filter(r => r.authorId === this._uid && r.type !== 'fotostop').length;
@@ -17980,6 +18076,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       authorId:   this._uid,
       authorName: this._user ? (this._user.displayName || this._user.email?.split('@')[0] || 'Anónimo') : 'Anónimo',
       createdAt:  Date.now(),
+      acceso:     acceso,
       status: this._isAdmin() ? 'approved' : 'pending' // ── Moderación previa: espera aprobación de un mod/admin ──
     };
 
@@ -19137,6 +19234,13 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       const d = document.getElementById('adm-desc'); if(d) d.value = r.desc||'';
       const t = document.getElementById('adm-type'); if(t) t.value = r.type||'trad';
       const c = document.getElementById('adm-city'); if(c) c.value = r.ciudad||r.cityId||'La Paz';
+      // Cargar acceso guardado
+      const admAcEdit = document.getElementById('adm-acceso-chips');
+      if (admAcEdit) {
+        admAcEdit.querySelectorAll('.acceso-chip').forEach(ch => {
+          ch.classList.toggle('on', ch.dataset.val === (r.acceso||'todos'));
+        });
+      }
       // Cargar puntos del loop en el mapa admin
       this.aPts = r.pts ? r.pts.map(p => Array.isArray(p) ? p : [p.lat, p.lng]) : [];
       this._renderPts();
