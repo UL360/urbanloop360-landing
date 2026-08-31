@@ -19361,6 +19361,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
               ? `<button class="adm-btn adm-btn-green" onclick="App._admProponerMunicipioFL('${p.id}')">👑 Marcar como Oficial</button>`
               : `<button class="adm-btn" style="background:#FEF3C7;color:#92400E;" onclick="App._admProponerMunicipioFL('${p.id}')">👑 Quitar Oficial</button>`
             }
+            <button class="adm-btn" style="background:#EEF2FF;color:#4F46E5;border-color:#4F46E5;" onclick="App._admFLEdit('${p.id}')">✏️ Editar</button>
             <button class="adm-btn" style="background:#EEF2FF;color:#4F46E5;border-color:#4F46E5;" onclick="App._admRetagFotoloop('${p.id}')">🏷️ Re-etiquetar ciudad</button>
             <button class="adm-btn adm-btn-red" onclick="App._admDeleteFL('${p.id}')">🗑️ Eliminar</button>
           </div>
@@ -19540,13 +19541,107 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
       }
     }
     if (this._fotoPosts) this._fotoPosts = this._fotoPosts.filter(p=>p.id!==id);
-    // Los pines de FotoLoop se dibujan con clusters a partir de _fotoPosts —
-    // hay que volver a dibujarlos para que el pin borrado desaparezca del mapa
-    // sin necesidad de refrescar la página.
     this._drawFotoStopsOnMap();
     this._admRenderFotoloops();
     this.toast('🗑️ Foto loop eliminado');
     if (this._currentScreen === 'detail') this.go('explore');
+  },
+
+  _admFLEdit(id) {
+    const p = (this._fotoPosts||[]).find(x => x.id === id);
+    if (!p) return this.toast('⚠️ FotoLoop no encontrado');
+
+    const accesoOpts = [
+      {val:'todos',   label:'🌐 Todos'},
+      {val:'caminando',label:'🚶 Caminando'},
+      {val:'bici',    label:'🚲 Bici'},
+      {val:'moto',    label:'🛵 Moto'},
+      {val:'auto',    label:'🚗 Auto'},
+      {val:'lancha',  label:'⛵ Lancha'},
+      {val:'caballo', label:'🐴 A caballo'},
+      {val:'kayak',   label:'🛶 Kayak'},
+    ];
+    const accesoActual = p.acceso || 'todos';
+    const chipsHtml = accesoOpts.map(o =>
+      `<button type="button" class="acceso-chip${o.val===accesoActual?' on':''}" data-val="${o.val}"
+        onclick="this.closest('#adm-fl-edit-modal').querySelectorAll('.acceso-chip').forEach(c=>c.classList.remove('on'));this.classList.add('on');">
+        ${o.label}</button>`
+    ).join('');
+
+    const catOptions = [
+      ['lugar','📍 Lugar Loop'],['gastro','🍽️ Gastronomía Loop'],['bar','🍸 Bar y tragos Loop'],
+      ['cafe','☕ Café Loop'],['nocturno','🌙 Boliche/Nocturno Loop'],['cultura','🎭 Cultura Loop'],
+      ['arte','🎨 Arte callejero Loop'],['patrimonio','🏛️ Patrimonio e historia Loop'],
+      ['musica','🎵 Música Loop'],['naturaleza','🌿 Naturaleza Loop'],['playa','🏖️ Playa Loop'],
+      ['parque','🌳 Parques y plazas Loop'],['pesca','🎣 Pesca Loop'],['aventura','🧗 Aventura Loop'],
+      ['deporte','⚽ Deporte Loop'],['bienestar','🧘 Bienestar Loop'],['eventos','📅 Eventos Loop'],
+      ['perro','🐕 Mascotas Loop'],['accesibilidad','♿ Accesibilidad Loop'],
+    ];
+    const catsHtml = catOptions.map(([v,l]) =>
+      `<option value="${v}"${v===(p.cat||'lugar')?' selected':''}>${l}</option>`
+    ).join('');
+
+    let ov = document.getElementById('adm-fl-edit-overlay');
+    if (!ov) {
+      ov = document.createElement('div');
+      ov.id = 'adm-fl-edit-overlay';
+      ov.onclick = e => { if(e.target===ov) ov.style.display='none'; };
+      ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:700;display:flex;align-items:flex-end;justify-content:center;';
+      document.body.appendChild(ov);
+    }
+    ov.innerHTML = `
+      <div id="adm-fl-edit-modal" style="background:var(--bg1);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:20px 18px 36px;max-height:88vh;overflow-y:auto;">
+        <div style="width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 16px;"></div>
+        <div style="font-family:var(--fH);font-size:16px;font-weight:800;color:var(--dk);margin-bottom:16px;">✏️ Editar FotoLoop</div>
+
+        <div style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;margin-bottom:5px;">NOMBRE</div>
+        <input id="adm-fle-name" class="fi" type="text" value="${this._esc(p.name||'')}" style="margin-bottom:12px;">
+
+        <div style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;margin-bottom:5px;">DESCRIPCIÓN</div>
+        <textarea id="adm-fle-desc" class="fi" rows="2" style="resize:none;margin-bottom:12px;">${this._esc(p.desc||'')}</textarea>
+
+        <div style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;margin-bottom:5px;">CATEGORÍA</div>
+        <select id="adm-fle-cat" class="fi" style="margin-bottom:14px;">${catsHtml}</select>
+
+        <div style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;margin-bottom:8px;">¿CÓMO SE LLEGA AL LUGAR?</div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:18px;">${chipsHtml}</div>
+
+        <div style="display:flex;gap:10px;">
+          <button onclick="document.getElementById('adm-fl-edit-overlay').style.display='none'"
+            style="flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--bd);background:var(--bg2);color:var(--gr);font-size:13px;font-weight:600;cursor:pointer;">
+            Cancelar
+          </button>
+          <button onclick="App._admFLSaveEdit('${id}')"
+            style="flex:2;padding:13px;border-radius:12px;border:none;background:var(--or);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--fH);">
+            💾 Guardar cambios
+          </button>
+        </div>
+      </div>`;
+    ov.style.display = 'flex';
+  },
+
+  async _admFLSaveEdit(id) {
+    const p = (this._fotoPosts||[]).find(x => x.id === id);
+    if (!p) return;
+    const modal = document.getElementById('adm-fl-edit-modal');
+    const name  = document.getElementById('adm-fle-name')?.value?.trim();
+    const desc  = document.getElementById('adm-fle-desc')?.value?.trim();
+    const cat   = document.getElementById('adm-fle-cat')?.value || p.cat;
+    const acOn  = modal?.querySelector('.acceso-chip.on');
+    const acceso = acOn ? (acOn.dataset.val||'todos') : 'todos';
+    if (!name) return this.toast('⚠️ El nombre no puede estar vacío');
+    const patch = { name, desc: desc||'', cat, acceso, updatedAt: Date.now() };
+    if (this._db) {
+      try {
+        await this._db.collection('fotoloops').doc(id).update(patch);
+      } catch(e) {
+        return this.toast(`❌ Error al guardar: ${e.message||''}`);
+      }
+    }
+    Object.assign(p, patch);
+    document.getElementById('adm-fl-edit-overlay').style.display = 'none';
+    this._admRenderFotoloops();
+    this.toast('✅ FotoLoop actualizado');
   },
 
   // ── Eventos ──
