@@ -4746,6 +4746,21 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
          algo como oficial la toma directo el admin desde su panel, con un botón,
          sin pasar por una cola de propuestas pendientes. -->
 
+    <!-- Cómo se llega al punto -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--gr);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;">¿Cómo se llega al lugar?</div>
+      <div style="display:flex;flex-wrap:wrap;gap:7px;" id="fl-acceso-chips">
+        <button type="button" class="acceso-chip on" data-val="todos" onclick="App._setAcceso('fl',this)">🌐 Todos</button>
+        <button type="button" class="acceso-chip" data-val="caminando" onclick="App._setAcceso('fl',this)">🚶 Caminando</button>
+        <button type="button" class="acceso-chip" data-val="bici" onclick="App._setAcceso('fl',this)">🚲 Bici</button>
+        <button type="button" class="acceso-chip" data-val="moto" onclick="App._setAcceso('fl',this)">🛵 Moto</button>
+        <button type="button" class="acceso-chip" data-val="auto" onclick="App._setAcceso('fl',this)">🚗 Auto</button>
+        <button type="button" class="acceso-chip" data-val="lancha" onclick="App._setAcceso('fl',this)">⛵ Lancha</button>
+        <button type="button" class="acceso-chip" data-val="caballo" onclick="App._setAcceso('fl',this)">🐴 A caballo</button>
+        <button type="button" class="acceso-chip" data-val="kayak" onclick="App._setAcceso('fl',this)">🛶 Kayak</button>
+      </div>
+    </div>
+
     <!-- Aviso: solo lugares, no personas -->
     <div style="background:#FEF2F2;border:2px solid #EF4444;border-radius:14px;padding:14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:12px;">
       <input type="checkbox" id="fl-no-personas" onchange="App._toggleFLPublishBtn()" style="width:24px;height:24px;accent-color:#EF4444;flex-shrink:0;margin-top:1px;">
@@ -11748,6 +11763,9 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     // Destruir mapa para que se pueda reiniciar la próxima vez
     if (this._flMap) { this._flMap.remove(); this._flMap = null; this._flMarker = null; }
     this._flLat = null; this._flLng = null;
+    // Reset acceso chips
+    const flAc = document.getElementById('fl-acceso-chips');
+    if (flAc) { flAc.querySelectorAll('.acceso-chip').forEach(c=>c.classList.remove('on')); const first=flAc.querySelector('.acceso-chip'); if(first) first.classList.add('on'); }
   },
 
   _clearFotoLoop() {
@@ -11924,6 +11942,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     }
     const name = document.getElementById('fl-name')?.value?.trim();
     const desc = document.getElementById('fl-desc')?.value?.trim();
+    const acceso = this._getAcceso('fl-acceso-chips');
     if (!name) return this.toast('⚠️ Poné un nombre al lugar');
     if (!this._fotoLoopImg) return this.toast('⚠️ Agregá una foto del lugar');
 
@@ -11998,6 +12017,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       ts: Date.now(),
       createdAt: Date.now(),
       likes: 0,
+      acceso: acceso,
       facesDetected: !!this._fotoLoopHasFaces,
       status: this._isAdmin() ? 'approved' : 'pending' // ── Moderación previa: espera aprobación de un mod/admin ──
     };
