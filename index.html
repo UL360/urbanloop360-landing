@@ -3333,7 +3333,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
         <div class="fg">
           <label class="fl">¿Cómo se llega al punto de partida?</label>
           <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:4px;" id="adm-acceso-chips">
-            <button type="button" class="acceso-chip on" data-val="todos" onclick="App._setAcceso('adm',this)">🌐 Todos</button>
+            <button type="button" class="acceso-chip on" data-val="todos" onclick="App._setAcceso('adm',this)">🌐 Toda Movilidad</button>
             <button type="button" class="acceso-chip" data-val="caminando" onclick="App._setAcceso('adm',this)">🚶 Caminando</button>
             <button type="button" class="acceso-chip" data-val="bici" onclick="App._setAcceso('adm',this)">🚲 Bici</button>
             <button type="button" class="acceso-chip" data-val="moto" onclick="App._setAcceso('adm',this)">🛵 Moto</button>
@@ -3727,7 +3727,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
   <div style="padding:10px 14px 12px;background:#1C1C1E;border-bottom:0.5px solid #2C2C2E;flex-shrink:0;">
     <div style="font-size:10px;font-weight:700;color:var(--gr);letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px;">¿Cómo se llega al punto de partida?</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;" id="grab-acceso-chips">
-      <button type="button" class="grab-acceso-chip on" data-val="todos" onclick="App._grabSetAcceso('todos',this)">🌐 Todos</button>
+      <button type="button" class="grab-acceso-chip on" data-val="todos" onclick="App._grabSetAcceso('todos',this)">🌐 Toda Movilidad</button>
       <button type="button" class="grab-acceso-chip" data-val="caminando" onclick="App._grabSetAcceso('caminando',this)">🚶 Caminando</button>
       <button type="button" class="grab-acceso-chip" data-val="bici" onclick="App._grabSetAcceso('bici',this)">🚲 Bici</button>
       <button type="button" class="grab-acceso-chip" data-val="moto" onclick="App._grabSetAcceso('moto',this)">🛵 Moto</button>
@@ -3902,7 +3902,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <div>
       <label style="font-size:12px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:8px;">¿CÓMO SE LLEGA AL PUNTO DE PARTIDA?</label>
       <div style="display:flex;flex-wrap:wrap;gap:7px;" id="cm-acceso-chips">
-        <button type="button" class="acceso-chip on" data-val="todos" onclick="App._setAcceso('cm',this)">🌐 Todos</button>
+        <button type="button" class="acceso-chip on" data-val="todos" onclick="App._setAcceso('cm',this)">🌐 Toda Movilidad</button>
         <button type="button" class="acceso-chip" data-val="caminando" onclick="App._setAcceso('cm',this)">🚶 Caminando</button>
         <button type="button" class="acceso-chip" data-val="bici" onclick="App._setAcceso('cm',this)">🚲 Bici</button>
         <button type="button" class="acceso-chip" data-val="moto" onclick="App._setAcceso('cm',this)">🛵 Moto</button>
@@ -4751,7 +4751,7 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <div style="margin-bottom:14px;">
       <div style="font-size:12px;font-weight:700;color:var(--gr);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;">¿Cómo se llega al lugar?</div>
       <div style="display:flex;flex-wrap:wrap;gap:7px;" id="fl-acceso-chips">
-        <button type="button" class="acceso-chip on" data-val="todos" onclick="App._setAcceso('fl',this)">🌐 Todos</button>
+        <button type="button" class="acceso-chip on" data-val="todos" onclick="App._setAcceso('fl',this)">🌐 Toda Movilidad</button>
         <button type="button" class="acceso-chip" data-val="caminando" onclick="App._setAcceso('fl',this)">🚶 Caminando</button>
         <button type="button" class="acceso-chip" data-val="bici" onclick="App._setAcceso('fl',this)">🚲 Bici</button>
         <button type="button" class="acceso-chip" data-val="moto" onclick="App._setAcceso('fl',this)">🛵 Moto</button>
@@ -12129,13 +12129,13 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   },
   // Convierte el campo acceso (string o array) en badges HTML para mostrar en detalle
   _accesoHTML(acceso) {
-    if (!acceso) return '';
-    const vals = Array.isArray(acceso) ? acceso : [acceso];
-    if (!vals.length || (vals.length === 1 && vals[0] === 'todos')) return '';
-    const MAP = {caminando:'🚶 Caminando',bici:'🚲 Bici',moto:'🛵 Moto',auto:'🚗 Auto',lancha:'⛵ Lancha',caballo:'🐴 A caballo',kayak:'🛶 Kayak',todos:'🌐 Todos'};
-    const badges = vals.map(v => `<span style="display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:20px;background:var(--orL,#FFF0E8);border:1.5px solid var(--or,#FF5F00);color:var(--or,#FF5F00);font-size:11px;font-weight:700;white-space:nowrap;">${MAP[v]||v}</span>`).join('');
-    return `<div style="margin-bottom:14px;">
-      <div style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;text-transform:uppercase;margin-bottom:7px;">Cómo llegar al punto de inicio</div>
+    const MAP = {caminando:'🚶 Caminando',bici:'🚲 Bici',moto:'🛵 Moto',auto:'🚗 Auto',lancha:'⛵ Lancha',caballo:'🐴 A caballo',kayak:'🛶 Kayak',todos:'🌐 Toda Movilidad'};
+    // Normalizar: string, array, o ausente → siempre array
+    let vals = acceso ? (Array.isArray(acceso) ? acceso : [acceso]) : ['todos'];
+    if (!vals.length) vals = ['todos'];
+    const badges = vals.map(v => `<span style="display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:20px;background:var(--orL,#FFF0E8);border:1.5px solid var(--or,#FF5F00);color:var(--or,#FF5F00);font-size:12px;font-weight:700;white-space:nowrap;">${MAP[v]||v}</span>`).join('');
+    return `<div style="margin:4px 0 16px;">
+      <div style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;">🧭 Cómo llegar al inicio</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;">${badges}</div>
     </div>`;
   },
@@ -18007,7 +18007,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         <div style="margin-bottom:14px;">
           <label style="font-size:11px;font-weight:700;color:var(--gr);letter-spacing:.5px;display:block;margin-bottom:8px;">¿CÓMO SE LLEGA AL PUNTO DE PARTIDA?</label>
           <div style="display:flex;flex-wrap:wrap;gap:6px;" id="gsm-acceso-chips">
-            <button type="button" class="acceso-chip on" data-val="todos" onclick="App._setAcceso('gsm',this)">🌐 Todos</button>
+            <button type="button" class="acceso-chip on" data-val="todos" onclick="App._setAcceso('gsm',this)">🌐 Toda Movilidad</button>
             <button type="button" class="acceso-chip" data-val="caminando" onclick="App._setAcceso('gsm',this)">🚶 Caminando</button>
             <button type="button" class="acceso-chip" data-val="bici" onclick="App._setAcceso('gsm',this)">🚲 Bici</button>
             <button type="button" class="acceso-chip" data-val="moto" onclick="App._setAcceso('gsm',this)">🛵 Moto</button>
@@ -19587,7 +19587,7 @@ https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if (!p) return this.toast('⚠️ FotoLoop no encontrado');
 
     const accesoOpts = [
-      {val:'todos',   label:'🌐 Todos'},
+      {val:'todos',   label:'🌐 Toda Movilidad'},
       {val:'caminando',label:'🚶 Caminando'},
       {val:'bici',    label:'🚲 Bici'},
       {val:'moto',    label:'🛵 Moto'},
