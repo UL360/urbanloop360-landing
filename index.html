@@ -4533,13 +4533,9 @@ body.day .layer-chip.foto { background:#FCE7F3; border-color:#DB2777; color:#DB2
     <div class="qr-loop-name" id="qr-loop-name">—</div>
     <div class="qr-loop-sub" id="qr-loop-sub">—</div>
     <div class="qr-btns">
-      <button class="qr-dl-btn primary" onclick="App.downloadQR()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Descargar PNG
-      </button>
-      <button class="qr-dl-btn secondary" onclick="App.shareQR()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-        Compartir
+      <button class="qr-dl-btn secondary" onclick="App.shareQRImage()" style="background:#25D366;border-color:#25D366;color:#fff;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.149-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.993 1C6.012 1 1.07 5.94 1.07 11.922c0 1.909.5 3.79 1.453 5.445L1 23l5.797-1.522A10.918 10.918 0 0011.993 22.84C17.974 22.84 23 17.9 23 11.92 23 5.94 17.974 1 11.993 1zm0 20c-1.738 0-3.44-.467-4.928-1.352l-.353-.21-3.44.903.92-3.352-.23-.364A8.922 8.922 0 012.93 11.922C2.93 6.962 7.035 2.86 11.993 2.86c4.958 0 9.063 4.1 9.063 9.062C21.056 16.9 16.951 21 11.993 21z"/></svg>
+        WhatsApp
       </button>
     </div>
   </div>
@@ -18293,11 +18289,80 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   },
   shareQR() {
     const r=this.routes.find(x=>x.id===this._qrId);
-    const text=r?`¡Mirá este loop en Urban Loop 360°!
-${App._esc(r.name)}
-https://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
+    const text=r?`¡Mirá este loop en Urban Loop 360°!\n${r.name}\nhttps://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
     if(navigator.share){navigator.share({title:'Urban Loop 360°',text,url:`https://urbanloop360.app/loop/${this._qrId}`});}
     else{navigator.clipboard&&navigator.clipboard.writeText(text).then(()=>this.toast('🔗 Link copiado al portapapeles'));}
+  },
+  async shareQRImage() {
+    const canvas = document.querySelector('#qr-canvas canvas');
+    if (!canvas) { this.toast('⚠️ Generando QR, esperá un momento...'); return; }
+    const r = this.routes.find(x => x.id === this._qrId);
+    const loopName = r ? r.name : 'Loop';
+    const url = `https://urbanloop360.app/loop/${this._qrId}`;
+
+    // Crear canvas con QR + nombre + URL para compartir como imagen completa
+    const offscreen = document.createElement('canvas');
+    offscreen.width = 320;
+    offscreen.height = 400;
+    const ctx = offscreen.getContext('2d');
+
+    // Fondo blanco
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 320, 400);
+
+    // QR centrado
+    ctx.drawImage(canvas, 80, 40, 160, 160);
+
+    // Nombre del loop
+    ctx.fillStyle = '#111827';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'center';
+    const maxW = 280;
+    let nameText = loopName;
+    if (ctx.measureText(nameText).width > maxW) {
+      while (ctx.measureText(nameText + '…').width > maxW && nameText.length > 0)
+        nameText = nameText.slice(0, -1);
+      nameText += '…';
+    }
+    ctx.fillText(nameText, 160, 240);
+
+    // Subtítulo
+    ctx.fillStyle = '#FF5F00';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText('Urban Loop 360°', 160, 265);
+
+    // URL pequeña
+    ctx.fillStyle = '#9CA3AF';
+    ctx.font = '10px sans-serif';
+    ctx.fillText(url, 160, 290);
+
+    // Línea decorativa naranja
+    ctx.fillStyle = '#FF5F00';
+    ctx.fillRect(120, 310, 80, 3);
+
+    // Intentar compartir como archivo (Web Share API nivel 2 — funciona en mobile)
+    try {
+      offscreen.toBlob(async (blob) => {
+        const file = new File([blob], `loop-qr-${this._qrId}.png`, { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: `Loop: ${loopName}`,
+            text: `¡Mirá este loop en Urban Loop 360°!
+${loopName}
+${url}`,
+            files: [file]
+          });
+        } else {
+          // Fallback: abrir WhatsApp con texto + link (sin imagen, pero con link)
+          const waText = encodeURIComponent(`¡Mirá este loop en Urban Loop 360°!\n${loopName}\n${url}`);
+          window.open(`https://wa.me/?text=${waText}`, '_blank');
+        }
+      }, 'image/png');
+    } catch(e) {
+      // Si el usuario canceló o no soportado, igual abrir WhatsApp con link
+      const waText = encodeURIComponent(`¡Mirá este loop en Urban Loop 360°!\n${loopName}\n${url}`);
+      window.open(`https://wa.me/?text=${waText}`, '_blank');
+    }
   },
   shareLoop(id) { this._qrId=id; this.shareQR(); },
 
