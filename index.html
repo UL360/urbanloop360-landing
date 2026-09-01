@@ -6489,7 +6489,7 @@ const App = {
   // ── MAIN MAP (MapLibre GL JS) ──
   _ML_STYLE_DARK:      'https://api.maptiler.com/maps/streets-v2-dark/style.json?key=kS5YiQh2kB23jvnE6cpy',
   _ML_STYLE_LIGHT:     'https://api.maptiler.com/maps/streets-v2/style.json?key=kS5YiQh2kB23jvnE6cpy',
-  _ML_STYLE_SATELLITE: 'https://api.maptiler.com/maps/satellite-v4/style.json?key=kS5YiQh2kB23jvnE6cpy',
+  _ML_STYLE_SATELLITE: 'https://api.maptiler.com/maps/hybrid/style.json?key=kS5YiQh2kB23jvnE6cpy',
 
   // ── Pines de logo (mascota Urban Loop) por sección ──
   _PIN_INICIO_LOOP: 'https://raw.githubusercontent.com/UL360/urbanloop360-landing/refs/heads/main/imagenes/deapp/pin-inicio-loop.png',
@@ -21858,6 +21858,15 @@ ${url}`,
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">📍 Ubicación en el mapa</div>
               <div style="font-size:11px;color:var(--gr);margin-bottom:8px;">Tocá el mapa para marcar la ubicación exacta del local.</div>
+              <!-- Botones modo mapa -->
+              <div style="display:flex;gap:6px;margin-bottom:8px;">
+                <button type="button" id="neg-map-mode-day" onclick="App._negSetMapStyle('day')"
+                  style="flex:1;padding:6px 4px;border-radius:8px;border:1.5px solid var(--or);background:var(--or);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--fH);">☀️ Día</button>
+                <button type="button" id="neg-map-mode-night" onclick="App._negSetMapStyle('night')"
+                  style="flex:1;padding:6px 4px;border-radius:8px;border:1.5px solid var(--bd);background:var(--bg2);color:var(--gr);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--fH);">🌙 Noche</button>
+                <button type="button" id="neg-map-mode-satellite" onclick="App._negSetMapStyle('satellite')"
+                  style="flex:1;padding:6px 4px;border-radius:8px;border:1.5px solid var(--bd);background:var(--bg2);color:var(--gr);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--fH);">🛰️ Satélite</button>
+              </div>
               <div id="neg-map-container" style="width:100%;height:200px;border-radius:12px;overflow:hidden;border:1px solid var(--bd);position:relative;">
                 <div id="neg-map" style="width:100%;height:100%;"></div>
               </div>
@@ -22023,6 +22032,21 @@ ${url}`,
         el.textContent = '📍'; el.style.cssText = 'font-size:28px;cursor:pointer;text-shadow:0 2px 6px rgba(0,0,0,.5);';
         this._negMarker = new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([lo, la]).addTo(this._negMap);
       }
+    });
+  },
+
+  _negSetMapStyle(mode) {
+    if (!this._negMap) return;
+    const styleUrl = mode === 'satellite' ? this._ML_STYLE_SATELLITE
+      : mode === 'night' ? this._ML_STYLE_DARK : this._ML_STYLE_LIGHT;
+    this._negMap.setStyle(styleUrl);
+    ['day','night','satellite'].forEach(m => {
+      const btn = document.getElementById(`neg-map-mode-${m}`);
+      if (!btn) return;
+      const on = m === mode;
+      btn.style.background = on ? 'var(--or)' : 'var(--bg2)';
+      btn.style.color = on ? '#fff' : 'var(--gr)';
+      btn.style.borderColor = on ? 'var(--or)' : 'var(--bd)';
     });
   },
 
