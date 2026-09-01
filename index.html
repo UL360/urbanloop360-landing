@@ -18261,7 +18261,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     document.getElementById('qr-loop-sub').textContent=`${r.dist||'—'} · ${r.dur||'—'} · ${this._typeLabel(r.type)}`;
     const container=document.getElementById('qr-canvas');
     container.innerHTML='';
-    const url=`https://urbanloop360.app/loop/${id}`;
+    const url=`https://www.urbanloop360.com.ar/loop/${id}`;
     if(window.QRCode) {
       new QRCode(container,{text:url,width:160,height:160,colorDark:'#111827',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
     } else {
@@ -18289,8 +18289,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
   },
   shareQR() {
     const r=this.routes.find(x=>x.id===this._qrId);
-    const text=r?`¡Mirá este loop en Urban Loop 360°!\n${r.name}\nhttps://urbanloop360.app/loop/${this._qrId}`:'https://urbanloop360.app';
-    if(navigator.share){navigator.share({title:'Urban Loop 360°',text,url:`https://urbanloop360.app/loop/${this._qrId}`});}
+    const text=r?`¡Mirá este loop en Urban Loop 360°!\n${r.name}\nhttps://www.urbanloop360.com.ar/loop/${this._qrId}`:'https://www.urbanloop360.com.ar';
+    if(navigator.share){navigator.share({title:'Urban Loop 360°',text,url:`https://www.urbanloop360.com.ar/loop/${this._qrId}`});}
     else{navigator.clipboard&&navigator.clipboard.writeText(text).then(()=>this.toast('🔗 Link copiado al portapapeles'));}
   },
   async shareQRImage() {
@@ -18298,7 +18298,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if (!canvas) { this.toast('⚠️ Generando QR, esperá un momento...'); return; }
     const r = this.routes.find(x => x.id === this._qrId);
     const loopName = r ? r.name : 'Loop';
-    const url = `https://urbanloop360.app/loop/${this._qrId}`;
+    const url = `https://www.urbanloop360.com.ar/loop/${this._qrId}`;
 
     // Crear canvas con QR + nombre + URL para compartir como imagen completa
     const offscreen = document.createElement('canvas');
