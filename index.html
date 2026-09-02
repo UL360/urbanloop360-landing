@@ -7910,6 +7910,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     visible.forEach(p => {
       const el = document.createElement('div');
       el.className = 'ul-pin-wrap ul-pin-foto' + (p.source === 'municipio' ? ' ul-pin-oficial' : '');
+      el.dataset.id = p.id;
       const pinFotoSrc = (p.source === 'municipio') ? this._PIN_FOTOLOOP_OFICIAL : this._PIN_FOTOLOOP;
       el.innerHTML = `<img src="${pinFotoSrc}" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,.4)) saturate(1.35) brightness(1.08);" alt="FotoLoop" draggable="false">`;
       el.title = p.name || 'Foto Loop';
@@ -9181,7 +9182,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
     if (mode === 'muni') {
       visible = this.routes.filter(r => r.source === 'municipio');
-      showFotos = false;
+      showFotos = true;   // los fotoloops oficiales se filtran abajo
       showNegocios = false;
     } else if (mode === 'com') {
       visible = this.routes.filter(r => r.source !== 'municipio');
@@ -9231,7 +9232,16 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     (this._fotoMarkers || []).forEach(m => {
       try {
         const el = m.getElement ? m.getElement() : null;
-        if (el) el.style.display = showFotos ? '' : 'none';
+        if (!el) return;
+        if (!showFotos) { el.style.display = 'none'; return; }
+        // En modo oficial: solo fotoloops con source === 'municipio'
+        if (mode === 'muni') {
+          const pid = el.dataset && el.dataset.id;
+          const p = pid && (this._fotoPosts || []).find(x => x.id === pid);
+          el.style.display = (p && p.source === 'municipio') ? '' : 'none';
+        } else {
+          el.style.display = '';
+        }
       } catch(e) {}
     });
 
