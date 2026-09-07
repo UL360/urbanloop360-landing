@@ -22719,6 +22719,7 @@ ${url}`,
 
   _accLoopMapInit() {
     if (this._accLoopMap) { try { this._accLoopMap.remove(); } catch(e){} this._accLoopMap = null; }
+    if (this._accLoopResizeObs) { try { this._accLoopResizeObs.disconnect(); } catch(e){} this._accLoopResizeObs = null; }
     const container = document.getElementById('acc-loop-map');
     if (!container || typeof maplibregl === 'undefined') return;
     const isDark = !document.body.classList.contains('day');
@@ -22730,6 +22731,7 @@ ${url}`,
       attributionControl: false, dragRotate: false,
     });
     this._accLoopMap.on('load', () => {
+      this._accLoopMap.resize(); // fuerza el tamaño correcto por si el contenedor midió 0 o mal al iniciar
       this._accLoopMap.addSource('acc-loop-line', { type:'geojson', data:{ type:'Feature', geometry:{ type:'LineString', coordinates:[] } } });
       this._accLoopMap.addLayer({ id:'acc-loop-line', type:'line', source:'acc-loop-line',
         paint:{ 'line-color':'#22C55E', 'line-width':5, 'line-dasharray':[0.2,1.5] } });
@@ -22743,6 +22745,11 @@ ${url}`,
         if (itemsEl) itemsEl.scrollTop = itemsEl.scrollHeight;
       }, 50);
     });
+    // Si el contenedor cambia de tamaño (animación del modal, rotación, etc.) forzar resize
+    if (window.ResizeObserver) {
+      this._accLoopResizeObs = new ResizeObserver(() => this._accLoopMap && this._accLoopMap.resize());
+      this._accLoopResizeObs.observe(container);
+    }
   },
 
   _accLoopRedraw() {
@@ -22814,6 +22821,7 @@ ${url}`,
   _accLoopFormCerrar() {
     const modal = document.getElementById('acc-loop-modal-bg');
     if (modal) modal.style.display = 'none';
+    if (this._accLoopResizeObs) { try { this._accLoopResizeObs.disconnect(); } catch(e){} this._accLoopResizeObs = null; }
     if (this._accLoopMap) { try { this._accLoopMap.remove(); } catch(e){} this._accLoopMap = null; }
     (this._accLoopMarkers || []).forEach(m => { try{ m.remove(); }catch(e){} });
     this._accLoopMarkers = [];
