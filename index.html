@@ -22665,6 +22665,78 @@ ${url}`,
                 <input type="text" id="acc-loop-provincia" placeholder="Entre Ríos…" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg2);color:var(--dk);font-size:13px;font-family:var(--fH);box-sizing:border-box;">
               </div>
             </div>
+
+            <!-- ── APTO PARA ── -->
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">♿ Apto para...</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;" id="acc-loop-apto-grid">
+                ${[
+                  ['silla_ruedas',    '♿', 'Silla de ruedas'],
+                  ['muletas_andador', '🩼', 'Muletas / andador'],
+                  ['cochecito',       '🍼', 'Cochecito de bebé'],
+                  ['tutor',           '👨‍👩‍👧', 'Con tutor / acompañante'],
+                  ['adultos_mayores', '👴', 'Adultos mayores solos'],
+                  ['vision_reducida', '👁️', 'Visión reducida'],
+                  ['bicicleta',       '🚲', 'Bicicleta / handbike'],
+                ].map(([val, em, lbl]) => `
+                  <label style="display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:10px;border:1.5px solid var(--bd);background:var(--bg2);cursor:pointer;font-size:12.5px;color:var(--dk);font-family:var(--fH);transition:border-color .15s,background .15s;"
+                    onmousedown="this.style.background='#EFF6FF';this.style.borderColor='#3B82F6';"
+                    onmouseup="this.style.background='';this.style.borderColor='';">
+                    <input type="checkbox" class="acc-loop-apto" value="${val}"
+                      style="width:16px;height:16px;accent-color:#2563EB;flex-shrink:0;cursor:pointer;">
+                    <span>${em} ${lbl}</span>
+                  </label>`).join('')}
+              </div>
+            </div>
+
+            <!-- ── CARACTERÍSTICAS DEL CAMINO ── -->
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">🛤️ Características del camino</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;" id="acc-loop-caract-grid">
+                ${[
+                  ['pavimentado',     '🏗️', 'Todo pavimentado'],
+                  ['sin_escalones',   '✅', 'Sin escalones'],
+                  ['rampas',          '🔼', 'Rampas en los cruces'],
+                  ['bancos',          '🪑', 'Bancos para descansar'],
+                  ['banios',          '🚻', 'Baños accesibles'],
+                  ['sombreado',       '🌳', 'Sombreado / techado'],
+                  ['antideslizante',  '🦶', 'Superficie antideslizante'],
+                  ['guia_tactil',     '🦯', 'Señalización / guía táctil'],
+                  ['estacionamiento', '🅿️', 'Estacionamiento accesible'],
+                ].map(([val, em, lbl]) => `
+                  <label style="display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:10px;border:1.5px solid var(--bd);background:var(--bg2);cursor:pointer;font-size:12.5px;color:var(--dk);font-family:var(--fH);transition:border-color .15s,background .15s;"
+                    onmousedown="this.style.background='#EFF6FF';this.style.borderColor='#3B82F6';"
+                    onmouseup="this.style.background='';this.style.borderColor='';">
+                    <input type="checkbox" class="acc-loop-caract" value="${val}"
+                      style="width:16px;height:16px;accent-color:#2563EB;flex-shrink:0;cursor:pointer;">
+                    <span>${em} ${lbl}</span>
+                  </label>`).join('')}
+              </div>
+            </div>
+
+            <!-- ── DIFICULTAD / PENDIENTE ── -->
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">📏 Dificultad / pendiente</div>
+              <div style="display:flex;flex-direction:column;gap:6px;" id="acc-loop-dif-group">
+                ${[
+                  ['plano',    '🟢', 'Plano', 'Sin desnivel'],
+                  ['leve',     '🟡', 'Leve pendiente', 'Cómodo con asistencia'],
+                  ['moderado', '🔴', 'Moderado', 'Requiere esfuerzo o ayuda'],
+                ].map(([val, dot, lbl, sub]) => `
+                  <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--bd);background:var(--bg2);cursor:pointer;font-family:var(--fH);"
+                    onmousedown="this.style.background='#EFF6FF';this.style.borderColor='#3B82F6';"
+                    onmouseup="this.style.background='';this.style.borderColor='';">
+                    <input type="radio" name="acc-loop-dificultad" class="acc-loop-dif" value="${val}"
+                      style="width:16px;height:16px;accent-color:#2563EB;flex-shrink:0;cursor:pointer;">
+                    <span style="font-size:16px;">${dot}</span>
+                    <div>
+                      <div style="font-size:13px;font-weight:700;color:var(--dk);">${lbl}</div>
+                      <div style="font-size:11px;color:var(--gr);">${sub}</div>
+                    </div>
+                  </label>`).join('')}
+              </div>
+            </div>
+
           </div>
           <div style="flex-shrink:0;display:flex;gap:10px;padding:14px 18px;border-top:1px solid var(--bd);background:var(--wh);">
             <button onclick="App._accLoopFormCerrar()" style="flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--bd);background:var(--bg2);font-family:var(--fH);font-size:14px;font-weight:600;color:var(--gr);cursor:pointer;">Cancelar</button>
@@ -22726,6 +22798,13 @@ ${url}`,
       ? this._imgTag(existing.img, 'width:100%;height:100%;object-fit:cover;border-radius:10px;')
       : `<div style="text-align:center;color:var(--gr);"><div style="font-size:28px;">📷</div><div style="font-size:12px;margin-top:4px;">Tocar para agregar foto</div></div>`;
     if (existing && existing.img && prev) this._lazyLoadFsImgs(prev);
+    // Cargar checkboxes apto_para y caracteristicas, y radio dificultad
+    const aptoVals    = (existing && existing.apto_para)      || [];
+    const caractVals  = (existing && existing.caracteristicas) || [];
+    const difVal      = (existing && existing.dificultad)      || '';
+    document.querySelectorAll('.acc-loop-apto').forEach(cb  => { cb.checked = aptoVals.includes(cb.value); });
+    document.querySelectorAll('.acc-loop-caract').forEach(cb => { cb.checked = caractVals.includes(cb.value); });
+    document.querySelectorAll('.acc-loop-dif').forEach(r   => { r.checked  = r.value === difVal; });
     setTimeout(() => App._accLoopMapInit(), 220);
   },
 
@@ -22902,10 +22981,14 @@ ${url}`,
     const pts = this._accLoopPts || [];
     if (pts.length < 2) return this.toast('⚠️ Marcá al menos 2 puntos en el mapa');
     const dist = this._calcDist(pts.map(p => [p.lat, p.lng]));
+    const apto_para      = [...document.querySelectorAll('.acc-loop-apto:checked')].map(c => c.value);
+    const caracteristicas = [...document.querySelectorAll('.acc-loop-caract:checked')].map(c => c.value);
+    const dificultad     = (document.querySelector('.acc-loop-dif:checked') || {}).value || '';
     const data = {
       nombre, desc: get('acc-loop-desc'), ciudad: get('acc-loop-ciudad'), provincia: get('acc-loop-provincia'),
       pts: pts.map(p => ({ lat: p.lat, lng: p.lng })),
       dist: `${dist.toFixed(2)} km`,
+      apto_para, caracteristicas, dificultad,
     };
     const editId = this._accLoopEditId;
     const existing = editId ? (this._accLoopsCache||[]).find(x => x.id === editId) : null;
