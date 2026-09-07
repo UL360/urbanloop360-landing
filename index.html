@@ -22619,7 +22619,7 @@ ${url}`,
            onclick="if(event.target===this)App._accLoopFormCerrar()">
         <div id="acc-loop-modal" style="background:var(--wh);border-radius:20px 20px 0 0;width:100%;max-width:500px;max-height:94vh;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;">
           <div style="flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(--bd);background:var(--wh);border-radius:20px 20px 0 0;">
-            <div style="font-family:var(--fH);font-size:17px;font-weight:800;color:var(--dk);">♿ Nuevo loop accesible</div>
+            <div id="acc-loop-form-title" style="font-family:var(--fH);font-size:17px;font-weight:800;color:var(--dk);">♿ Nuevo loop accesible</div>
             <button onclick="App._accLoopFormCerrar()" style="width:34px;height:34px;border-radius:50%;border:1px solid var(--bd);background:var(--bg2);cursor:pointer;font-size:20px;font-weight:300;display:flex;align-items:center;justify-content:center;color:var(--dk);flex-shrink:0;">×</button>
           </div>
           <div style="flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:12px;">
@@ -22665,7 +22665,7 @@ ${url}`,
           </div>
           <div style="flex-shrink:0;display:flex;gap:10px;padding:14px 18px;border-top:1px solid var(--bd);background:var(--wh);">
             <button onclick="App._accLoopFormCerrar()" style="flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--bd);background:var(--bg2);font-family:var(--fH);font-size:14px;font-weight:600;color:var(--gr);cursor:pointer;">Cancelar</button>
-            <button onclick="App._accLoopGuardar()" style="flex:2;padding:13px;border-radius:12px;border:none;background:var(--or);color:white;font-family:var(--fH);font-size:14px;font-weight:700;cursor:pointer;">💾 Guardar loop accesible</button>
+            <button onclick="App._accLoopGuardar()" id="acc-loop-guardar-btn" style="flex:2;padding:13px;border-radius:12px;border:none;background:var(--or);color:white;font-family:var(--fH);font-size:14px;font-weight:700;cursor:pointer;">💾 Guardar loop accesible</button>
           </div>
         </div>
       </div>`;
@@ -22690,21 +22690,37 @@ ${url}`,
         </div>
         <div class="adm-item-actions" style="margin-top:8px;">
           ${first ? `<button class="adm-btn" onclick="App._navToFotoLoop(${first.lat},${first.lng},'${App._esc(n.nombre||'Loop accesible').replace(/'/g,"\\'")}')" style="background:var(--bg2);border:1px solid var(--bd);color:var(--dk);">🧭 Cómo llegar</button>` : ''}
+          <button class="adm-btn adm-btn-blue" onclick="App._accLoopFormAbrir('${n.id}')">✏️ Editar</button>
           <button class="adm-btn adm-btn-red" onclick="App._accLoopEliminar('${n.id}','${App._esc(n.nombre||'')}')">🗑 Eliminar</button>
         </div>
       </div>`;
   },
 
-  _accLoopFormAbrir() {
-    this._accLoopPts = [];
+  _accLoopFormAbrir(id) {
+    this._accLoopEditId = id || null;
+    const existing = id ? (this._accLoopsCache||[]).find(x => x.id === id) : null;
+    this._accLoopPts = existing ? (existing.pts||[]).map(p => Array.isArray(p) ? { lat:p[0], lng:p[1] } : { lat:p.lat, lng:p.lng }) : [];
     this._accLoopImgData = null;
     const modal = document.getElementById('acc-loop-modal-bg');
     if (!modal) return;
     modal.style.display = 'flex';
-    ['acc-loop-nombre','acc-loop-desc'].forEach(fid => { const e = document.getElementById(fid); if (e) e.value = ''; });
-    const ciudadEl = document.getElementById('acc-loop-ciudad'); if (ciudadEl) ciudadEl.value = this._admCity || '';
+    const title = document.getElementById('acc-loop-form-title');
+    if (title) title.textContent = existing ? `✏️ Editar: ${existing.nombre||'Loop'}` : '♿ Nuevo loop accesible';
+    const btn = document.getElementById('acc-loop-guardar-btn');
+    if (btn) btn.textContent = existing ? '💾 Guardar cambios' : '💾 Guardar loop accesible';
+    const set = (eid, val) => { const e = document.getElementById(eid); if (e) e.value = val || ''; };
+    if (existing) {
+      set('acc-loop-nombre', existing.nombre); set('acc-loop-desc', existing.desc);
+      set('acc-loop-ciudad', existing.ciudad); set('acc-loop-provincia', existing.provincia);
+    } else {
+      ['acc-loop-nombre','acc-loop-desc'].forEach(fid => { const e = document.getElementById(fid); if (e) e.value = ''; });
+      const ciudadEl = document.getElementById('acc-loop-ciudad'); if (ciudadEl) ciudadEl.value = this._admCity || '';
+      const provEl = document.getElementById('acc-loop-provincia'); if (provEl) provEl.value = '';
+    }
     const prev = document.getElementById('acc-loop-foto-preview');
-    if (prev) prev.innerHTML = `<div style="text-align:center;color:var(--gr);"><div style="font-size:28px;">📷</div><div style="font-size:12px;margin-top:4px;">Tocar para agregar foto</div></div>`;
+    if (prev) prev.innerHTML = (existing && existing.img)
+      ? `<img src="${existing.img}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">`
+      : `<div style="text-align:center;color:var(--gr);"><div style="font-size:28px;">📷</div><div style="font-size:12px;margin-top:4px;">Tocar para agregar foto</div></div>`;
     setTimeout(() => App._accLoopMapInit(), 220);
   },
 
@@ -22724,7 +22740,10 @@ ${url}`,
     const container = document.getElementById('acc-loop-map');
     if (!container || typeof maplibregl === 'undefined') return;
     const isDark = !document.body.classList.contains('day');
-    const center = (this.mainMap && this.mainMap.getCenter) ? this.mainMap.getCenter() : { lng: -59.6450, lat: -30.7490 };
+    const existingPts = this._accLoopPts || [];
+    const center = existingPts.length
+      ? { lng: existingPts[0].lng, lat: existingPts[0].lat }
+      : ((this.mainMap && this.mainMap.getCenter) ? this.mainMap.getCenter() : { lng: -59.6450, lat: -30.7490 });
     this._accLoopMap = new maplibregl.Map({
       container: 'acc-loop-map',
       style: isDark ? this._ML_STYLE_DARK : this._ML_STYLE_LIGHT,
@@ -22736,6 +22755,14 @@ ${url}`,
       this._accLoopMap.addSource('acc-loop-line', { type:'geojson', data:{ type:'Feature', geometry:{ type:'LineString', coordinates:[] } } });
       this._accLoopMap.addLayer({ id:'acc-loop-line', type:'line', source:'acc-loop-line',
         paint:{ 'line-color':'#FF5F00', 'line-width':4, 'line-opacity':0.85 } });
+      if (existingPts.length) {
+        this._accLoopRedraw();
+        const lons = existingPts.map(p => p.lng), lats = existingPts.map(p => p.lat);
+        this._accLoopMap.fitBounds(
+          [[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]],
+          { padding: 40, maxZoom: 17, duration: 0 }
+        );
+      }
     });
     this._accLoopMap.on('click', (e) => {
       this._accLoopPts.push({ lat: e.lngLat.lat, lng: e.lngLat.lng });
@@ -22860,6 +22887,7 @@ ${url}`,
     this._accLoopMarkers = [];
     this._accLoopPts = [];
     this._accLoopImgData = null;
+    this._accLoopEditId = null;
   },
 
   async _accLoopGuardar() {
@@ -22873,18 +22901,28 @@ ${url}`,
       nombre, desc: get('acc-loop-desc'), ciudad: get('acc-loop-ciudad'), provincia: get('acc-loop-provincia'),
       pts: pts.map(p => ({ lat: p.lat, lng: p.lng })),
       dist: `${dist.toFixed(2)} km`,
-      createdAt: Date.now(),
     };
+    const editId = this._accLoopEditId;
+    const existing = editId ? (this._accLoopsCache||[]).find(x => x.id === editId) : null;
     if (this._accLoopImgData) {
       try {
-        const docId = 'accloop-' + Date.now();
+        const docId = editId || ('accloop-' + Date.now());
         data.img = await this._uploadImg(this._accLoopImgData, `accesibilidad_loops/${docId}.jpg`);
       } catch(e) { data.img = this._accLoopImgData; }
+    } else if (existing?.img) {
+      data.img = existing.img;
     }
     if (!this._db) return this.toast('❌ Firebase no disponible');
     try {
-      await this._db.collection('accesibilidad_loops').doc().set(data);
-      this.toast('✅ Loop accesible guardado');
+      if (editId) {
+        data.updatedAt = Date.now();
+        await this._db.collection('accesibilidad_loops').doc(editId).update(data);
+        this.toast('✅ Loop accesible actualizado');
+      } else {
+        data.createdAt = Date.now();
+        await this._db.collection('accesibilidad_loops').doc().set(data);
+        this.toast('✅ Loop accesible guardado');
+      }
       this._accLoopFormCerrar();
       this._admRenderAccLoops();
       this._accLoadLoopsMapa(true);
@@ -22971,6 +23009,8 @@ ${url}`,
 
   _accRenderLoopsMapa() {
     if (!this.mainMap) return;
+    (this._accLoopStartMarkers || []).forEach(m => { try{ m.remove(); }catch(e){} });
+    this._accLoopStartMarkers = [];
     (this._accLoopsMapaCache || []).forEach(loop => {
       if (!loop.pts || loop.pts.length < 2) return;
       const srcId = 'acc-loop-src-' + loop.id, lyrId = 'acc-loop-lyr-' + loop.id;
@@ -22980,11 +23020,20 @@ ${url}`,
       } else {
         this.mainMap.addSource(srcId, { type:'geojson', data:{ type:'Feature', geometry:{ type:'LineString', coordinates: coords } } });
         this.mainMap.addLayer({ id: lyrId, type:'line', source: srcId,
-          paint:{ 'line-color':'#22C55E', 'line-width':5, 'line-dasharray':[0.2,1.5] } });
+          paint:{ 'line-color':'#2563EB', 'line-width':5, 'line-opacity':0.9 } });
         this.mainMap.on('click', lyrId, () => this._showAccLoopPopup(loop));
         this.mainMap.on('mouseenter', lyrId, () => { this.mainMap.getCanvas().style.cursor = 'pointer'; });
         this.mainMap.on('mouseleave', lyrId, () => { this.mainMap.getCanvas().style.cursor = ''; });
       }
+      // Pin de inicio del loop, igual al de punto accesible
+      const el = document.createElement('div');
+      el.className = 'ul-pin-wrap ul-pin-comercio';
+      el.innerHTML = `<img src="${this._PIN_ACCESIBILIDAD}" style="filter:drop-shadow(0 3px 6px rgba(0,0,0,.45));" alt="${loop.nombre || 'Loop accesible'}" draggable="false">`;
+      el.title = loop.nombre || 'Loop accesible';
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', (e) => { e.stopPropagation(); this._showAccLoopPopup(loop); });
+      const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat(coords[0]).addTo(this.mainMap);
+      this._accLoopStartMarkers.push(marker);
     });
   },
 
@@ -22994,7 +23043,7 @@ ${url}`,
     const first = Array.isArray(firstRaw) ? { lat: firstRaw[0], lng: firstRaw[1] } : firstRaw;
     const imgHtml = loop.img
       ? `<img src="${loop.img}" style="width:100%;height:110px;object-fit:cover;border-radius:10px 10px 0 0;display:block;" loading="lazy">`
-      : `<div style="width:100%;height:80px;background:linear-gradient(135deg,#22C55E30,#22C55E60);display:flex;align-items:center;justify-content:center;font-size:36px;border-radius:10px 10px 0 0;">♿</div>`;
+      : `<div style="width:100%;height:80px;background:linear-gradient(135deg,#2563EB30,#2563EB60);display:flex;align-items:center;justify-content:center;font-size:36px;border-radius:10px 10px 0 0;">♿</div>`;
     const html = `
       <div style="font-family:'Bai Jamjuree',sans-serif;width:215px;border-radius:12px;overflow:hidden;background:#1E1E26;box-shadow:0 8px 32px rgba(0,0,0,.7);">
         ${this._popupHeader('♿ Loop accesible', `App._reportContent('${loop.id}','accesibilidad_loop')`, `if(App._accPopup){App._accPopup.remove();App._accPopup=null;}`)}
@@ -23003,7 +23052,7 @@ ${url}`,
           <div style="font-size:13px;font-weight:800;color:#F0F0F8;line-height:1.3;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">♿ ${this._esc(loop.nombre||'Loop accesible')}</div>
           <div style="font-size:10px;color:#9898B8;margin-bottom:10px;">${loop.dist||''}${loop.ciudad ? ' · '+this._esc(loop.ciudad) : ''}</div>
           <button onclick="App._navToFotoLoop(${first.lat},${first.lng},'${this._esc(loop.nombre||'Loop accesible').replace(/'/g,"\\'")}');if(App._accPopup){App._accPopup.remove();App._accPopup=null;}"
-            style="width:100%;height:34px;background:#22C55E;color:white;border:none;border-radius:8px;font-family:'Bai Jamjuree',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;">
+            style="width:100%;height:34px;background:#2563EB;color:white;border:none;border-radius:8px;font-family:'Bai Jamjuree',sans-serif;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;">
             🧭 Cómo llegar
           </button>
         </div>
