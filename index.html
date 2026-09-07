@@ -22734,11 +22734,12 @@ ${url}`,
       this._accLoopMap.resize(); // fuerza el tamaño correcto por si el contenedor midió 0 o mal al iniciar
       this._accLoopMap.addSource('acc-loop-line', { type:'geojson', data:{ type:'Feature', geometry:{ type:'LineString', coordinates:[] } } });
       this._accLoopMap.addLayer({ id:'acc-loop-line', type:'line', source:'acc-loop-line',
-        paint:{ 'line-color':'#22C55E', 'line-width':5, 'line-dasharray':[0.2,1.5] } });
+        paint:{ 'line-color':'#FF5F00', 'line-width':4, 'line-opacity':0.85 } });
     });
     this._accLoopMap.on('click', (e) => {
       this._accLoopPts.push({ lat: e.lngLat.lat, lng: e.lngLat.lng });
       this._accLoopRedraw();
+      if (this._accLoopPts.length === 1) this._accLoopDetectCity(e.lngLat.lat, e.lngLat.lng);
       // Scroll al último punto de la lista de coordenadas
       setTimeout(() => {
         const itemsEl = document.getElementById('acc-loop-pts-items');
@@ -22750,6 +22751,24 @@ ${url}`,
       this._accLoopResizeObs = new ResizeObserver(() => this._accLoopMap && this._accLoopMap.resize());
       this._accLoopResizeObs.observe(container);
     }
+  },
+
+  // Auto-detecta ciudad/provincia al primer punto (igual a _cmAddPt del loop manual)
+  _accLoopDetectCity(lat, lng) {
+    const ciudadEl = document.getElementById('acc-loop-ciudad');
+    const provEl   = document.getElementById('acc-loop-provincia');
+    // Primero con _GEO_KNOWN directo (sin API, instantáneo)
+    const sync = this._enrichGeo({ lat, lng });
+    if (sync.ciudad) {
+      if (ciudadEl) ciudadEl.value = sync.ciudad;
+      if (provEl && sync.provincia) provEl.value = sync.provincia;
+    }
+    // Luego confirmar con _detectLocation (asíncrono, puede refinar)
+    this._detectLocation(lat, lng).then(loc => {
+      const geo = this._enrichGeo({ lat, lng, ...loc });
+      if (ciudadEl && geo.ciudad) ciudadEl.value = geo.ciudad;
+      if (provEl && geo.provincia) provEl.value = geo.provincia;
+    }).catch(() => {});
   },
 
   _accLoopRedraw() {
@@ -22803,18 +22822,31 @@ ${url}`,
 
   _accLoopUndo() {
     (this._accLoopPts || []).pop();
+    if ((this._accLoopPts || []).length === 0) this._accLoopClearCity();
     this._accLoopRedraw();
   },
 
   _accLoopReset() {
     this._accLoopPts = [];
+    this._accLoopClearCity();
     this._accLoopRedraw();
+  },
+
+  _accLoopClearCity() {
+    const ciudadEl = document.getElementById('acc-loop-ciudad');
+    const provEl   = document.getElementById('acc-loop-provincia');
+    if (ciudadEl) ciudadEl.value = this._admCity || '';
+    if (provEl) provEl.value = '';
   },
 
   // Eliminar un punto específico por índice (igual a _cmRemovePt del loop manual)
   _accLoopRemovePt(idx) {
     if (!this._accLoopPts || idx < 0 || idx >= this._accLoopPts.length) return;
     this._accLoopPts.splice(idx, 1);
+    if (idx === 0) {
+      if (this._accLoopPts.length > 0) this._accLoopDetectCity(this._accLoopPts[0].lat, this._accLoopPts[0].lng);
+      else this._accLoopClearCity();
+    }
     this._accLoopRedraw();
   },
 
