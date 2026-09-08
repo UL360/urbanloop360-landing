@@ -6591,6 +6591,7 @@ const App = {
     this.mainMap.on('moveend',   () => App._showNavDelay());
     this.mainMap.on('zoomstart', () => App._hideNav());
     this.mainMap.on('zoomend',   () => App._showNavDelay());
+    this.mainMap.on('zoom',      () => App._scaleMarkersByZoom());
 
     // ── Long press en el mapa: modo ciudad virtual ──
     this._initMapLongPress();
@@ -6736,6 +6737,55 @@ const App = {
 
     // 5. Mostrar banner
     this._showVirtualCityBanner(city, prov);
+  },
+
+  // ── Escala todos los markers del mainMap según el nivel de zoom ──
+  _scaleMarkersByZoom() {
+    if (!this.mainMap) return;
+    const z = this.mainMap.getZoom();
+
+    // Interpolación lineal entre breakpoints
+    // zoom:  9 → 0.30   12 → 0.55   14 → 0.80   16 → 1.00   18+ → 1.10
+    let s;
+    if      (z <= 9)  s = 0.30;
+    else if (z <= 12) s = 0.30 + (z -  9) / (12 -  9) * (0.55 - 0.30);
+    else if (z <= 14) s = 0.55 + (z - 12) / (14 - 12) * (0.80 - 0.55);
+    else if (z <= 16) s = 0.80 + (z - 14) / (16 - 14) * (1.00 - 0.80);
+    else if (z <= 18) s = 1.00 + (z - 16) / (18 - 16) * (1.10 - 1.00);
+    else              s = 1.10;
+    this._lastPinScale = s;
+
+    const apply = mkr => {
+      try {
+        const wrapper = mkr && mkr.getElement && mkr.getElement();
+        if (!wrapper) return;
+        // getElement() devuelve .maplibregl-marker (el padre que MapLibre controla).
+        // Su firstElementChild es nuestro div.ul-pin-wrap — lo escalamos a el.
+        // Usamos scaleX+scaleY en lugar de scale() para no pisar el translate del padre.
+        const inner = wrapper.firstElementChild || wrapper;
+        inner.style.transform = `scale(${s})`;
+        inner.style.transformOrigin = 'bottom center';
+        inner.style.transition = 'transform 0.1s ease-out';
+        // Reducir tambien el area de hit para que no se pisen los markers al alejarse
+        wrapper.style.zIndex = Math.round(s * 10).toString();
+      } catch(e) {}
+    };
+
+    // _startMarkers e _iconMarkers son objetos { id: marker }
+    if (this._startMarkers) Object.values(this._startMarkers).forEach(apply);
+    if (this._iconMarkers)  Object.values(this._iconMarkers).forEach(apply);
+
+    // _poiMarkers es objeto { id: [marker, marker, …] }
+    if (this._poiMarkers) Object.values(this._poiMarkers).forEach(arr => {
+      if (Array.isArray(arr)) arr.forEach(apply);
+    });
+
+    // Arrays planos
+    if (this._fotoMarkers)         this._fotoMarkers.forEach(apply);
+    if (this._negocioMarkers)      this._negocioMarkers.forEach(apply);
+    if (this._accPuntoMarkers)     this._accPuntoMarkers.forEach(apply);
+    if (this._accLoopStartMarkers) this._accLoopStartMarkers.forEach(apply);
+    if (this._accLayerMarkers)     this._accLayerMarkers.forEach(apply);
   },
 
   _showVirtualCityBanner(city, prov) {
@@ -7703,8 +7753,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
       elStart.innerHTML = `<img src="${pinStartSrc}" style="filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));" alt="Inicio del Loop" draggable="false">`;
       elStart.title = r.name || 'Inicio del Loop';
       const elStartImg = elStart.querySelector('img');
-      elStart.addEventListener('mouseenter', () => { elStartImg.style.transform = 'scale(1.12) translateY(-2px)'; });
-      elStart.addEventListener('mouseleave', () => { elStartImg.style.transform = 'scale(1) translateY(0)'; });
+      elStart.addEventListener('mouseenter', () => { elStartImg.dataset.hover = '1'; elStartImg.style.transform = `scale(${(App._lastPinScale||1)*1.12}) translateY(-2px)`; });
+      elStart.addEventListener('mouseleave', () => { elStartImg.dataset.hover = ''; elStartImg.style.transform = `scale(${App._lastPinScale||1})`; });
       // Un toque/click: el pin "rebota" y se abre la card del Loop con imagen y acciones
       elStart.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -7715,6 +7765,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         .setLngLat(coords[0])
         .addTo(this.mainMap);
       this._startMarkers[r.id] = startMkr;
+      this._scaleMarkersByZoom && this._scaleMarkersByZoom();
     }
 
 
@@ -7925,6 +7976,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         .setLngLat([p.lng, p.lat]).addTo(this.mainMap);
       this._fotoMarkers.push(mkr);
     });
+    this._scaleMarkersByZoom && this._scaleMarkersByZoom();
   },
 
   // ── Negocios activos en el mapa ──
@@ -7964,6 +8016,8 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         .addTo(this.mainMap);
       this._negocioMarkers.push(mkr);
     });
+    // Aplicar escala actual al cargar
+    this._scaleMarkersByZoom && this._scaleMarkersByZoom();
   },
 
   // ── Mini popup inline para Negocios ──
@@ -23053,6 +23107,8 @@ ${url}`,
       el.addEventListener('click', (e) => { e.stopPropagation(); this._showAccPuntoPopup(p); });
       return new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([p.lng, p.lat]).addTo(this.mainMap);
     });
+    // Aplicar escala actual al cargar
+    this._scaleMarkersByZoom && this._scaleMarkersByZoom();
   },
 
   _showAccPuntoPopup(p) {
@@ -23125,6 +23181,7 @@ ${url}`,
       const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat(coords[0]).addTo(this.mainMap);
       this._accLoopStartMarkers.push(marker);
     });
+    this._scaleMarkersByZoom && this._scaleMarkersByZoom();
   },
 
   _showAccLoopPopup(loop) {
