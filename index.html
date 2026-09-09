@@ -6934,7 +6934,7 @@ const App = {
     };
 
     const imgHtml = loop.img
-      ? `<img src="${loop.img}" style="width:100%;height:150px;object-fit:cover;display:block;" loading="lazy">`
+      ? `<img src="${loop.img}" style="width:100%;height:150px;object-fit:cover;display:block;" loading="lazy" onerror="this.style.display='none'">`
       : `<div style="width:100%;height:110px;background:linear-gradient(135deg,${loop.color||'#FF5F00'}40,${loop.color||'#FF5F00'}80);display:flex;align-items:center;justify-content:center;font-size:44px;">${loop.emoji||'🔁'}</div>`;
 
     const card = document.createElement('div');
@@ -8122,7 +8122,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const thumbHtml = allImgs.length > 0 ? `
       <div style="position:relative;width:100%;height:110px;border-radius:10px 10px 0 0;overflow:hidden;">
         <div id="${galeriaId}" style="display:flex;width:${allImgs.length*100}%;height:100%;transition:transform .3s ease;">
-          ${allImgs.map(src => `<img src="${src}" style="width:${100/allImgs.length}%;height:100%;object-fit:cover;object-position:center;flex-shrink:0;" loading="lazy">`).join('')}
+          ${allImgs.map(src => `<img src="${src}" style="width:${100/allImgs.length}%;height:100%;object-fit:cover;object-position:center;flex-shrink:0;" loading="lazy" onerror="this.style.display='none'">`).join('')}
         </div>
         ${allImgs.length > 1 ? `
         <button onclick="App._negGaleriaNav('${galeriaId}',${allImgs.length},-1)"
@@ -8223,7 +8223,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const imgSrc = p.img && (p.img.startsWith('data:') || p.img.startsWith('http')) ? p.img : null;
 
     const thumbHtml = imgSrc
-      ? `<img src="${imgSrc}" style="width:100%;height:100px;object-fit:cover;border-radius:10px 10px 0 0;display:block;" loading="lazy">`
+      ? `<img src="${imgSrc}" style="width:100%;height:100px;object-fit:cover;border-radius:10px 10px 0 0;display:block;" loading="lazy" onerror="this.style.display='none'">`
       : `<div style="width:100%;height:70px;background:linear-gradient(135deg,#FF5F0030,#FF5F0060);display:flex;align-items:center;justify-content:center;font-size:32px;border-radius:10px 10px 0 0;">${emoji}</div>`;
 
     const html = `
@@ -8253,7 +8253,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     // Placeholder mientras resuelve imagen
     // Detecta orientación de la imagen y ajusta el popup
     const thumbHtml = (imgSrc, isVertical=false) => imgSrc
-      ? `<img src="${imgSrc}" style="width:100%;height:${isVertical?'180px':'110px'};object-fit:cover;border-radius:10px 10px 0 0;display:block;" loading="lazy">`
+      ? `<img src="${imgSrc}" style="width:100%;height:${isVertical?'180px':'110px'};object-fit:cover;border-radius:10px 10px 0 0;display:block;" loading="lazy" onerror="this.style.display='none'">`
       : `<div style="width:100%;height:80px;background:linear-gradient(135deg,#FF5F0030,#FF5F0060);display:flex;align-items:center;justify-content:center;font-size:36px;border-radius:10px 10px 0 0;">${emoji}</div>`;
 
     const liked = (App._likedFotos||new Set()).has(p.id);
@@ -10897,7 +10897,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const lngLat = Array.isArray(pt) ? [pt[1], pt[0]] : [pt.lng, pt.lat];
 
     const thumbHtml = (imgSrc) => imgSrc
-      ? `<img src="${imgSrc}" style="width:100%;height:100px;object-fit:cover;border-radius:10px 10px 0 0;display:block;" loading="lazy">`
+      ? `<img src="${imgSrc}" style="width:100%;height:100px;object-fit:cover;border-radius:10px 10px 0 0;display:block;" loading="lazy" onerror="this.style.display='none'">`
       : `<div style="width:100%;height:70px;background:linear-gradient(135deg,${r.color}30,${r.color}60);display:flex;align-items:center;justify-content:center;font-size:32px;border-radius:10px 10px 0 0;">${r.emoji||'🔁'}</div>`;
 
     const html = `
@@ -10931,7 +10931,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     const lngLat = Array.isArray(pt) ? [pt[1], pt[0]] : [pt.lng, pt.lat];
 
     const thumbHtml = (imgSrc, isVertical=false) => imgSrc
-      ? `<img src="${imgSrc}" style="width:100%;height:${isVertical?'180px':'110px'};object-fit:cover;border-radius:10px 10px 0 0;display:block;" loading="lazy">`
+      ? `<img src="${imgSrc}" style="width:100%;height:${isVertical?'180px':'110px'};object-fit:cover;border-radius:10px 10px 0 0;display:block;" loading="lazy" onerror="this.style.display='none'">`
       : `<div style="width:100%;height:80px;background:linear-gradient(135deg,${r.color}30,${r.color}60);display:flex;align-items:center;justify-content:center;font-size:36px;border-radius:10px 10px 0 0;">${r.emoji||'🔁'}</div>`;
 
     const liked = (this.likes||[]).includes(r.id);
@@ -11395,13 +11395,29 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     if (!imgRef) return '';
     if (imgRef.startsWith('data:') || imgRef.startsWith('http')) return imgRef;
     if (imgRef.startsWith('firestore:')) {
+      // Cache en memoria: evita N lecturas a Firestore por la misma imagen
+      this._imgCache = this._imgCache || {};
+      if (this._imgCache[imgRef] !== undefined) return this._imgCache[imgRef];
+      // Si ya hay una promesa en vuelo para esta ref, esperarla en vez de duplicar
+      this._imgCachePromises = this._imgCachePromises || {};
+      if (this._imgCachePromises[imgRef]) return this._imgCachePromises[imgRef];
       const path = imgRef.replace('firestore:', ''); // 'loop_imgs/cm_123'
       const [col, docId] = path.split('/');
       if (!this._db || !col || !docId) return '';
-      try {
-        const snap = await this._db.collection(col).doc(docId).get();
-        return snap.exists ? (snap.data().img || '') : '';
-      } catch(e) { return ''; }
+      this._imgCachePromises[imgRef] = (async () => {
+        try {
+          const snap = await this._db.collection(col).doc(docId).get();
+          const url = snap.exists ? (snap.data().img || '') : '';
+          this._imgCache[imgRef] = url;
+          return url;
+        } catch(e) {
+          this._imgCache[imgRef] = '';
+          return '';
+        } finally {
+          delete this._imgCachePromises[imgRef];
+        }
+      })();
+      return this._imgCachePromises[imgRef];
     }
     if (imgRef === '[[base64]]') return ''; // compat datos viejos
     return imgRef;
@@ -12451,7 +12467,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
         <!-- Imagen: ocupa lo que necesita, mínimo 40% de la pantalla -->
         <div style="flex-shrink:0;width:100%;min-height:40vh;display:flex;align-items:center;justify-content:center;padding:56px 16px 12px;">
           ${img
-            ? `<img src="${img}" style="max-width:100%;max-height:55vh;width:auto;height:auto;border-radius:16px;object-fit:contain;box-shadow:0 8px 48px rgba(0,0,0,.6);display:block;margin:0 auto;" loading="lazy">`
+            ? `<img src="${img}" style="max-width:100%;max-height:55vh;width:auto;height:auto;border-radius:16px;object-fit:contain;box-shadow:0 8px 48px rgba(0,0,0,.6);display:block;margin:0 auto;" loading="lazy" onerror="this.style.display='none'">`
             : `<div style="width:220px;height:220px;border-radius:50%;background:linear-gradient(135deg,${r.color||'#FF5F00'}44,${r.color||'#FF5F00'}22);display:flex;align-items:center;justify-content:center;font-size:80px;">${catIcon}</div>`
           }
         </div>
@@ -12672,7 +12688,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
 
       <div style="position:relative;width:100%;max-width:520px;max-height:70vh;display:flex;align-items:center;justify-content:center;padding:0 16px;">
         ${src
-          ? `<img src="${src}" style="max-width:100%;max-height:65vh;border-radius:16px;object-fit:contain;box-shadow:0 8px 48px rgba(0,0,0,.6);" loading="lazy">`
+          ? `<img src="${src}" style="max-width:100%;max-height:65vh;border-radius:16px;object-fit:contain;box-shadow:0 8px 48px rgba(0,0,0,.6);" loading="lazy" onerror="this.style.display='none'">`
           : `<div style="width:36px;height:36px;border:3px solid rgba(255,255,255,0.2);border-top-color:#FF5F00;border-radius:50%;animation:spin .8s linear infinite;"></div>`
         }
       </div>
@@ -13425,7 +13441,7 @@ Usá un tono cálido y entusiasta como guía local. No uses asteriscos ni markdo
     list.innerHTML = negocios.map(n => {
       const emoji = RUBRO_EMOJI[n.rubro] || '🏪';
       const imgHtml = n.img
-        ? `<img src="${n.img}" style="width:56px;height:56px;object-fit:cover;border-radius:12px;flex-shrink:0;" loading="lazy">`
+        ? `<img src="${n.img}" style="width:56px;height:56px;object-fit:cover;border-radius:12px;flex-shrink:0;" loading="lazy" onerror="this.style.display='none'">`
         : `<div style="width:56px;height:56px;border-radius:12px;background:var(--bg2);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;">${emoji}</div>`;
       const deliveryBadge = n.delivery
         ? `<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:rgba(56,189,248,.12);color:#0284C7;font-weight:700;">🛵 Delivery</span>` : '';
@@ -21956,7 +21972,7 @@ ${url}`,
   _negocioCard(n) {
     const planColor = n.plan === 'Mayorista Premium' ? '#F59E0B' : n.plan === 'NegocioG' ? '#A78BFA' : n.plan === 'NegocioM' ? '#FF5F00' : n.plan === 'NegocioC' ? '#38BDF8' : '#9898B8';
     const imgHtml = n.img
-      ? `<img src="${n.img}" style="width:52px;height:52px;object-fit:cover;border-radius:10px;flex-shrink:0;" loading="lazy">`
+      ? `<img src="${n.img}" style="width:52px;height:52px;object-fit:cover;border-radius:10px;flex-shrink:0;" loading="lazy" onerror="this.style.display='none'">`
       : `<div style="width:52px;height:52px;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;">🏪</div>`;
     return `
       <div class="adm-item">
