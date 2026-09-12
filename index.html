@@ -24080,15 +24080,25 @@ document.addEventListener('DOMContentLoaded',()=>{
   // ── Botón "Seguir explorando" → cerrar modal ─────────────
   document.getElementById('ul-exit-stay').addEventListener('click', hideExitModal);
 
-  // ── Botón "Salir por ahora" → cerrar la pestaña / volver ─
+  // ── Botón "Salir" → minimizar la PWA en Android ─────────
   document.getElementById('ul-exit-go').addEventListener('click', function() {
     hideExitModal();
-    // Intenta cerrar la pestaña (funciona si la abrió JS / PWA standalone)
-    if (window.history.length > 1) {
-      window.history.back();
-    } else {
-      window.close();
-    }
+
+    // Truco para mandar la PWA al fondo (minimizar) en Android:
+    // Intentamos navegar a un intent vacío; como no existe, el SO
+    // devuelve el foco al launcher y la PWA queda en segundo plano.
+    try {
+      window.location.href = 'intent://#Intent;end';
+    } catch(e) {}
+
+    // Fallback: si el intent no funcionó después de 400ms,
+    // abrimos y cerramos una ventana auxiliar (fuerza minimizar en algunos Android)
+    setTimeout(function() {
+      try {
+        var w = window.open('about:blank', '_blank');
+        if (w) { w.close(); }
+      } catch(e2) {}
+    }, 400);
   });
 
   // ── Interceptar botón físico "Atrás" del navegador/Android ─
