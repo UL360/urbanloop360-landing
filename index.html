@@ -24080,25 +24080,23 @@ document.addEventListener('DOMContentLoaded',()=>{
   // ── Botón "Seguir explorando" → cerrar modal ─────────────
   document.getElementById('ul-exit-stay').addEventListener('click', hideExitModal);
 
-  // ── Botón "Salir" → minimizar la PWA en Android ─────────
+  // ── Botón "Salir" → volver a la pantalla de bienvenida ──
   document.getElementById('ul-exit-go').addEventListener('click', function() {
     hideExitModal();
 
-    // Truco para mandar la PWA al fondo (minimizar) en Android:
-    // Intentamos navegar a un intent vacío; como no existe, el SO
-    // devuelve el foco al launcher y la PWA queda en segundo plano.
-    try {
-      window.location.href = 'intent://#Intent;end';
-    } catch(e) {}
+    // Mostrar la welcome screen
+    var ws = document.getElementById('welcome-screen');
+    if (ws) {
+      ws.classList.add('ws-show');
+      setTimeout(function() { ws.classList.add('ws-visible'); }, 30);
+    }
 
-    // Fallback: si el intent no funcionó después de 400ms,
-    // abrimos y cerramos una ventana auxiliar (fuerza minimizar en algunos Android)
-    setTimeout(function() {
-      try {
-        var w = window.open('about:blank', '_blank');
-        if (w) { w.close(); }
-      } catch(e2) {}
-    }, 400);
+    // Si App tiene función para ir a welcome, usarla también
+    try {
+      if (window.App && typeof window.App.showScreen === 'function') {
+        window.App.showScreen('welcome-screen');
+      }
+    } catch(e) {}
   });
 
   // ── Interceptar botón físico "Atrás" del navegador/Android ─
