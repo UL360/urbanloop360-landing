@@ -24009,5 +24009,112 @@ document.addEventListener('DOMContentLoaded',()=>{
   </div>
 </div>
 
+<!-- ════════════ MODAL: SALIR DE URBAN LOOP (estilo Waze) ════════════ -->
+<div id="ul-exit-overlay"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:99999;
+         align-items:center;justify-content:center;padding:24px;">
+  <div style="background:var(--bg1,#1a1a2e);border-radius:24px;width:100%;max-width:320px;
+              padding:28px 22px 22px;text-align:center;
+              box-shadow:0 20px 60px rgba(0,0,0,.6);
+              animation:ul-exit-pop .25s cubic-bezier(.34,1.56,.64,1);">
+
+    <!-- Ícono animado -->
+    <div style="font-size:52px;margin-bottom:12px;line-height:1;">🗺️</div>
+
+    <!-- Título -->
+    <div style="font-family:var(--fH,'sans-serif');font-size:20px;font-weight:900;
+                color:var(--dk,#fff);margin-bottom:8px;letter-spacing:-.3px;">
+      ¿Salís de Urban Loop?
+    </div>
+
+    <!-- Subtítulo -->
+    <div style="font-size:13.5px;color:var(--gr,#aaa);line-height:1.5;margin-bottom:26px;">
+      Tu ciudad te espera.<br>¿Volvés pronto?
+    </div>
+
+    <!-- Botón: Quedarme -->
+    <button id="ul-exit-stay"
+      style="width:100%;padding:15px;margin-bottom:10px;
+             background:#FF5F00;color:white;border:none;border-radius:14px;
+             font-family:var(--fH,'sans-serif');font-size:15px;font-weight:800;
+             cursor:pointer;letter-spacing:-.2px;
+             box-shadow:0 4px 16px rgba(255,95,0,.4);
+             transition:transform .1s,box-shadow .1s;">
+      🗺️ Me quedo
+    </button>
+
+    <!-- Botón: Salir -->
+    <button id="ul-exit-go"
+      style="width:100%;padding:12px;
+             background:transparent;border:1.5px solid rgba(255,255,255,.15);
+             border-radius:14px;color:var(--gr,#aaa);
+             font-size:14px;font-weight:600;cursor:pointer;
+             transition:background .15s;">
+      Salir
+    </button>
+
+  </div>
+</div>
+
+<style>
+@keyframes ul-exit-pop {
+  from { transform: scale(.85); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+#ul-exit-stay:active { transform: scale(.97); box-shadow: 0 2px 8px rgba(255,95,0,.3); }
+#ul-exit-go:hover    { background: rgba(255,255,255,.07); }
+</style>
+
+<script>
+(function() {
+  // ── Mostrar/ocultar overlay ──────────────────────────────
+  function showExitModal() {
+    const el = document.getElementById('ul-exit-overlay');
+    if (el) { el.style.display = 'flex'; }
+  }
+  function hideExitModal() {
+    const el = document.getElementById('ul-exit-overlay');
+    if (el) { el.style.display = 'none'; }
+  }
+
+  // ── Botón "Seguir explorando" → cerrar modal ─────────────
+  document.getElementById('ul-exit-stay').addEventListener('click', hideExitModal);
+
+  // ── Botón "Salir por ahora" → cerrar la pestaña / volver ─
+  document.getElementById('ul-exit-go').addEventListener('click', function() {
+    hideExitModal();
+    // Intenta cerrar la pestaña (funciona si la abrió JS / PWA standalone)
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.close();
+    }
+  });
+
+  // ── Interceptar botón físico "Atrás" del navegador/Android ─
+  // Usamos la History API para detectar el gesto sin navegar
+  window.history.pushState({ ulLoop: true }, '');
+
+  window.addEventListener('popstate', function(e) {
+    // Si el usuario tocó "atrás" → mostrar el modal en lugar de salir
+    showExitModal();
+    // Volver a empujar el estado para seguir capturando futuros "atrás"
+    window.history.pushState({ ulLoop: true }, '');
+  });
+
+  // ── En desktop: interceptar cierre de pestaña (beforeunload) ──
+  // Solo activa el diálogo nativo del navegador si hay algo importante
+  // Para PWA instalada, el popstate ya lo cubre.
+  window.addEventListener('beforeunload', function(e) {
+    // Sólo mostramos si NO estamos ya en el modal (evitar doble aviso en desktop)
+    const overlay = document.getElementById('ul-exit-overlay');
+    if (overlay && overlay.style.display === 'flex') return;
+    e.preventDefault();
+    e.returnValue = '';   // Chrome requiere esto para mostrar el diálogo
+  });
+
+})();
+</script>
+
 </body>
 </html>
